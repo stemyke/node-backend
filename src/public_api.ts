@@ -48,7 +48,7 @@ export function createServices(): Injector {
     ]);
 }
 
-export async function setupBackend(injector: Injector, config: IBackendConfig): Promise<Server> {
+export async function setupBackend(injector: Injector, config: IBackendConfig): Promise<Injector> {
     const fixtureTypes = (config.fixtures || []);
     const fixtureProviders = fixtureTypes.map(fixture => {
         return {
@@ -113,5 +113,5 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     useSocketContainer(injector);
     useSocketServer(io, socketOptions);
 
-    return server;
+    return injector;
 }

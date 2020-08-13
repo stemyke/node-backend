@@ -5,7 +5,7 @@ import * as socket_io from "socket.io";
 import {useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
-import {EXPRESS, FIXTURE, HTTP_SERVER, IBackendConfig, SOCKET_SERVER} from "./common-types";
+import {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig} from "./common-types";
 
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
@@ -21,6 +21,8 @@ import {GalleryController} from "./controllers/gallery.controller";
 import {ErrorHandlerMiddleware} from "./middlewares/error-handler.middleware";
 import {LanguageMiddleware} from "./middlewares/language.middleware";
 import {getApiDocs} from "./rest-openapi";
+
+export {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig} from "./common-types";
 
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
@@ -80,6 +82,9 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};
+    socketOptions.middlewares = [];
+    socketOptions.controllers = [];
+    socketOptions.useClassTransformer = false;
 
     // Create final injector
     injector = ReflectiveInjector.resolveAndCreate([

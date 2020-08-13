@@ -1,6 +1,3 @@
-import {IBackendConfig} from "./common-types";
-import {Injector} from "injection-js";
-
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
 }

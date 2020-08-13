@@ -1,11 +1,14 @@
 import * as express_ from "express";
+import {json} from "body-parser";
 import {createServer} from "http";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
 import * as socket_io from "socket.io";
 import {useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
-import {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig} from "./common-types";
+import {getApiDocs} from "./rest-openapi";
+
+import {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig, Parameter} from "./common-types";
 
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
@@ -16,13 +19,18 @@ import {TemplateRenderer} from "./services/template-renderer";
 import {TranslationProvider} from "./services/translation-provider";
 import {Translator} from "./services/translator";
 
-import {GalleryController} from "./controllers/gallery.controller";
+import {GalleryController} from "./rest-controllers/gallery.controller";
 
-import {ErrorHandlerMiddleware} from "./middlewares/error-handler.middleware";
-import {LanguageMiddleware} from "./middlewares/language.middleware";
-import {getApiDocs} from "./rest-openapi";
+import {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
+import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
-export {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig} from "./common-types";
+import {MessageController} from "./socket-controllers/message.controller";
+
+import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
+
+export {isNullOrUndefined, isDefined, getType, isString, isFunction, getValue, groupBy, convertValue} from "./utils";
+
+export {IFixture, SchemaConverter, FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, Parameter, IRequest, IGalleryImage, IGallerySize, ITranslations, IBackendConfig} from "./common-types";
 
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
@@ -33,10 +41,10 @@ export {TemplateRenderer} from "./services/template-renderer";
 export {TranslationProvider} from "./services/translation-provider";
 export {Translator} from "./services/translator";
 
-export {GalleryController} from "./controllers/gallery.controller";
+export {GalleryController} from "./rest-controllers/gallery.controller";
 
-export {ErrorHandlerMiddleware} from "./middlewares/error-handler.middleware";
-export {LanguageMiddleware} from "./middlewares/language.middleware";
+export {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
+export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 export function createServices(): Injector {
     return ReflectiveInjector.resolveAndCreate([
@@ -68,6 +76,8 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     const io = socketIO(server);
 
     // Setup rest API
+    app.use(json());
+
     const restOptions = config.restOptions || {};
     restOptions.defaultErrorHandler = false;
     restOptions.cors = {
@@ -82,8 +92,8 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};
-    socketOptions.middlewares = [];
-    socketOptions.controllers = [];
+    socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);;
+    socketOptions.controllers = [MessageController].concat(socketOptions.controllers as any || []);;
     socketOptions.useClassTransformer = false;
 
     // Create final injector
@@ -108,6 +118,14 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
 
     // Add parameters
     const configuration = injector.get(Configuration);
+    configuration.add(new Parameter("defaultLanguage", "en"));
+    configuration.add(new Parameter("smtpHost", "smtp.sendgrid.net"));
+    configuration.add(new Parameter("smtpPort", 587));
+    configuration.add(new Parameter("smtpUser", "apikey"));
+    configuration.add(new Parameter("smtpPassword", "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"));
+    configuration.add(new Parameter("mailSenderAddress", "info@stemy.hu"));
+    configuration.add(new Parameter("translationsTemplate", "https://translation.service/[lang]"));
+
     (config.params || []).forEach(param => {
         configuration.add(param);
     });

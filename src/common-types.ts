@@ -1,5 +1,6 @@
 import {Application, Request} from "express";
 import {Server} from "http";
+import {Server as SocketServer} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
 import {InjectionToken, Type} from "injection-js";
@@ -20,7 +21,7 @@ export const EXPRESS = new InjectionToken<Application>("express");
 
 export const HTTP_SERVER = new InjectionToken<Server>("http-server");
 
-export const SOCKET_SERVER = new InjectionToken<SocketIO.Server>("socket-server");
+export const SOCKET_SERVER = new InjectionToken<SocketServer>("socket-server");
 
 export class Parameter {
     constructor(readonly name: string, readonly defaultValue: any, readonly resolver: (value) => any = null) {

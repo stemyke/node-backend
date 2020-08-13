@@ -1,6 +1,5 @@
 import {Injectable} from "injection-js";
-import {isString} from "util";
-import {getValue, isDefined} from "../utils";
+import {getValue, isDefined, isString} from "../utils";
 import {ITranslations} from "../common-types";
 import {TranslationProvider} from "./translation-provider";
 

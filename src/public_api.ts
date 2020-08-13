@@ -1,7 +1,7 @@
-import * as express from "express";
+import * as express_ from "express";
 import {createServer} from "http";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
-import * as socketIO from "socket.io";
+import * as socket_io from "socket.io";
 import {useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
@@ -48,6 +48,9 @@ export function createServices(): Injector {
         Translator
     ]);
 }
+
+const express = express_;
+const socketIO = socket_io;
 
 export async function setupBackend(injector: Injector, config: IBackendConfig): Promise<Injector> {
     const fixtureTypes = (config.fixtures || []);

@@ -4,8 +4,7 @@ import {OpenAPIObject, SchemaObject} from "openapi3-ts";
 import {defaultMetadataStorage} from "class-transformer/storage";
 import {ValidationTypes} from "class-validator"
 import {validationMetadatasToSchemas} from "class-validator-jsonschema"
-import {SchemaConverter} from "class-validator-jsonschema/src/defaultConverters";
-
+import {SchemaConverter} from "./common-types";
 
 let apiDocs: string = null;
 

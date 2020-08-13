@@ -3,9 +3,24 @@
     "lib": {
         "entryFile": "./src/public_api.ts",
         "umdModuleIds": {
-            "moment": "moment",
-            "class-validator-jsonschema": "class-validator-jsonschema",
-            "injection-js": "injection-js"
+            "path": "path",
+            "fs": "fs",
+            "http": "http",
+            "axios": "axios",
+            "injection-js": "injection-js",
+            "express": "express",
+            "socket.io": "socket.io",
+            "routing-controllers-openapi": "routing-controllers-openapi",
+            "routing-controllers": "routing-controllers",
+            "socket-controllers": "socket-controllers",
+            "uuid": "uuid",
+            "sharp": "sharp",
+            "rimraf": "rimraf",
+            "nodemailer": "nodemailer",
+            "handlebars": "handlebars",
+            "class-transformer/storage": "class-transformer/storage",
+            "class-validator": "class-validator",
+            "class-validator-jsonschema": "class-validator-jsonschema"
         }
     },
     "deleteDestPath": false,

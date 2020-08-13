@@ -17,9 +17,15 @@
             "es2017",
             "dom"
         ],
+        "allowSyntheticDefaultImports": true,
         "skipLibCheck": true,
         "paths": {
 
         }
+    },
+    "angularCompilerOptions": {
+        "skipTemplateCodegen": true,
+        "strictMetadataEmit": true,
+        "fullTemplateTypeCheck": true
     }
 }

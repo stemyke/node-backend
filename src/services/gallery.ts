@@ -1,7 +1,7 @@
 import {Injectable} from "injection-js";
 import {v4 as uuidv4} from "uuid";
-import * as rimraf from "rimraf";
-import * as sharp from "sharp";
+import * as rimraf_ from "rimraf";
+import * as sharp_ from "sharp";
 import {Sharp, Metadata} from "sharp";
 import {join} from "path";
 import {readdir, lstat, mkdir} from "fs";
@@ -11,6 +11,9 @@ import * as Buffer from "buffer";
 const thumbSize = 250;
 const bigSize = 1500;
 const output = join(__dirname, "..", "cache", "gallery");
+
+const rimraf = rimraf_;
+const sharp = sharp_;
 
 class GalleryImage implements IGalleryImage {
 

@@ -1,8 +1,8 @@
 import {BadRequestError, ExpressErrorMiddlewareInterface, HttpError, Middleware} from "routing-controllers";
 import {Response} from "express";
 import {Injectable} from "injection-js";
+
 import {Translator} from "../services/translator";
-import {ParamRequiredError} from "routing-controllers/error/ParamRequiredError";
 import {IRequest} from "../common-types";
 
 @Injectable()
@@ -18,15 +18,16 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
         const result: any = {};
         const isDev = process.env.NODE_ENV === "development";
 
-        if (error instanceof ParamRequiredError) {
+        if (error instanceof BadRequestError) {
             res.status(400);
-            result.message = await this.translator.getTranslation(req.language, "message.parameter-required.error");
-            result.param = error.message;
-        } else if (error instanceof BadRequestError) {
-            res.status(400);
-            result.message = await this.translator.getTranslation(req.language, "message.form-validation.error");
-            result.errors = error["errors"];
-            result.stack = error.stack;
+            if (error.constructor.name === "ParamRequiredError") {
+                result.message = await this.translator.getTranslation(req.language, "message.parameter-required.error");
+                result.param = error.message;
+            } else {
+                result.message = await this.translator.getTranslation(req.language, "message.form-validation.error");
+                result.errors = error["errors"];
+                result.stack = error.stack;
+            }
         } else {
             // set http status
             if (error instanceof HttpError && error.httpCode) {

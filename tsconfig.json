@@ -3,6 +3,7 @@
     "compilerOptions": {
         "outDir": "./dist/out-tsc",
         "baseUrl": ".",
+        "rootDir": "src",
         "sourceMap": true,
         "declaration": false,
         "moduleResolution": "node",
@@ -16,19 +17,9 @@
             "es2017",
             "dom"
         ],
+        "skipLibCheck": true,
         "paths": {
-            "@angular/*": ["node_modules/@angular/*"],
-            "@angular-devkit/*": ["node_modules/@angular-devkit/*"],
-            "rxjs/*": ["node_modules/rxjs/*"],
-            "@ngx-translate/*": ["node_modules/@ngx-translate/*"],
-            "@nguniversal/*": ["node_modules/@nguniversal/*"],
-            "@ngtools/*": ["node_modules/@ngtools/*"],
-            "ng-socket-io": ["node_modules/ng-socket-io"],
-            "ngx-bootstrap": ["node_modules/ngx-bootstrap"],
-            "ngx-bootstrap/*": ["node_modules/ngx-bootstrap/*"],
-            "ngx-toastr": ["node_modules/ngx-toastr"],
-            "ngx-mask": ["node_modules/ngx-mask"],
-            "@stemy/*": ["node_modules/@stemy/*"]
+
         }
     }
 }

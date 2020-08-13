@@ -3,6 +3,8 @@ import {Server} from "http";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
 import {InjectionToken, Type} from "injection-js";
+import {SchemaConverter} from "class-validator-jsonschema/src/defaultConverters";
+import {SchemaObject} from "openapi3-ts";
 
 export interface IFixture {
     load(): Promise<any>;
@@ -45,5 +47,6 @@ export interface IBackendConfig {
     params?: Parameter[],
     fixtures?: Type<IFixture>[],
     restOptions?: RoutingControllersOptions,
-    socketOptions?: SocketControllersOptions
+    socketOptions?: SocketControllersOptions,
+    customValidation?: SchemaConverter | SchemaObject
 }

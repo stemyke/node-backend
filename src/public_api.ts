@@ -1,11 +1,11 @@
 import * as express from "express";
-import {createServer, Server} from "http";
+import {createServer} from "http";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
 import * as socketIO from "socket.io";
 import {useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
-import {FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, IBackendConfig} from "./common-types";
+import {EXPRESS, FIXTURE, HTTP_SERVER, IBackendConfig, SOCKET_SERVER} from "./common-types";
 
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
@@ -20,6 +20,7 @@ import {GalleryController} from "./controllers/gallery.controller";
 
 import {ErrorHandlerMiddleware} from "./middlewares/error-handler.middleware";
 import {LanguageMiddleware} from "./middlewares/language.middleware";
+import {getApiDocs} from "./rest-openapi";
 
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
@@ -112,6 +113,11 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     useExpressServer(app, restOptions);
     useSocketContainer(injector);
     useSocketServer(io, socketOptions);
+
+    // Setup rest ai docs
+    app.get("/api-docs", (req, res) => {
+        res.status(200).end(getApiDocs(config.customValidation));
+    });
 
     return injector;
 }

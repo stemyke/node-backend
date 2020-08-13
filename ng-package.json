@@ -1,13 +1,15 @@
 {
-  "$schema": "./node_modules/ng-packagr/ng-package.schema.json",
-  "lib": {
-    "entryFile": "./src/public_api.ts",
-    "umdModuleIds": {
-      "moment": "moment"
-    }
-  },
-  "deleteDestPath": false,
-  "whitelistedNonPeerDependencies": [
-    "."
-  ]
+    "$schema": "./node_modules/ng-packagr/ng-package.schema.json",
+    "lib": {
+        "entryFile": "./src/public_api.ts",
+        "umdModuleIds": {
+            "moment": "moment",
+            "class-validator-jsonschema": "class-validator-jsonschema",
+            "injection-js": "injection-js"
+        }
+    },
+    "deleteDestPath": false,
+    "whitelistedNonPeerDependencies": [
+        "."
+    ]
 }

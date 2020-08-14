@@ -20,7 +20,8 @@
             "handlebars": "handlebars",
             "class-transformer/storage": "class-transformer/storage",
             "class-validator": "class-validator",
-            "class-validator-jsonschema": "class-validator-jsonschema"
+            "class-validator-jsonschema": "class-validator-jsonschema",
+            "body-parser": "body-parser"
         }
     },
     "deleteDestPath": false,

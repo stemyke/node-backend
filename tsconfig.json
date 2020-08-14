@@ -26,6 +26,7 @@
     "angularCompilerOptions": {
         "skipTemplateCodegen": true,
         "strictMetadataEmit": true,
-        "fullTemplateTypeCheck": true
+        "fullTemplateTypeCheck": false,
+        "enableIvy": false
     }
 }

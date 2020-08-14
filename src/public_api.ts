@@ -122,7 +122,7 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     configuration.add(new Parameter("smtpHost", "smtp.sendgrid.net"));
     configuration.add(new Parameter("smtpPort", 587));
     configuration.add(new Parameter("smtpUser", "apikey"));
-    configuration.add(new Parameter("smtpPassword", "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"));
+    configuration.add(new Parameter("smtpPassword", ""));
     configuration.add(new Parameter("mailSenderAddress", "info@stemy.hu"));
     configuration.add(new Parameter("translationsTemplate", "https://translation.service/[lang]"));
 

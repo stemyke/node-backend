@@ -71,8 +71,5 @@
         "@angular/compiler-cli": "10.0.8",
         "zone.js": "0.10.3",
         "typescript": "3.9.7"
-    },
-    "publishConfig": {
-        "registry": "https://nxs.metrix.co.hu/repository/metrix-npm/"
     }
 }

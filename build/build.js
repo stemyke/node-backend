@@ -6,7 +6,7 @@ const copy = require('./copy');
 const buildType = process.argv[2];
 const buildCallbacks = [
     {
-        type: 'node-backend',
+        type: 'backend',
         cb: () => {
             ngPackage
                 .ngPackagr()

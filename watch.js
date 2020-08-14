@@ -8,7 +8,7 @@ const copy = require('./build/copy');
 
 program
     .version('0.0.1', '-v, --version')
-    .option('-p, --project [path]', 'Project path where node-backend is used')
+    .option('-p, --project [path]', 'Project path where backend is used')
     .option('-b, --skip-build', 'Skip first build')
     .option('-m, --skip-modules', 'Skip copying node modules to project')
     .parse(process.argv);
@@ -21,7 +21,7 @@ let builds = 0;
 function deployToProject() {
     const modulePath = path.join(projectPath, 'node_modules', '@stemy');
     return copy('./dist/', modulePath, 'dist folder to project').then(() => {
-        const targetPath = path.join(modulePath, 'node-backend');
+        const targetPath = path.join(modulePath, 'backend');
         if (fs.existsSync(targetPath)) {
             del.sync(`${targetPath}/**`, {force: true});
         }
@@ -54,7 +54,7 @@ function build(type, cb = null) {
 
 build('', () => {
     console.log('Watching for file changes started.');
-    watch('./src', { delay: 1000, recursive: true, filter: /\.(json|html|scss|ts)$/ }, () => build('node-backend'));
+    watch('./src', { delay: 1000, recursive: true, filter: /\.(json|html|scss|ts)$/ }, () => build('backend'));
     if (noProject || program.skipModules) return;
     copy('./node_modules', path.join(projectPath, 'node_modules'), `node modules to project: ${projectPath}`).then(() => {
         deployToProject();

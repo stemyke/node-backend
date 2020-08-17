@@ -73,7 +73,7 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     });
     const app = express();
     const server = createServer(app);
-    const io = socketIO(server);
+    const io = socketIO(server, {path: "/"});
 
     // Setup rest API
     app.use(json());
@@ -92,14 +92,16 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};
-    socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);;
-    socketOptions.controllers = [MessageController].concat(socketOptions.controllers as any || []);;
+    socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
+    socketOptions.controllers = [MessageController].concat(socketOptions.controllers as any || []);
     socketOptions.useClassTransformer = false;
 
     // Create final injector
     injector = ReflectiveInjector.resolveAndCreate([
         ...restOptions.middlewares as Provider[],
         ...restOptions.controllers as Provider[],
+        ...socketOptions.middlewares as Provider[],
+        ...socketOptions.controllers as Provider[],
         ...fixtureTypes,
         ...fixtureProviders,
         {

@@ -73,7 +73,7 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     });
     const app = express();
     const server = createServer(app);
-    const io = socketIO(server, {path: "/"});
+    const io = socketIO(server, {path: "/socket"});
 
     // Setup rest API
     app.use(json());
@@ -94,7 +94,6 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     const socketOptions = config.socketOptions || {};
     socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
     socketOptions.controllers = [MessageController].concat(socketOptions.controllers as any || []);
-    socketOptions.useClassTransformer = false;
 
     // Create final injector
     injector = ReflectiveInjector.resolveAndCreate([
@@ -138,8 +137,9 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
 
     // Final setup
     useRoutingContainer(injector);
-    useExpressServer(app, restOptions);
     useSocketContainer(injector);
+
+    useExpressServer(app, restOptions);
     useSocketServer(io, socketOptions);
 
     // Setup rest ai docs

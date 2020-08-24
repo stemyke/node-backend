@@ -29,8 +29,19 @@ export class Parameter {
     }
 }
 
-export interface IRequest extends Request {
+export interface IUser {
+    id: string;
+    email: string;
+    password: string;
+}
+
+export interface IRequestBase<T> extends Request {
     language?: string;
+    user?: T;
+}
+
+export interface IRequest extends IRequestBase<any> {
+
 }
 
 export interface IGalleryImage {

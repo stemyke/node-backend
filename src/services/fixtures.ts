@@ -4,7 +4,9 @@ import {FIXTURE, IFixture} from "../common-types";
 @Injectable()
 export class Fixtures {
 
-    constructor(@Optional() @Inject(FIXTURE) protected fixtures: IFixture[] = []) {}
+    constructor(@Optional() @Inject(FIXTURE) protected fixtures: IFixture[]) {
+
+    }
 
     async load() {
         if (!this.fixtures) return;

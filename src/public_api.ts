@@ -18,7 +18,9 @@ import {MailSender} from "./services/mail-sender";
 import {TemplateRenderer} from "./services/template-renderer";
 import {TranslationProvider} from "./services/translation-provider";
 import {Translator} from "./services/translator";
+import {UserManager} from "./services/user-manager";
 
+import {AuthController} from "./rest-controllers/auth.controller";
 import {GalleryController} from "./rest-controllers/gallery.controller";
 
 import {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
@@ -30,8 +32,9 @@ import {CompressionMiddleware} from "./socket-middlewares/compression.middleware
 
 export {isNullOrUndefined, isDefined, getType, isString, isFunction, getValue, groupBy, convertValue} from "./utils";
 
-export {IFixture, SchemaConverter, FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, Parameter, IRequest, IGalleryImage, IGallerySize, ITranslations, IBackendConfig} from "./common-types";
+export {IFixture, SchemaConverter, FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, Parameter, IUser, IRequestBase, IRequest, IGalleryImage, IGallerySize, ITranslations, IBackendConfig} from "./common-types";
 
+export {BaseRepository} from "./services/base.repository";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
@@ -40,29 +43,18 @@ export {MailSender} from "./services/mail-sender";
 export {TemplateRenderer} from "./services/template-renderer";
 export {TranslationProvider} from "./services/translation-provider";
 export {Translator} from "./services/translator";
+export {UserManager} from "./services/user-manager";
 
+export {AuthController} from "./rest-controllers/auth.controller";
 export {GalleryController} from "./rest-controllers/gallery.controller";
 
 export {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
 export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
-export function createServices(): Injector {
-    return ReflectiveInjector.resolveAndCreate([
-        Configuration,
-        Fixtures,
-        Gallery,
-        Logger,
-        MailSender,
-        TemplateRenderer,
-        TranslationProvider,
-        Translator
-    ]);
-}
-
 const express = express_;
 const socketIO = socket_io;
 
-export async function setupBackend(injector: Injector, config: IBackendConfig): Promise<Injector> {
+export async function setupBackend(config: IBackendConfig, ...providers: Provider[]): Promise<Injector> {
     const fixtureTypes = (config.fixtures || []);
     const fixtureProviders = fixtureTypes.map(fixture => {
         return {
@@ -71,6 +63,7 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
             useExisting: fixture
         };
     });
+
     const app = express();
     const server = createServer(app);
     const io = socketIO(server, {path: "/socket"});
@@ -88,21 +81,34 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
     };
     restOptions.routePrefix = "/api";
     restOptions.middlewares = [ErrorHandlerMiddleware, LanguageMiddleware].concat(restOptions.middlewares as any || []);
-    restOptions.controllers = [GalleryController].concat(restOptions.controllers as any || []);
+    restOptions.controllers = [AuthController, GalleryController].concat(restOptions.controllers as any || []);
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};
     socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
     socketOptions.controllers = [MessageController].concat(socketOptions.controllers as any || []);
 
-    // Create final injector
-    injector = ReflectiveInjector.resolveAndCreate([
+    // Create injector
+    const services = [
+        Configuration,
+        Fixtures,
+        Gallery,
+        Logger,
+        MailSender,
+        TemplateRenderer,
+        TranslationProvider,
+        Translator
+    ];
+
+    const injector = ReflectiveInjector.resolveAndCreate([
+        ...providers,
         ...restOptions.middlewares as Provider[],
         ...restOptions.controllers as Provider[],
         ...socketOptions.middlewares as Provider[],
         ...socketOptions.controllers as Provider[],
         ...fixtureTypes,
         ...fixtureProviders,
+        ...services,
         {
             provide: EXPRESS,
             useValue: app
@@ -114,8 +120,8 @@ export async function setupBackend(injector: Injector, config: IBackendConfig): 
         {
             provide: SOCKET_SERVER,
             useValue: io
-        }
-    ], injector);
+        },
+    ]);
 
     // Add parameters
     const configuration = injector.get(Configuration);

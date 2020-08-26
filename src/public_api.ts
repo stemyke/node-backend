@@ -1,14 +1,16 @@
 import * as express_ from "express";
 import {json} from "body-parser";
 import {createServer} from "http";
+import {verify} from "jsonwebtoken";
+import {connect} from "mongoose";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
 import * as socket_io from "socket.io";
-import {useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
+import {Action, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
 import {getApiDocs} from "./rest-openapi";
 
-import {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig, Parameter} from "./common-types";
+import {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig, Parameter, IRequest, IUser} from "./common-types";
 
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
@@ -54,6 +56,22 @@ export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 const express = express_;
 const socketIO = socket_io;
 
+async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
+    if (req.user) return req.user;
+    const auth = req.header("Authorization") || "";
+    let payload = null;
+    try {
+        const config = injector.get(Configuration);
+        payload = verify(auth.split(" ")[1], config.resolve("jwtSecret")) as any;
+    } catch (e) {
+        throw {httpCode: 401, message: `Authentication failed. (${e.message})`};
+    }
+    if (!payload) {
+        throw {httpCode: 401, message: `Authentication failed. (Maybe invalid token)`};
+    }
+    return injector.get(UserManager).getById(payload.id);
+}
+
 export async function setupBackend(config: IBackendConfig, ...providers: Provider[]): Promise<Injector> {
     const fixtureTypes = (config.fixtures || []);
     const fixtureProviders = fixtureTypes.map(fixture => {
@@ -97,18 +115,19 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         MailSender,
         TemplateRenderer,
         TranslationProvider,
-        Translator
+        Translator,
+        UserManager
     ];
 
     const injector = ReflectiveInjector.resolveAndCreate([
+        ...fixtureTypes,
+        ...fixtureProviders,
+        ...services,
         ...providers,
         ...restOptions.middlewares as Provider[],
         ...restOptions.controllers as Provider[],
         ...socketOptions.middlewares as Provider[],
         ...socketOptions.controllers as Provider[],
-        ...fixtureTypes,
-        ...fixtureProviders,
-        ...services,
         {
             provide: EXPRESS,
             useValue: app
@@ -121,7 +140,26 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
             provide: SOCKET_SERVER,
             useValue: io
         },
-    ]);
+    ]) as Injector;
+
+    // Authentication
+    restOptions.authorizationChecker = async (action: Action, roles: any[]) => {
+        const user = await resolveUser(injector, action.request);
+        const userRoles = Array.isArray(user.roles) ? user.roles : [];
+        if (Array.isArray(roles) && roles.length > 0) {
+            const hasRole = roles.some(role => userRoles.indexOf(role) >= 0);
+            if (!hasRole) {
+                throw {
+                    httpCode: 401,
+                    message: "Authentication failed. (User doesn't have access to this resource)"
+                };
+            }
+        }
+        return true;
+    };
+    restOptions.currentUserChecker = async (action: Action) => {
+        return resolveUser(injector, action.request);
+    };
 
     // Add parameters
     const configuration = injector.get(Configuration);
@@ -132,6 +170,11 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("smtpPassword", ""));
     configuration.add(new Parameter("mailSenderAddress", "info@stemy.hu"));
     configuration.add(new Parameter("translationsTemplate", "https://translation.service/[lang]"));
+    configuration.add(new Parameter("jwtSecret", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9"));
+    configuration.add(new Parameter("jwtSecret", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9"));
+    configuration.add(new Parameter("mongoDb", "node-backend"));
+    configuration.add(new Parameter("mongoUser", null));
+    configuration.add(new Parameter("mongoPassword", null));
 
     (config.params || []).forEach(param => {
         configuration.add(param);
@@ -152,6 +195,17 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     app.get("/api-docs", (req, res) => {
         res.status(200).end(getApiDocs(config.customValidation));
     });
+
+    // Connect to mongo if necessary
+    if (configuration.hasParam("mongoUri")) {
+        await connect(configuration.resolve("mongoUri"), {
+            dbName: configuration.resolve("mongoDb"),
+            user: configuration.resolve("mongoUser"),
+            pass: configuration.resolve("mongoPassword"),
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+    }
 
     return injector;
 }

@@ -33,6 +33,7 @@ export interface IUser {
     id: string;
     email: string;
     password: string;
+    roles: string[];
 }
 
 export interface IRequestBase<T> extends Request {
@@ -40,7 +41,7 @@ export interface IRequestBase<T> extends Request {
     user?: T;
 }
 
-export interface IRequest extends IRequestBase<any> {
+export interface IRequest extends IRequestBase<IUser> {
 
 }
 

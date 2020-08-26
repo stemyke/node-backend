@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -75,6 +75,7 @@
         "@types/nodemailer": "6.4.0",
         "@types/sharp": "0.25.1",
         "@types/rimraf": "3.0.0",
+        "@types/mongoose": "5.7.36",
         "ng-packagr": "10.0.3",
         "del": "5.1.0",
         "cpy": "8.1.0",

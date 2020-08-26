@@ -16,6 +16,10 @@ export class Configuration {
         this.paramMap[param.name] = param;
     }
 
+    hasParam(name: string): boolean {
+        return !!this.paramMap[name];
+    }
+
     resolve(name: string): any {
         const param = this.paramMap[name];
         if (!param) throw new Error(`Parameter with name: '${name}' does not exists in configuration`);

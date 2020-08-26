@@ -1,9 +1,10 @@
 import {IUser} from "../common-types";
 
 const sampleUser: IUser = {
-    id: "",
+    id: "5a3cdf7c6a9cf0ba32feccdf",
     email: "admin@site.com",
-    password: ""
+    password: "",
+    roles: ["admin"]
 };
 
 export class UserManager {
@@ -12,11 +13,11 @@ export class UserManager {
         return (sampleUser.email == credentials.email) ? sampleUser : await Promise.reject("message.login.error");
     }
 
-    async getById(email: string): Promise<IUser> {
-        return (sampleUser.email == email) ? sampleUser : null;
+    async getById(id: string): Promise<IUser> {
+        return (sampleUser.id == id) ? sampleUser : null;
     }
 
-    serialize(user: IUser): any {
+    async serialize(user: IUser): Promise<any> {
         const res = Object.assign({}, user);
         delete res.password;
         return res;

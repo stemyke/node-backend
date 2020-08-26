@@ -184,10 +184,6 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         configuration.add(param);
     });
 
-    // Load fixtures
-    const fixtures = injector.get(Fixtures);
-    await fixtures.load();
-
     // Final setup
     useRoutingContainer(injector);
     useSocketContainer(injector);
@@ -210,6 +206,10 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
             useUnifiedTopology: true
         });
     }
+
+    // Load fixtures
+    const fixtures = injector.get(Fixtures);
+    await fixtures.load();
 
     return injector;
 }

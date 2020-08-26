@@ -22,7 +22,7 @@ export class AuthController {
                     return Promise.reject({ httpCode: 401, message: "message.login.error" });
                 }
                 return Promise.resolve({
-                    token: sign({ id: user.id }, this.config.resolve("jwtSecret")),
+                    token: sign({ id: user._id || user.id }, this.config.resolve("jwtSecret")),
                     user: this.userManager.serialize(user)
                 });
             });

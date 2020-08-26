@@ -5,7 +5,7 @@ import {verify} from "jsonwebtoken";
 import {connect} from "mongoose";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
 import * as socket_io from "socket.io";
-import {Action, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
+import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
 import {getApiDocs} from "./rest-openapi";
@@ -67,10 +67,10 @@ async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
         const config = injector.get(Configuration);
         payload = verify(auth.split(" ")[1], config.resolve("jwtSecret")) as any;
     } catch (e) {
-        throw {httpCode: 401, message: `Authentication failed. (${e.message})`};
+        throw new HttpError(401, `Authentication failed. (${e.message})`);
     }
     if (!payload) {
-        throw {httpCode: 401, message: `Authentication failed. (Maybe invalid token)`};
+        throw new HttpError(401, `Authentication failed. (Maybe invalid token)`);
     }
     return injector.get(UserManager).getById(payload.id);
 }
@@ -153,10 +153,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         if (Array.isArray(roles) && roles.length > 0) {
             const hasRole = roles.some(role => userRoles.indexOf(role) >= 0);
             if (!hasRole) {
-                throw {
-                    httpCode: 401,
-                    message: "Authentication failed. (User doesn't have access to this resource)"
-                };
+                throw new HttpError(401, "Authentication failed. (User doesn't have access to this resource)");
             }
         }
         return true;

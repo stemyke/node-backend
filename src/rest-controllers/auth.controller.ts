@@ -1,7 +1,7 @@
 import {Response} from "express";
 import {sign} from "jsonwebtoken";
 import {Injectable} from "injection-js";
-import {Authorized, Body, Controller, CurrentUser, Get, Res} from "routing-controllers";
+import {Authorized, Body, Controller, CurrentUser, Get, HttpError, Post, Res} from "routing-controllers";
 import {compare} from "bcrypt";
 
 import {Configuration} from "../services/configuration";
@@ -14,21 +14,19 @@ export class AuthController {
 
     constructor(readonly config: Configuration, readonly userManager: UserManager) {}
 
-    @Get("/login")
-    login(@Body() credentials: any, @Res() res: Response) {
-        return this.userManager.getByCredentials(credentials).then(user => {
-            return compare(credentials.password, user.password).then(response => {
-                if (response !== true) {
-                    return Promise.reject({ httpCode: 401, message: "message.login.error" });
-                }
-                return Promise.resolve({
-                    token: sign({ id: user._id || user.id }, this.config.resolve("jwtSecret")),
-                    user: this.userManager.serialize(user)
-                });
-            });
-        }, reason => {
-            return Promise.reject({ httpCode: 401, message: reason });
-        });
+    @Post("/login")
+    async login(@Body() credentials: any, @Res() res: Response) {
+        try {
+            const user = await this.userManager.getByCredentials(credentials);
+            const valid = await compare(credentials.password, user.password);
+            if (valid !== true) throw "message.login.error";
+            return {
+                token: sign({ id: user._id || user.id }, this.config.resolve("jwtSecret")),
+                user: await this.userManager.serialize(user)
+            };
+        } catch (reason) {
+            throw new HttpError(401, reason);
+        }
     }
 
     @Authorized()

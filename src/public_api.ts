@@ -12,6 +12,7 @@ import {getApiDocs} from "./rest-openapi";
 
 import {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig, Parameter, IRequest, IUser} from "./common-types";
 
+import {Assets} from "./services/assets";
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
 import {Gallery} from "./services/gallery";
@@ -22,6 +23,7 @@ import {TranslationProvider} from "./services/translation-provider";
 import {Translator} from "./services/translator";
 import {UserManager} from "./services/user-manager";
 
+import {AssetsController} from "./rest-controllers/assets.controller";
 import {AuthController} from "./rest-controllers/auth.controller";
 import {GalleryController} from "./rest-controllers/gallery.controller";
 
@@ -36,6 +38,7 @@ export {isNullOrUndefined, isDefined, getType, isString, isFunction, getValue, g
 
 export {IFixture, SchemaConverter, FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, Parameter, IUser, IRequestBase, IRequest, IGalleryImage, IGallerySize, ITranslations, IBackendConfig} from "./common-types";
 
+export {Assets} from "./services/assets";
 export {BaseRepository} from "./services/base.repository";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
@@ -99,7 +102,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     };
     restOptions.routePrefix = "/api";
     restOptions.middlewares = [ErrorHandlerMiddleware, LanguageMiddleware].concat(restOptions.middlewares as any || []);
-    restOptions.controllers = [AuthController, GalleryController].concat(restOptions.controllers as any || []);
+    restOptions.controllers = [AssetsController, AuthController, GalleryController].concat(restOptions.controllers as any || []);
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};
@@ -108,6 +111,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Create injector
     const services = [
+        Assets,
         Configuration,
         Fixtures,
         Gallery,

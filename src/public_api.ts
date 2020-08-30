@@ -34,7 +34,7 @@ import {MessageController} from "./socket-controllers/message.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 
-export {isNullOrUndefined, isDefined, getType, isString, isFunction, getValue, groupBy, convertValue} from "./utils";
+export {isNullOrUndefined, isDefined, getType, isString, isFunction, getValue, groupBy, convertValue, injectServices} from "./utils";
 
 export {IFixture, SchemaConverter, FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, Parameter, IUser, IRequestBase, IRequest, IGalleryImage, IGallerySize, ITranslations, IBackendConfig} from "./common-types";
 

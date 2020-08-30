@@ -1,3 +1,6 @@
+import {Model} from "mongoose";
+import {Provider} from "injection-js";
+
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
 }
@@ -57,4 +60,8 @@ export function convertValue(value: any, type: string): any {
             return isNaN(val) ? 0 : val;
     }
     return value;
+}
+
+export function injectServices(model: Model<any>, providers: {[prop: string]: Provider}) {
+    Reflect.defineMetadata("injected-services", providers, model);
 }

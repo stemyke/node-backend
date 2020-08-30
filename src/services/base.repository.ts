@@ -1,62 +1,74 @@
-import { Document, Model } from "mongoose";
-import { ExtractProps } from "ts-mongoose";
-import { ObjectId } from "bson";
+import {Injector} from "injection-js";
+import {Document, FilterQuery, Model} from "mongoose";
+import {ObjectId} from "bson";
 
 export interface IPagination {
     count: number
     items: any[];
 }
 
-export class BaseRepository<Doc extends Document, Props extends ExtractProps<any>> {
+export class BaseRepository<Doc extends Document> {
 
-    constructor(private type: Model<any>) {
+    private readonly injectServices: (docs: Doc[]) => Doc[];
 
+    constructor(protected injector: Injector, protected readonly type: Model<any>) {
+        const injectedServiceTypes = Reflect.getMetadata("injected-services", type) || {};
+        const injectedServices = Object.keys(injectedServiceTypes).map(prop => ({
+            prop,
+            service: injector.get(injectedServiceTypes[prop])
+        }));
+        this.injectServices = (docs: Doc[]) => {
+            docs.forEach(doc => {
+                if (!doc) return;
+                injectedServices.forEach(s => {
+                    doc[s.prop] = s.service;
+                });
+            });
+            return docs;
+        };
     }
 
-    countDocuments(props?: Partial<Props>): Promise<number> {
+    countDocuments(props?: FilterQuery<Doc>): Promise<number> {
         return !props
             ? this.type.estimatedDocumentCount().then(t => t as number)
             : this.type.countDocuments(props).then(t => t as number);
     }
 
-    create(props: Partial<Props>): Promise<Doc> {
+    create(props: Partial<Doc>): Promise<Doc> {
         return !props
-            ? Promise.reject('message.no-props.error')
-            : this.type.create([props]).then(res => res[0] as Doc);
-    }
-
-    save(model: Doc): Promise<Doc> {
-        return !model
-            ? Promise.reject(`message.no-model.error`)
-            : model.save().then(t => t as Props);
-    }
-
-    paginate(where: Partial<Props>, page: number, limit: number, sort: string = null, filter: string = null): Promise<IPagination> {
-        const filterParams: any[] = !filter ? [] : JSON.parse(filter);
-        const filterQuery: any = Object.assign({}, where);
-        if (Array.isArray(filterParams)) {
-            filterParams.forEach((filter) => {
-                filterQuery[filter.field] = { "$regex": filter.search, "$options": "i" };
+            ? Promise.reject("message.no-props.error")
+            : this.type.create([props]).then(docs => {
+                this.injectServices(docs);
+                return docs[0] as Doc;
             });
-        }
-        return this.type.countDocuments(filterQuery).then(count => {
-            let query = this.type.find(filterQuery).sort(sort);
+    }
+
+    paginate(where: FilterQuery<Doc>, page: number, limit: number, sort: string = null): Promise<IPagination> {
+        return this.type.countDocuments(where).then(count => {
+            let query = this.type.find(where).sort(sort);
             return (limit > 0 ? query.skip(page * limit).limit(limit) : query).then(items => {
+                this.injectServices(items);
                 return { count, items };
             });
         });
     }
 
-    find(where: Partial<Props>): Promise<Doc[]> {
-        return this.type.find(where).then(t => t as Doc[]);
+    async find(where: FilterQuery<Doc>): Promise<Doc[]> {
+        return this.type.find(where).then(this.injectServices);
     }
 
-    findOne(where: Partial<Props>): Promise<Doc> {
-        return this.type.findOne(where).then(t => t as Doc);
+    async findOne(where: FilterQuery<Doc>): Promise<Doc> {
+        return this.type.findOne(where).then(doc => {
+            this.injectServices([doc]);
+            return doc;
+        });
     }
 
-    findById(id: string | ObjectId): Promise<Doc> {
-        return this.type.findById(id).then(t => t as Doc);
+    async findById(id: string | ObjectId): Promise<Doc> {
+        return this.type.findById(id).then(doc => {
+            this.injectServices([doc]);
+            return doc;
+        });
     }
 
     delete(id: string): Promise<any> {
@@ -65,9 +77,5 @@ export class BaseRepository<Doc extends Document, Props extends ExtractProps<any
                 _id: id
             };
         });
-    }
-
-    toJSON(model: Doc): any {
-        return model.toJSON();
     }
 }

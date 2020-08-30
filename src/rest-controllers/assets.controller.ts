@@ -1,5 +1,5 @@
 import {Injectable} from "injection-js";
-import {Authorized, Controller, Get, Param, Post, UploadedFile} from "routing-controllers";
+import {Authorized, Controller, Get, HttpError, Param, Post, UploadedFile} from "routing-controllers";
 import {Assets} from "../services/assets";
 
 @Injectable()
@@ -14,7 +14,7 @@ export class AssetsController {
     @Post("")
     upload(@UploadedFile("file") file: Express.Multer.File) {
         return new Promise<any>((resolve, reject) => {
-            this.assets.writeBuffer(file.buffer, file.mimetype, file.filename)
+            this.assets.writeBuffer(file.buffer, file.mimetype, {filename: file.filename})
                 .then(id => {
                     resolve({_id: id, id});
                 })
@@ -25,7 +25,14 @@ export class AssetsController {
     }
 
     @Get("/:id")
-    getFile(@Param("id") id: string) {
-        return this.assets.read(id);
+    async getFile(@Param("id") id: string) {
+        const asset = await this.assets.read(id);
+        if (!asset) {
+            return new HttpError(404, `File with id: '${id}' not found.`);
+        }
+        if (asset.metadata?.classified) {
+            return new HttpError(403, `Asset is classified, and can be only downloaded from a custom url.`);
+        }
+        return asset.stream;
     }
 }

@@ -38,6 +38,8 @@ export {isNullOrUndefined, isDefined, getType, isString, isFunction, getValue, g
 
 export {IFixture, SchemaConverter, FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, Parameter, IUser, IRequestBase, IRequest, IGalleryImage, IGallerySize, ITranslations, IBackendConfig} from "./common-types";
 
+export {IAsset} from "./models/asset";
+
 export {Assets} from "./services/assets";
 export {BaseRepository} from "./services/base.repository";
 export {Configuration} from "./services/configuration";

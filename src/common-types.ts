@@ -3,7 +3,7 @@ import {Server} from "http";
 import {Server as SocketServer} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
-import {InjectionToken, Type} from "injection-js";
+import {InjectionToken, Injector, Type} from "injection-js";
 import {SchemaObject} from "openapi3-ts";
 
 export interface IFixture {
@@ -38,6 +38,7 @@ export interface IUser {
 }
 
 export interface IRequestBase<T> extends Request {
+    injector?: Injector;
     language?: string;
     user?: T;
 }

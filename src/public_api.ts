@@ -28,6 +28,7 @@ import {AuthController} from "./rest-controllers/auth.controller";
 import {GalleryController} from "./rest-controllers/gallery.controller";
 
 import {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
+import {InjectorMiddleware} from "./rest-middlewares/injector.middleware";
 import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 import {MessageController} from "./socket-controllers/message.controller";
@@ -103,7 +104,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         }
     };
     restOptions.routePrefix = "/api";
-    restOptions.middlewares = [ErrorHandlerMiddleware, LanguageMiddleware].concat(restOptions.middlewares as any || []);
+    restOptions.middlewares = [ErrorHandlerMiddleware, InjectorMiddleware, LanguageMiddleware].concat(restOptions.middlewares as any || []);
     restOptions.controllers = [AssetsController, AuthController, GalleryController].concat(restOptions.controllers as any || []);
 
     // Setup socket API

@@ -1,5 +1,6 @@
-import {Model} from "mongoose";
-import {Provider} from "injection-js";
+import {Document, FilterQuery, Model, Schema} from "mongoose";
+import {Injector} from "injection-js";
+import {IPagination} from "./common-types";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -12,6 +13,10 @@ export function isDefined(value: any): boolean {
 export function getType(obj: any): string {
     const regex = new RegExp("\\s([a-zA-Z]+)");
     return Object.prototype.toString.call(obj).match(regex)[1].toLowerCase();
+}
+
+export function isObject(value: any): boolean {
+    return getType(value) == "object";
 }
 
 export function isString(value: any): value is string {
@@ -62,6 +67,21 @@ export function convertValue(value: any, type: string): any {
     return value;
 }
 
-export function injectServices(model: Model<any>, providers: {[prop: string]: Provider}) {
-    Reflect.defineMetadata("injected-services", providers, model);
+export function injectServices(schema: Schema<any>, services: {[prop: string]: any}) {
+    schema.pre("init", function () {
+        const injector = Injector["appInjector"] as Injector;
+        console.log(injector);
+        Object.keys(services).forEach(prop => {
+            this[prop] = injector.get(services[prop]);
+        });
+    });
+}
+
+export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, page: number, limit: number, sort: string = null): Promise<IPagination> {
+    return model.countDocuments(where).then(count => {
+        let query = this.type.find(where).sort(sort);
+        return (limit > 0 ? query.skip(page * limit).limit(limit) : query).then(items => {
+            return { count, items };
+        });
+    });
 }

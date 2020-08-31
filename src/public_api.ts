@@ -10,7 +10,7 @@ import {useContainer as useSocketContainer, useSocketServer} from "socket-contro
 
 import {getApiDocs} from "./rest-openapi";
 
-import {EXPRESS, FIXTURE, HTTP_SERVER, SOCKET_SERVER, IBackendConfig, Parameter, IRequest, IUser} from "./common-types";
+import {EXPRESS, FIXTURE, HTTP_SERVER, IBackendConfig, IRequest, IUser, Parameter, SOCKET_SERVER} from "./common-types";
 
 import {Assets} from "./services/assets";
 import {Configuration} from "./services/configuration";
@@ -35,14 +35,41 @@ import {MessageController} from "./socket-controllers/message.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 
-export {isNullOrUndefined, isDefined, getType, isString, isFunction, getValue, groupBy, convertValue, injectServices} from "./utils";
+export {
+    isNullOrUndefined,
+    isDefined,
+    getType,
+    isObject,
+    isString,
+    isFunction,
+    getValue,
+    groupBy,
+    convertValue,
+    injectServices,
+    paginate
+}from "./utils";
 
-export {IFixture, SchemaConverter, FIXTURE, EXPRESS, HTTP_SERVER, SOCKET_SERVER, Parameter, IUser, IRequestBase, IRequest, IGalleryImage, IGallerySize, ITranslations, IBackendConfig} from "./common-types";
+export {
+    IFixture,
+    SchemaConverter,
+    FIXTURE,
+    EXPRESS,
+    HTTP_SERVER,
+    SOCKET_SERVER,
+    Parameter,
+    IUser,
+    IRequestBase,
+    IRequest,
+    IGalleryImage,
+    IGallerySize,
+    ITranslations,
+    IPagination,
+    IBackendConfig
+} from "./common-types";
 
 export {IAsset} from "./models/asset";
 
 export {Assets} from "./services/assets";
-export {BaseRepository} from "./services/base.repository";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
@@ -148,6 +175,8 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
             useValue: io
         },
     ]) as Injector;
+
+    Injector["appInjector"] = injector;
 
     // Authentication
     restOptions.authorizationChecker = async (action: Action, roles: any[]) => {

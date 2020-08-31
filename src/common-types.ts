@@ -62,6 +62,11 @@ export interface ITranslations {
     [key: string]: any;
 }
 
+export interface IPagination {
+    count: number
+    items: any[];
+}
+
 export interface IBackendConfig {
     params?: Parameter[],
     fixtures?: Type<IFixture>[],

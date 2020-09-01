@@ -1,10 +1,10 @@
-import * as express_ from "express";
+import express_ from "express";
 import {json} from "body-parser";
 import {createServer} from "http";
 import {verify} from "jsonwebtoken";
 import {connect} from "mongoose";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
-import * as socket_io from "socket.io";
+import socket_io from "socket.io";
 import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 

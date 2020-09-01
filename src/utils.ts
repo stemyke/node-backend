@@ -68,12 +68,15 @@ export function convertValue(value: any, type: string): any {
 }
 
 export function injectServices(schema: Schema<any>, services: {[prop: string]: any}) {
-    schema.pre("init", function () {
-        const injector = Injector["appInjector"] as Injector;
-        console.log(injector);
-        Object.keys(services).forEach(prop => {
-            this[prop] = injector.get(services[prop]);
-        });
+    const serviceMap: {[prop: string]: any} = {};
+    Object.keys(services).forEach(prop => {
+        schema
+            .virtual(prop)
+            .get(() => {
+                const injector = Injector["appInjector"] as Injector;
+                serviceMap[prop] = serviceMap[prop] || (!injector ? {} : injector.get(services[prop]));
+                return serviceMap[prop];
+            });
     });
 }
 

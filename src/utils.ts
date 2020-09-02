@@ -1,6 +1,7 @@
 import {Document, FilterQuery, Model, Schema} from "mongoose";
 import {Injector} from "injection-js";
 import {IPagination} from "./common-types";
+import {PassThrough, Readable} from "stream";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -87,4 +88,21 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
             return { count, items };
         });
     });
+}
+
+export function bufferToStream(buffer: Buffer): Readable {
+    const readStream = new PassThrough();
+    readStream.end(buffer);
+    return readStream
+}
+
+export function streamToBuffer(stream: Readable): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+        const concat = [];
+        stream.on("data", data => {
+            concat.push(data);
+        });
+        stream.on("error", reject);
+        stream.on("end", () => resolve(Buffer.concat(concat)));
+    })
 }

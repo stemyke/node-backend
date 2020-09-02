@@ -1,9 +1,9 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const rimraf = require('rimraf');
 const program = require('commander');
 const watch = require('node-watch');
-const del = require('del');
 const copy = require('./build/copy');
 
 program
@@ -23,7 +23,7 @@ function deployToProject() {
     return copy('./dist/', modulePath, 'dist folder to project').then(() => {
         const targetPath = path.join(modulePath, 'backend');
         if (fs.existsSync(targetPath)) {
-            del.sync(`${targetPath}/**`, {force: true});
+            rimraf.sync(targetPath);
         }
         fs.renameSync(path.join(modulePath, 'dist'), targetPath);
     });

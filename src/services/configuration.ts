@@ -2,6 +2,7 @@ import {Injectable} from "injection-js";
 import {Parameter} from "../common-types";
 import {convertValue, getType, isFunction} from "../utils";
 import {Logger} from "./logger";
+import dotenv from "dotenv";
 
 @Injectable()
 export class Configuration {
@@ -9,6 +10,7 @@ export class Configuration {
     protected paramMap: {[name: string]: Parameter};
 
     constructor(readonly logger: Logger) {
+        dotenv.config();
         this.paramMap = {};
     }
 

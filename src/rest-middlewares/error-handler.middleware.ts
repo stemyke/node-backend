@@ -2,21 +2,33 @@ import {BadRequestError, ExpressErrorMiddlewareInterface, HttpError, Middleware}
 import {Response} from "express";
 import {Injectable} from "injection-js";
 
-import {Translator} from "../services/translator";
 import {IRequest} from "../common-types";
+import {Translator} from "../services/translator";
+import {Configuration} from "../services/configuration";
 
 @Injectable()
 @Middleware({ type: "after" })
 export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
 
-    constructor(readonly translator: Translator) {
+    get isDev(): boolean {
+        return this.configuration.resolve("nodeEnv") === "development";
+    }
+
+    constructor(readonly configuration: Configuration, readonly translator: Translator) {
 
     }
 
     async error(error: any, req: IRequest, res: Response, next: (err?: any) => any) {
+        const result = this.getResult(error, req, res);
+        if (this.isDev) {
+            console.log(result);
+        }
+        res.json(result);
+    }
+
+    protected async getResult(error, req: IRequest, res: Response) {
 
         const result: any = {};
-        const isDev = process.env.NODE_ENV === "development";
 
         if (error instanceof BadRequestError) {
             res.status(400);
@@ -28,29 +40,27 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
                 result.errors = error["errors"];
                 result.stack = error.stack;
             }
-        } else {
-            // set http status
-            if (error instanceof HttpError && error.httpCode) {
-                res.status(error.httpCode);
-            } else {
-                res.status(500);
-            }
-
-            if (error instanceof Error) {
-                if (error.name) {
-                    result.name = error.name;
-                }
-                if (error.message) {
-                    result.message = error.message;
-                }
-                if (error.stack && isDev) {
-                    result.stack = error.stack;
-                }
-            } else if (typeof error === "string") {
-                result.message = error;
-            }
+            return result;
         }
 
-        res.json(result);
+        res.status(error.httpCode || 500);
+
+        console.log(error);
+
+        if (error instanceof Error) {
+            if (error.name) {
+                result.name = error.name;
+            }
+            if (error.message) {
+                result.message = error.message;
+            }
+            if (error.stack && this.isDev) {
+                result.stack = error.stack;
+            }
+        } else if (typeof error === "string") {
+            result.message = error;
+        }
+
+        return result;
     }
 }

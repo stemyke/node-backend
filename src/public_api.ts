@@ -210,6 +210,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("mongoDb", "node-backend"));
     configuration.add(new Parameter("mongoUser", null));
     configuration.add(new Parameter("mongoPassword", null));
+    configuration.add(new Parameter("nodeEnv", "development"));
     configuration.add(new Parameter("appPort", 80));
 
     (config.params || []).forEach(param => {

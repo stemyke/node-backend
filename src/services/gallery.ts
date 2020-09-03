@@ -1,7 +1,7 @@
 import {Injectable} from "injection-js";
 import {v4 as uuidv4} from "uuid";
-import * as rimraf_ from "rimraf";
-import * as sharp_ from "sharp";
+import rimraf_ from "rimraf";
+import sharp_ from "sharp";
 import {Sharp, Metadata} from "sharp";
 import {join} from "path";
 import {readdir, lstat, mkdir} from "fs";

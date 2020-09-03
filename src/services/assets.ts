@@ -3,7 +3,7 @@ import {Duplex, Readable} from "stream";
 import {ObjectId} from "bson";
 import {connection, FilterQuery} from "mongoose";
 import {createModel} from "mongoose-gridfs";
-import * as sharp_ from "sharp";
+import sharp_ from "sharp";
 import {Asset, AssetDoc, IAsset, IAssetMeta} from "../models/asset";
 
 const sharp = sharp_;

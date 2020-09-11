@@ -1,5 +1,5 @@
 import {Document, FilterQuery, Model, Schema} from "mongoose";
-import {Injector} from "injection-js";
+import {Injector, Type} from "injection-js";
 import {IPagination} from "./common-types";
 import {PassThrough, Readable} from "stream";
 
@@ -105,4 +105,61 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
         stream.on("error", reject);
         stream.on("end", () => resolve(Buffer.concat(concat)));
     })
+}
+
+export function getFunctionParams(func: Function): string[] {
+
+    // Remove comments of the form /* ... */
+    // Removing comments of the form //
+    // Remove body of the function { ... }
+    // removing '=>' if func is arrow function
+    const str = func.toString()
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/(.)*/g, '')
+        .replace(/{[\s\S]*}/, '')
+        .replace(/=>/g, '')
+        .trim();
+
+    // Start parameter names after first '('
+    const start = str.indexOf("(") + 1;
+
+    // End parameter names is just before last ')'
+    const end = str.length - 1;
+    const result = str.substring(start, end).split(", ");
+    const params = [];
+
+    result.forEach(element => {
+
+        // Removing any default value
+        element = element.replace(/=[\s\S]*/g, '').trim();
+
+        if(element.length > 0)
+            params.push(element);
+    });
+
+    return params;
+}
+
+export function proxyFunction(name: string): Function {
+    return function() {
+        const args = Array.from(arguments);
+        args.unshift(this);
+        return (this.helper[name] as Function).apply(this.helper, args);
+    }
+}
+
+export function proxyFunctions(schema: Schema, helper: Type<any>, paramName: string = null): void {
+    paramName = paramName || helper.prototype.constructor.name.toLowerCase().replace("helper", "");
+    Object.getOwnPropertyNames(helper.prototype).forEach(name => {
+        const func = helper.prototype[name];
+        if (isFunction(func) && name !== "constructor") {
+            const paramNames = getFunctionParams(func);
+            if (paramNames[0] == paramName) {
+                schema.methods[name] = proxyFunction(name);
+            }
+        }
+    });
+    injectServices(schema, {
+        "helper": helper
+    });
 }

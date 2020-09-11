@@ -48,7 +48,10 @@ export {
     injectServices,
     paginate,
     bufferToStream,
-    streamToBuffer
+    streamToBuffer,
+    getFunctionParams,
+    proxyFunction,
+    proxyFunctions
 } from "./utils";
 
 export {

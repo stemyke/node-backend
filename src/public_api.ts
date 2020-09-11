@@ -16,6 +16,7 @@ import {Assets} from "./services/assets";
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
 import {Gallery} from "./services/gallery";
+import {IdGenerator} from "./services/id-generator";
 import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
 import {TemplateRenderer} from "./services/template-renderer";
@@ -78,6 +79,7 @@ export {Assets} from "./services/assets";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
+export {IdGenerator} from "./services/id-generator";
 export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
 export {TemplateRenderer} from "./services/template-renderer";
@@ -151,6 +153,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         Fixtures,
         Gallery,
         Logger,
+        IdGenerator,
         MailSender,
         TemplateRenderer,
         TranslationProvider,

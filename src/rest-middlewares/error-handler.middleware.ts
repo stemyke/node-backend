@@ -19,7 +19,7 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
     }
 
     async error(error: any, req: IRequest, res: Response, next: (err?: any) => any) {
-        const result = this.getResult(error, req, res);
+        const result = await this.getResult(error, req, res);
         if (this.isDev) {
             console.log(result);
         }
@@ -36,9 +36,11 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
                 result.message = await this.translator.getTranslation(req.language, "message.parameter-required.error");
                 result.param = error.message;
             } else {
-                result.message = await this.translator.getTranslation(req.language, "message.form-validation.error");
+                result.message = error.message || await this.translator.getTranslation(req.language, "message.form-validation.error");
                 result.errors = error["errors"];
-                result.stack = error.stack;
+                if (this.isDev) {
+                    result.stack = error.stack;
+                }
             }
             return result;
         }

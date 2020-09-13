@@ -212,7 +212,6 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("mailSenderAddress", "info@stemy.hu"));
     configuration.add(new Parameter("translationsTemplate", "https://translation.service/[lang]"));
     configuration.add(new Parameter("jwtSecret", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9"));
-    configuration.add(new Parameter("jwtSecret", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9"));
     configuration.add(new Parameter("mongoDb", "node-backend"));
     configuration.add(new Parameter("mongoUser", null));
     configuration.add(new Parameter("mongoPassword", null));

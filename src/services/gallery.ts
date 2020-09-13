@@ -7,10 +7,10 @@ import {join} from "path";
 import {readdir, lstat, mkdir} from "fs";
 import {IGalleryImage, IGallerySize} from "../common-types";
 import * as Buffer from "buffer";
+import {Configuration} from "./configuration";
 
 const thumbSize = 250;
 const bigSize = 1500;
-const output = join(__dirname, "..", "cache", "gallery");
 
 const rimraf = rimraf_;
 const sharp = sharp_;
@@ -26,7 +26,7 @@ class GalleryImage implements IGalleryImage {
     protected bigFilePath: Promise<string>;
     protected thumbFilePath: Promise<string>;
 
-    constructor(img: Sharp, readonly meta: Metadata, readonly folder: string, protected size: IGallerySize) {
+    constructor(img: Sharp, readonly meta: Metadata, readonly folder: string, protected size: IGallerySize, protected output: string) {
         this.thumb = uuidv4();
         this.thumbImg = img.clone();
         this.big = uuidv4();
@@ -43,7 +43,7 @@ class GalleryImage implements IGalleryImage {
 
         if (isThumb) {
             this.thumbFilePath = this.thumbFilePath || new Promise<string>(resolve => {
-                const path = join(output, this.thumb);
+                const path = join(this.output, this.thumb);
                 this.thumbImg
                     .resize(width, height)
                     .extract({
@@ -57,7 +57,7 @@ class GalleryImage implements IGalleryImage {
             });
         } else {
             this.bigFilePath = this.bigFilePath || new Promise<string>(resolve => {
-                const path = join(output, this.big);
+                const path = join(this.output, this.big);
                 this.bigImg
                     .resize(width, height)
                     .toFile(path)
@@ -76,19 +76,21 @@ export class Gallery {
     private readonly dir: string;
     private readonly cache: { [folder: string]: Promise<IGalleryImage[]> };
     private readonly imgCache: { [id: string]: GalleryImage };
+    private readonly output: string;
     private readonly init: Promise<any>;
 
-    constructor() {
+    constructor(readonly config: Configuration) {
         this.dir = join(__dirname, "..", "gallery");
         this.cache = {};
         this.imgCache = {};
+        this.output = join(this.config.resolve("cacheDir"), "gallery");
         this.init = new Promise<any>((resolve, reject) => {
-            rimraf(output, error => {
+            rimraf(this.output, error => {
                 if (error) {
                     reject(error);
                     return;
                 }
-                mkdir(output, { recursive: true }, resolve);
+                mkdir(this.output, { recursive: true }, resolve);
             });
         });
     }
@@ -136,7 +138,7 @@ export class Gallery {
                             const sharpImg = sharp(filePath);
                             sharpImg.rotate().metadata().then(async meta => {
 
-                                const galleryImg = new GalleryImage(sharpImg, meta, folder, size);
+                                const galleryImg = new GalleryImage(sharpImg, meta, folder, size, this.output);
                                 this.imgCache[galleryImg.big] = galleryImg;
                                 this.imgCache[galleryImg.thumb] = galleryImg;
 

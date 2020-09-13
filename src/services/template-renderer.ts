@@ -4,6 +4,7 @@ import {Injectable} from "injection-js";
 import * as Handlebars from "handlebars";
 
 import {Translator} from "./translator";
+import {Configuration} from "./configuration";
 
 @Injectable()
 export class TemplateRenderer {
@@ -12,7 +13,7 @@ export class TemplateRenderer {
 
     protected initPromise: Promise<any>;
 
-    constructor(readonly translator: Translator) {
+    constructor(readonly translator: Translator, readonly config: Configuration) {
         this.templates = {};
         Handlebars.registerHelper(`object`, function({hash}) {
             return hash;
@@ -26,8 +27,7 @@ export class TemplateRenderer {
     }
 
     protected init(): Promise<any> {
-        const dir = join(__dirname, "..", "templates");
-        this.initPromise = this.initPromise || this.parseTemplates(dir, []);
+        this.initPromise = this.initPromise || this.parseTemplates(this.config.resolve("templatesDir"), []);
         return this.initPromise;
     }
 

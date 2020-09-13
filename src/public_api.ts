@@ -35,6 +35,7 @@ import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 import {MessageController} from "./socket-controllers/message.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
+import {join} from "path";
 
 export {
     isNullOrUndefined,
@@ -204,6 +205,9 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Add parameters
     const configuration = injector.get(Configuration);
+    configuration.add(new Parameter("templatesDir", join(__dirname, "..", "templates")));
+    configuration.add(new Parameter("galleryDir", join(__dirname, "..", "gallery")));
+    configuration.add(new Parameter("cacheDir", join(__dirname, "..", "cache")));
     configuration.add(new Parameter("defaultLanguage", "en"));
     configuration.add(new Parameter("smtpHost", "smtp.sendgrid.net"));
     configuration.add(new Parameter("smtpPort", 587));

@@ -16,6 +16,7 @@ import {Assets} from "./services/assets";
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
 import {Gallery} from "./services/gallery";
+import {GalleryCache} from "./services/gallery-cache";
 import {IdGenerator} from "./services/id-generator";
 import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
@@ -80,6 +81,7 @@ export {Assets} from "./services/assets";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
+export {GalleryCache} from "./services/gallery-cache";
 export {IdGenerator} from "./services/id-generator";
 export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
@@ -153,6 +155,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         Configuration,
         Fixtures,
         Gallery,
+        GalleryCache,
         Logger,
         IdGenerator,
         MailSender,
@@ -205,9 +208,9 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Add parameters
     const configuration = injector.get(Configuration);
-    configuration.add(new Parameter("templatesDir", join(__dirname, "..", "templates")));
-    configuration.add(new Parameter("galleryDir", join(__dirname, "..", "gallery")));
-    configuration.add(new Parameter("cacheDir", join(__dirname, "..", "cache")));
+    configuration.add(new Parameter("templatesDir", join(__dirname, "templates")));
+    configuration.add(new Parameter("galleryDir", join(__dirname, "gallery")));
+    configuration.add(new Parameter("cacheDir", join(__dirname, "cache")));
     configuration.add(new Parameter("defaultLanguage", "en"));
     configuration.add(new Parameter("smtpHost", "smtp.sendgrid.net"));
     configuration.add(new Parameter("smtpPort", 587));

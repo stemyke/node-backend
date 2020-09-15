@@ -8,6 +8,7 @@ import {readdir, lstat, mkdir} from "fs";
 import {IGalleryImage, IGallerySize} from "../common-types";
 import * as Buffer from "buffer";
 import {Configuration} from "./configuration";
+import {GalleryCache} from "./gallery-cache";
 
 const thumbSize = 250;
 const bigSize = 1500;
@@ -21,36 +22,33 @@ class GalleryImage implements IGalleryImage {
 
     readonly big: string;
 
-    protected thumbImg: Sharp;
-    protected bigImg: Sharp;
     protected bigFilePath: Promise<string>;
     protected thumbFilePath: Promise<string>;
 
-    constructor(img: Sharp, readonly meta: Metadata, readonly folder: string, protected size: IGallerySize, protected output: string) {
+    constructor(readonly path: string, readonly folder: string, protected origSize: IGallerySize, protected targetSize: IGallerySize, protected output: string) {
         this.thumb = uuidv4();
-        this.thumbImg = img.clone();
         this.big = uuidv4();
-        this.bigImg = img.clone();
     }
 
     serve(id: string): Promise<Buffer> {
         const isThumb = id == this.thumb;
-        const ratio = this.meta.width / this.meta.height;
-        const sizeRatio = isThumb ? this.size.width / this.size.height : 1;
-        const size = isThumb ? Math.max(this.size.width, this.size.height) : bigSize;
+        const ratio = this.origSize.width / this.origSize.height;
+        const sizeRatio = isThumb ? this.targetSize.width / this.targetSize.height : 1;
+        const size = isThumb ? Math.max(this.targetSize.width, this.targetSize.height) : bigSize;
         const height = ratio > sizeRatio ? size : Math.round(size / ratio);
         const width = Math.round(height * ratio);
 
         if (isThumb) {
-            this.thumbFilePath = this.thumbFilePath || new Promise<string>(resolve => {
+            this.thumbFilePath = this.thumbFilePath || new Promise<string>(async resolve => {
                 const path = join(this.output, this.thumb);
+                const thumbImg = sharp();
                 this.thumbImg
                     .resize(width, height)
                     .extract({
-                        left: Math.floor((width - this.size.width) / 2),
-                        top: Math.floor((height - this.size.height) / 2),
-                        width: this.size.width,
-                        height: this.size.height
+                        left: Math.floor((width - this.targetSize.width) / 2),
+                        top: Math.floor((height - this.targetSize.height) / 2),
+                        width: this.targetSize.width,
+                        height: this.targetSize.height
                     })
                     .toFile(path)
                     .then(() => resolve(path));
@@ -75,14 +73,12 @@ export class Gallery {
 
     private readonly dir: string;
     private readonly cache: { [folder: string]: Promise<IGalleryImage[]> };
-    private readonly imgCache: { [id: string]: GalleryImage };
     private readonly output: string;
     private readonly init: Promise<any>;
 
-    constructor(readonly config: Configuration) {
+    constructor(readonly config: Configuration, readonly galleryCache: GalleryCache) {
         this.dir = join(__dirname, "..", "gallery");
         this.cache = {};
-        this.imgCache = {};
         this.output = join(this.config.resolve("cacheDir"), "gallery");
         this.init = new Promise<any>((resolve, reject) => {
             rimraf(this.output, error => {
@@ -93,11 +89,6 @@ export class Gallery {
                 mkdir(this.output, { recursive: true }, resolve);
             });
         });
-    }
-
-    getImage(id: string): Promise<Buffer> {
-        const img = this.imgCache[id];
-        return !img ? null : img.serve(id);
     }
 
     async getFolder(folder: string, size: IGallerySize = null): Promise<IGalleryImage[]> {
@@ -138,9 +129,8 @@ export class Gallery {
                             const sharpImg = sharp(filePath);
                             sharpImg.rotate().metadata().then(async meta => {
 
-                                const galleryImg = new GalleryImage(sharpImg, meta, folder, size, this.output);
-                                this.imgCache[galleryImg.big] = galleryImg;
-                                this.imgCache[galleryImg.thumb] = galleryImg;
+                                const galleryImg = new GalleryImage(filePath, folder, meta, size, this.output);
+                                this.galleryCache.put(galleryImg);
 
                                 resolve([galleryImg]);
                             }, () => resolve([]));

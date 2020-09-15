@@ -48,14 +48,16 @@ export interface IRequest extends IRequestBase<IUser> {
 }
 
 export interface IGalleryImage {
+    path: string;
     folder: string;
     thumb: string;
     big: string;
+    serve(id: string): Promise<Buffer>
 }
 
 export interface IGallerySize {
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
 }
 
 export interface ITranslations {

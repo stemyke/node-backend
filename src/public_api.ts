@@ -45,6 +45,7 @@ export {
     isObject,
     isString,
     isFunction,
+    ucFirst,
     getValue,
     groupBy,
     convertValue,
@@ -56,7 +57,9 @@ export {
     readAndDeleteFile,
     getFunctionParams,
     proxyFunction,
-    proxyFunctions
+    proxyFunctions,
+    idToString,
+    createTransformer
 } from "./utils";
 
 export {
@@ -74,6 +77,7 @@ export {
     IGallerySize,
     IGalleryImageHandler,
     ITranslations,
+    IPaginationBase,
     IPagination,
     IBackendConfig
 } from "./common-types";

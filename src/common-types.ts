@@ -71,9 +71,13 @@ export interface ITranslations {
     [key: string]: any;
 }
 
-export interface IPagination {
+export interface IPaginationBase<T> {
     count: number
-    items: any[];
+    items: T[];
+}
+
+export interface IPagination extends IPaginationBase<any> {
+
 }
 
 export interface IBackendConfig {

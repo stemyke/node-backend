@@ -2,7 +2,8 @@ import {mkdir, readFile, unlink} from "fs";
 import {Document, FilterQuery, Model, Schema} from "mongoose";
 import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
-import {IPagination} from "./common-types";
+import {ObjectId} from "bson";
+import {IPaginationBase} from "./common-types";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -27,6 +28,11 @@ export function isString(value: any): value is string {
 
 export function isFunction(value: any): value is Function {
     return typeof value === "function";
+}
+
+export function ucFirst(value: string): string {
+    if (!value) return "";
+    return value[0].toUpperCase() + value.substr(1);
 }
 
 export function getValue(obj: any, key: string, defaultValue?: any, treeFallback: boolean = false): any {
@@ -82,7 +88,7 @@ export function injectServices(schema: Schema<any>, services: {[prop: string]: a
     });
 }
 
-export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, page: number, limit: number, sort: string = null): Promise<IPagination> {
+export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, page: number, limit: number, sort: string = null): Promise<IPaginationBase<T>> {
     return model.countDocuments(where).then(count => {
         let query = model.find(where).sort(sort);
         return (limit > 0 ? query.skip(page * limit).limit(limit) : query).then(items => {
@@ -192,4 +198,19 @@ export function proxyFunctions(schema: Schema, helper: Type<any>, paramName: str
     injectServices(schema, {
         "helper": helper
     });
+}
+export function idToString(value: any): any {
+    if (Array.isArray(value)) {
+        return value.map(idToString);
+    }
+    return value instanceof ObjectId ? value.toHexString() : null;
+}
+
+export function createTransformer(transform?: (doc: Document, ret: any, options?: any) => any) {
+    return (doc: Document, ret: any, options?: any) => {
+        ret._id = idToString(doc._id);
+        ret.id = idToString(doc._id);
+        delete ret._v;
+        return isFunction(transform) ? transform(doc, ret, options) || ret : ret;
+    };
 }

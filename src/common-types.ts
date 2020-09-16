@@ -5,6 +5,7 @@ import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
 import {InjectionToken, Injector, Type} from "injection-js";
 import {SchemaObject} from "openapi3-ts";
+import Buffer from "buffer";
 
 export interface IFixture {
     load(): Promise<any>;
@@ -48,7 +49,6 @@ export interface IRequest extends IRequestBase<IUser> {
 }
 
 export interface IGalleryImage {
-    path: string;
     folder: string;
     thumb: string;
     big: string;
@@ -58,6 +58,13 @@ export interface IGalleryImage {
 export interface IGallerySize {
     width?: number;
     height?: number;
+}
+
+export interface IGalleryImageHandler {
+    getOriginal(): Promise<Buffer>;
+    writeResult(isThumb: boolean, buffer: Buffer): Promise<any>;
+    hasResult(isThumb: boolean): Promise<boolean>;
+    serveResult(isThumb: boolean): Promise<Buffer>;
 }
 
 export interface ITranslations {

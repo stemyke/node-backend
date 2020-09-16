@@ -1,7 +1,9 @@
+import {mkdir, stat} from "fs";
+import {normalize} from "path";
 import {Document, FilterQuery, Model, Schema} from "mongoose";
 import {Injector, Type} from "injection-js";
-import {IPagination} from "./common-types";
 import {PassThrough, Readable} from "stream";
+import {IPagination} from "./common-types";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -83,7 +85,7 @@ export function injectServices(schema: Schema<any>, services: {[prop: string]: a
 
 export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, page: number, limit: number, sort: string = null): Promise<IPagination> {
     return model.countDocuments(where).then(count => {
-        let query = this.type.find(where).sort(sort);
+        let query = model.find(where).sort(sort);
         return (limit > 0 ? query.skip(page * limit).limit(limit) : query).then(items => {
             return { count, items };
         });
@@ -107,8 +109,37 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
     })
 }
 
-export function getFunctionParams(func: Function): string[] {
+export function mkdirRecursive(path: string, mode: number = null, position: number = 0): Promise<any> {
+    return new Promise<any>((resolve, reject) => {
+        mode = mode || 0o777;
+        const parts = normalize(path).split(/[\\\/]/gi);
+        let isAbsolute = false;
+        if (!parts[0]) {
+            parts.shift();
+            isAbsolute = true;
+        }
+        if (position >= parts.length) {
+            resolve();
+            return;
+        }
+        const directory = (isAbsolute ? "/" : "") + parts.slice(0, position + 1).join('/');
+        stat(directory, function(err) {
+            if (err === null) {
+                mkdirRecursive(path, mode, position + 1).then(resolve, reject);
+            } else {
+                mkdir(directory, mode, function (err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        mkdirRecursive(path, mode,  position + 1).then(resolve, reject);
+                    }
+                })
+            }
+        });
+    });
+}
 
+export function getFunctionParams(func: Function): string[] {
     // Remove comments of the form /* ... */
     // Removing comments of the form //
     // Remove body of the function { ... }

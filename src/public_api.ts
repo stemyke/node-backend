@@ -52,6 +52,7 @@ export {
     paginate,
     bufferToStream,
     streamToBuffer,
+    mkdirRecursive,
     getFunctionParams,
     proxyFunction,
     proxyFunctions
@@ -70,6 +71,7 @@ export {
     IRequest,
     IGalleryImage,
     IGallerySize,
+    IGalleryImageHandler,
     ITranslations,
     IPagination,
     IBackendConfig

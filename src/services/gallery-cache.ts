@@ -1,5 +1,6 @@
 import {Injectable} from "injection-js";
-import {IGalleryImage} from "../common-types";
+import {IGalleryImage, IGalleryImageHandler, IGallerySize} from "../common-types";
+import {GalleryImage} from "./gallery-image";
 
 @Injectable()
 export class GalleryCache {
@@ -18,5 +19,11 @@ export class GalleryCache {
     serve(id: string): Promise<Buffer> {
         const img = this.imgCache[id];
         return !img ? null : img.serve(id);
+    }
+
+    create(folder: string, targetSize: IGallerySize, handler: IGalleryImageHandler): IGalleryImage {
+        const image = new GalleryImage(folder, targetSize, handler);
+        this.put(image);
+        return image;
     }
 }

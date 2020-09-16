@@ -3,7 +3,6 @@ import sharp_ from "sharp";
 import {access, constants, lstat, readdir, readFile, writeFile} from "fs";
 import {join, dirname} from "path";
 import {IGalleryImage, IGallerySize} from "../common-types";
-import * as Buffer from "buffer";
 import {Configuration} from "./configuration";
 import {GalleryCache} from "./gallery-cache";
 import {mkdirRecursive} from "../utils";

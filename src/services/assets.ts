@@ -1,4 +1,5 @@
 import {Injectable} from "injection-js";
+import {fromStream} from "file-type";
 import {Duplex, Readable} from "stream";
 import {ObjectId} from "bson";
 import {connection, FilterQuery} from "mongoose";
@@ -27,6 +28,7 @@ export class Assets {
     }
 
     async write(stream: Readable, contentType: string, metadata: IAssetMeta = null): Promise<IAsset> {
+        contentType = contentType || (await fromStream(stream)).mime;
         metadata = metadata || {};
         metadata.downloadCount = metadata.downloadCount || 0;
         metadata.filename = metadata.filename || new ObjectId().toHexString();

@@ -1,4 +1,3 @@
-import {imageSize} from "image-size";
 import {v4 as uuidv4} from "uuid";
 import sharp_ from "sharp";
 import {IGalleryImage, IGallerySize, IGalleryImageHandler} from "../common-types";
@@ -26,15 +25,15 @@ export class GalleryImage implements IGalleryImage {
             return this.handler.serveResult(isThumb);
         }
 
-        const original = await this.handler.getOriginal();
-        const origSize = imageSize(original);
-        const ratio = origSize.width / origSize.height;
+        const original = sharp(await this.handler.getOriginal()).rotate();
+        const meta = await original.metadata();
+        const ratio = meta.width / meta.height;
         const sizeRatio = isThumb ? this.targetSize.width / this.targetSize.height : 1;
         const size = isThumb ? Math.max(this.targetSize.width, this.targetSize.height) : bigSize;
         const targetHeight = ratio > sizeRatio ? size : Math.round(size / ratio);
         const targetWidth = Math.round(targetHeight * ratio);
 
-        const resized = sharp(original).resize(targetWidth, targetHeight);
+        const resized = original.resize(targetWidth, targetHeight);
         const buffer = await (isThumb ? resized.extract({
             left: Math.floor((targetWidth - this.targetSize.width) / 2),
             top: Math.floor((targetHeight - this.targetSize.height) / 2),

@@ -29,7 +29,11 @@ export class Assets {
     }
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
-        contentType = contentType || (await fromStream(stream)).mime;
+        try {
+            contentType = contentType || (await fromStream(stream)).mime;
+        } catch (e) {
+            console.log(`Can't determine content type`, e);
+        }
         metadata = metadata || {};
         metadata.downloadCount = metadata.downloadCount || 0;
         metadata.filename = metadata.filename || new ObjectId().toHexString();
@@ -45,8 +49,12 @@ export class Assets {
     }
 
     async writeBuffer(buffer: Buffer, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
-        contentType = contentType || (await fromBuffer(buffer)).mime;
-        if ((contentType || "").startsWith("image")) {
+        try {
+            contentType = contentType || (await fromBuffer(buffer)).mime;
+        } catch (e) {
+            console.log(`Can't determine content type`, e);
+        }
+        if (contentType == "image/jpeg" || contentType == "image/jpg") {
             buffer = await sharp(buffer).rotate().toBuffer();
         }
         return this.write(bufferToStream(buffer), contentType, metadata);
@@ -70,7 +78,11 @@ export class Assets {
         return new Promise<string>(((resolve, reject) => {
             this.asset.unlink({_id: new ObjectId(id)}, (error) => {
                 if (error) {
-                    return reject(error.message || error);
+                    error = error.message || error;
+                    if (error !== "not found") {
+                        reject(error.message || error);
+                        return;
+                    }
                 }
                 resolve();
             });

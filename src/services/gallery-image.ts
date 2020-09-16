@@ -5,15 +5,18 @@ import {IGalleryImage, IGallerySize, IGalleryImageHandler} from "../common-types
 
 const sharp = sharp_;
 const bigSize = 1500;
+const thumbSize = 250;
 
 export class GalleryImage implements IGalleryImage {
 
     readonly thumb: string;
     readonly big: string;
+    readonly targetSize: IGallerySize;
 
-    constructor(readonly folder: string, protected targetSize: IGallerySize, protected handler: IGalleryImageHandler) {
+    constructor(readonly folder: string, size: IGallerySize, readonly handler: IGalleryImageHandler) {
         this.thumb = uuidv4();
         this.big = uuidv4();
+        this.targetSize = !size ? {width: thumbSize, height: thumbSize} : size;
     }
 
     async serve(id: string): Promise<Buffer> {
@@ -24,8 +27,8 @@ export class GalleryImage implements IGalleryImage {
         }
 
         const original = await this.handler.getOriginal();
-        const {width, height} = imageSize(original);
-        const ratio = width / height;
+        const origSize = imageSize(original);
+        const ratio = origSize.width / origSize.height;
         const sizeRatio = isThumb ? this.targetSize.width / this.targetSize.height : 1;
         const size = isThumb ? Math.max(this.targetSize.width, this.targetSize.height) : bigSize;
         const targetHeight = ratio > sizeRatio ? size : Math.round(size / ratio);

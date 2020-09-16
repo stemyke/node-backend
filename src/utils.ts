@@ -1,5 +1,4 @@
-import {mkdir, stat} from "fs";
-import {normalize} from "path";
+import {mkdir, readFile, unlink} from "fs";
 import {Document, FilterQuery, Model, Schema} from "mongoose";
 import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
@@ -109,34 +108,34 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
     })
 }
 
-export function mkdirRecursive(path: string, mode: number = null, position: number = 0): Promise<any> {
+export function mkdirRecursive(path: string, mode: number = null): Promise<any> {
     return new Promise<any>((resolve, reject) => {
-        mode = mode || 0o777;
-        const parts = normalize(path).split(/[\\\/]/gi);
-        let isAbsolute = false;
-        if (!parts[0]) {
-            parts.shift();
-            isAbsolute = true;
-        }
-        if (position >= parts.length) {
-            resolve();
-            return;
-        }
-        const directory = (isAbsolute ? "/" : "") + parts.slice(0, position + 1).join('/');
-        stat(directory, function(err) {
-            if (err === null) {
-                mkdirRecursive(path, mode, position + 1).then(resolve, reject);
-            } else {
-                mkdir(directory, mode, function (err) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        mkdirRecursive(path, mode,  position + 1).then(resolve, reject);
-                    }
-                })
+        mkdir(path, { mode: mode || 0o777, recursive: true }, err => {
+            if (err) {
+                reject(err);
+                return;
             }
+            resolve();
         });
     });
+}
+
+export function readAndDeleteFile(path: string): Promise<Buffer> {
+    return new Promise<Buffer>((res, rej) => {
+        readFile(path, (err, data) => {
+            if (err) {
+                rej(err);
+                return;
+            }
+            unlink(path, err => {
+                if (err) {
+                    rej(err);
+                    return;
+                }
+                res(data);
+            });
+        });
+    })
 }
 
 export function getFunctionParams(func: Function): string[] {

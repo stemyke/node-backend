@@ -53,6 +53,7 @@ export {
     bufferToStream,
     streamToBuffer,
     mkdirRecursive,
+    readAndDeleteFile,
     getFunctionParams,
     proxyFunction,
     proxyFunctions

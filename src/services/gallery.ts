@@ -8,16 +8,14 @@ import {Configuration} from "./configuration";
 import {GalleryCache} from "./gallery-cache";
 import {mkdirRecursive} from "../utils";
 
-const thumbSize = 250;
-
 const sharp = sharp_;
 
 @Injectable()
 export class Gallery {
 
-    private readonly cache: { [folder: string]: Promise<IGalleryImage[]> };
     private readonly dir: string;
     private readonly output: string;
+    private readonly cache: { [folder: string]: Promise<IGalleryImage[]> };
 
     constructor(readonly config: Configuration, readonly galleryCache: GalleryCache) {
         this.cache = {};
@@ -26,7 +24,6 @@ export class Gallery {
     }
 
     async getFolder(folder: string, size: IGallerySize = null): Promise<IGalleryImage[]> {
-        size = !size ? {width: thumbSize, height: thumbSize} : size;
         this.cache[folder] = this.cache[folder] || new Promise<IGalleryImage[]>(resolve => {
             lstat(join(this.dir, folder), (err, stats) => {
                 if (err || !stats.isDirectory()) {

@@ -1,11 +1,12 @@
 import {Injectable} from "injection-js";
-import {fromStream} from "file-type";
-import {Duplex, Readable} from "stream";
+import {fromBuffer, fromStream} from "file-type";
+import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {connection, FilterQuery} from "mongoose";
 import {createModel} from "mongoose-gridfs";
 import sharp_ from "sharp";
 import {Asset, AssetDoc, IAsset, IAssetMeta} from "../models/asset";
+import {bufferToStream} from "../utils";
 
 const sharp = sharp_;
 
@@ -27,7 +28,7 @@ export class Assets {
         });
     }
 
-    async write(stream: Readable, contentType: string, metadata: IAssetMeta = null): Promise<IAsset> {
+    async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
         contentType = contentType || (await fromStream(stream)).mime;
         metadata = metadata || {};
         metadata.downloadCount = metadata.downloadCount || 0;
@@ -43,14 +44,12 @@ export class Assets {
         }));
     }
 
-    async writeBuffer(buffer: Buffer, contentType: string, meta: IAssetMeta = null): Promise<IAsset> {
+    async writeBuffer(buffer: Buffer, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
+        contentType = contentType || (await fromBuffer(buffer)).mime;
         if ((contentType || "").startsWith("image")) {
             buffer = await sharp(buffer).rotate().toBuffer();
         }
-        const stream = new Duplex();
-        stream.push(buffer);
-        stream.push(null);
-        return this.write(stream, contentType, meta);
+        return this.write(bufferToStream(buffer), contentType, metadata);
     }
 
     async read(id: string): Promise<IAsset> {

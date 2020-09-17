@@ -134,13 +134,10 @@ export function readAndDeleteFile(path: string): Promise<Buffer> {
                 rej(err);
                 return;
             }
-            unlink(path, err => {
-                if (err) {
-                    rej(err);
-                    return;
-                }
-                res(data);
-            });
+            res(data);
+            setTimeout(() => {
+                unlink(path, () => {});
+            }, 1000);
         });
     })
 }

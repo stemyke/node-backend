@@ -1,8 +1,10 @@
 import express_ from "express";
+import {join} from "path";
 import {json} from "body-parser";
 import {createServer} from "http";
 import {verify} from "jsonwebtoken";
 import {connect} from "mongoose";
+import cacheman_mongo from "cacheman-mongodb";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
 import socket_io from "socket.io";
 import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
@@ -13,6 +15,7 @@ import {getApiDocs} from "./rest-openapi";
 import {EXPRESS, FIXTURE, HTTP_SERVER, IBackendConfig, IRequest, IUser, Parameter, SOCKET_SERVER} from "./common-types";
 
 import {Assets} from "./services/assets";
+import {Cache} from "./services/cache";
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
 import {Gallery} from "./services/gallery";
@@ -36,7 +39,6 @@ import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 import {MessageController} from "./socket-controllers/message.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
-import {join} from "path";
 
 export {
     isNullOrUndefined,
@@ -87,6 +89,7 @@ export {
 export {IAsset} from "./models/asset";
 
 export {Assets} from "./services/assets";
+export {Cache} from "./services/cache";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
@@ -107,6 +110,7 @@ export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 const express = express_;
 const socketIO = socket_io;
+const CachemanMongo = cacheman_mongo;
 
 async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
     if (req.user) return req.user;
@@ -161,6 +165,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     // Create injector
     const services = [
         Assets,
+        Cache,
         Configuration,
         Fixtures,
         Gallery,
@@ -252,13 +257,14 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Connect to mongo if necessary
     if (configuration.hasParam("mongoUri")) {
-        await connect(configuration.resolve("mongoUri"), {
+        const db = (await connect(configuration.resolve("mongoUri"), {
             dbName: configuration.resolve("mongoDb"),
             user: configuration.resolve("mongoUser"),
             pass: configuration.resolve("mongoPassword"),
             useNewUrlParser: true,
             useUnifiedTopology: true
-        });
+        })).connection.db;
+        CachemanMongo["appInstance"] = new CachemanMongo(db, {compression: true, collection: "cache"});
     }
 
     // Load fixtures

@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "0.2.4",
+    "version": "0.3.0",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -40,7 +40,8 @@
         "ts-mongoose": "^0.0.21",
         "dotenv": "^8.2.0",
         "image-size": "^0.9.1",
-        "file-type": "^15.0.1"
+        "file-type": "^15.0.1",
+        "cacheman-mongodb": "^0.2.0"
     },
     "devDependencies": {
         "axios": "0.19.2",
@@ -74,6 +75,7 @@
         "dotenv": "8.2.0",
         "image-size": "0.9.1",
         "file-type": "15.0.1",
+        "cacheman-mongodb": "0.2.0",
         "@types/socket.io": "2.1.11",
         "@types/jsonwebtoken": "^8.5.0",
         "@types/bcrypt": "^3.0.0",

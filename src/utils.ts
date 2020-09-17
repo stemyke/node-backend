@@ -1,4 +1,5 @@
 import {mkdir, readFile, unlink} from "fs";
+import {basename} from "path";
 import {Document, FilterQuery, Model, Schema} from "mongoose";
 import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
@@ -199,6 +200,17 @@ export function proxyFunctions(schema: Schema, helper: Type<any>, paramName: str
         "helper": helper
     });
 }
+
+export function getFileName(path: string, withExtension: boolean = false): string {
+    const name = basename(path || "");
+    return withExtension ? name : name.split(".").slice(0, -1).join(".");
+}
+
+export function getExtension(path: string): string {
+    const name = basename(path || "");
+    return name.split(".").pop();
+}
+
 export function idToString(value: any): any {
     if (Array.isArray(value)) {
         return value.map(idToString);
@@ -208,8 +220,11 @@ export function idToString(value: any): any {
 
 export function createTransformer(transform?: (doc: Document, ret: any, options?: any) => any) {
     return (doc: Document, ret: any, options?: any) => {
-        ret._id = idToString(doc._id);
-        ret.id = idToString(doc._id);
+        ret.id = idToString(ret.id) || ret.id;
+        if (doc._id) {
+            ret._id = idToString(doc._id);
+            ret.id = ret.id || ret._id;
+        }
         delete ret._v;
         return isFunction(transform) ? transform(doc, ret, options) || ret : ret;
     };

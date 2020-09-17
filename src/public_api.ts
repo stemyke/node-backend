@@ -58,6 +58,8 @@ export {
     getFunctionParams,
     proxyFunction,
     proxyFunctions,
+    getFileName,
+    getExtension,
     idToString,
     createTransformer
 } from "./utils";

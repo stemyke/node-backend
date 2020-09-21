@@ -1,5 +1,5 @@
-import {mkdir, readFile, unlink} from "fs";
-import {basename} from "path";
+import {mkdir, readFile as fsReadFile, writeFile as fsWriteFile, unlink} from "fs";
+import {basename, dirname} from "path";
 import {Document, FilterQuery, Model, Schema} from "mongoose";
 import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
@@ -127,19 +127,57 @@ export function mkdirRecursive(path: string, mode: number = null): Promise<any> 
     });
 }
 
-export function readAndDeleteFile(path: string): Promise<Buffer> {
+export function deleteFile(path: string): Promise<any> {
+    return new Promise<Buffer>((resolve, reject) => {
+        unlink(path, err => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
+        });
+    });
+}
+
+export function readFile(path: string): Promise<Buffer> {
     return new Promise<Buffer>((res, rej) => {
-        readFile(path, (err, data) => {
+        fsReadFile(path, (err, data) => {
             if (err) {
                 rej(err);
                 return;
             }
             res(data);
-            setTimeout(() => {
-                unlink(path, () => {});
-            }, 1000);
         });
-    })
+    });
+}
+
+export async function readAndDeleteFile(path: string, timeout: number = 5000): Promise<Buffer> {
+    const data = await readFile(path);
+    setTimeout(() => {
+        unlink(path, () => {});
+    }, timeout);
+    return data;
+}
+
+export async function writeFile(path: string, data: Buffer): Promise<Buffer> {
+    await mkdirRecursive(dirname(path));
+    return new Promise<Buffer>((res, rej) => {
+        fsWriteFile(path, data, err => {
+            if (err) {
+                rej(err);
+                return;
+            }
+            res(data);
+        });
+    });
+}
+
+export function promiseTimeout(timeout: number = 1000): Promise<any> {
+    return new Promise<any>((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, timeout);
+    });
 }
 
 export function getFunctionParams(func: Function): string[] {

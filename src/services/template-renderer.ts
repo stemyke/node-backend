@@ -21,6 +21,9 @@ export class TemplateRenderer {
         Handlebars.registerHelper(`now`, function() {
             return new Date().getTime();
         });
+        Handlebars.registerHelper(`keys`, function(obj: any) {
+            return !obj ? [] : Object.keys(obj);
+        });
         Handlebars.registerHelper(`translate`, function (key: string, params: any) {
             return translator.getTranslationSync(this.language, key, params);
         });

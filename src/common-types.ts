@@ -36,7 +36,21 @@ export interface IJob {
     process(): Promise<any>;
 }
 
+export interface IJobTask {
+    start: () => this;
+    stop: () => this;
+    destroy: () => void;
+    getStatus: () => string;
+}
+
 export type JobParams = {[name: string]: string | number};
+
+export interface JobScheduleRange {
+    min: number;
+    max: number;
+}
+
+export type JobScheduleTime = string | number | JobScheduleRange | Array<string | number>;
 
 export interface IUser {
     _id?: string;

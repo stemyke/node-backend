@@ -1,5 +1,5 @@
 import {Injectable} from "injection-js";
-import {fromBuffer, fromStream} from "file-type";
+import {fromBuffer} from "file-type";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {connection, FilterQuery} from "mongoose";
@@ -28,11 +28,9 @@ export class Assets {
         });
     }
 
-    async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
-        try {
-            contentType = contentType || (await fromStream(stream)).mime;
-        } catch (e) {
-            console.log(`Can't determine content type`, e);
+    write(stream: Readable, contentType: string, metadata: IAssetMeta = null): Promise<IAsset> {
+        if (!contentType) {
+            return Promise.reject(`Content type should be provided!`);
         }
         metadata = metadata || {};
         metadata.downloadCount = metadata.downloadCount || 0;
@@ -48,9 +46,9 @@ export class Assets {
         }));
     }
 
-    async writeBuffer(buffer: Buffer, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
+    async writeBuffer(buffer: Buffer, metadata: IAssetMeta = null, contentType: string = null): Promise<IAsset> {
         try {
-            contentType = contentType || (await fromBuffer(buffer)).mime;
+            contentType = (contentType || (await fromBuffer(buffer)).mime).trim();
         } catch (e) {
             console.log(`Can't determine content type`, e);
         }

@@ -14,7 +14,7 @@ export class AssetsController {
     @Post("")
     upload(@UploadedFile("file") file: Express.Multer.File) {
         return new Promise<any>((resolve, reject) => {
-            this.assets.writeBuffer(file.buffer, file.mimetype, {filename: file.filename})
+            this.assets.writeBuffer(file.buffer, {filename: file.filename}, file.mimetype)
                 .then(id => {
                     resolve({_id: id, id});
                 })

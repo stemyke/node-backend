@@ -1,7 +1,9 @@
 import {Inject, Injectable, Injector, Optional, ReflectiveInjector, Type} from "injection-js";
 import {Queue, Scheduler, Worker} from "node-resque";
-import {IJob, JOB, JobParams} from "../common-types";
+import {schedule, validate} from "node-cron";
+import {IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime} from "../common-types";
 import {Configuration} from "./configuration";
+import {isArray, isObject} from "../utils";
 
 @Injectable()
 export class JobManager {
@@ -31,6 +33,27 @@ export class JobManager {
         }, {});
         this.queue = new Queue({connection}, this.jobs);
         this.worker = new Worker({connection, queues}, this.jobs);
+        this.worker.on("job", (queue, job) => {
+            console.log(`working job ${queue} ${JSON.stringify(job)}`);
+        });
+        this.worker.on("reEnqueue", (queue, job, plugin) => {
+            console.log(`reEnqueue job (${plugin}) ${queue} ${JSON.stringify(job)}`);
+        });
+        this.worker.on("success", (queue, job, result, duration) => {
+            console.log(
+                `job success ${queue} ${JSON.stringify(job)} >> ${result} (${duration}ms)`
+            );
+        });
+        this.worker.on("failure", (queue, job, failure, duration) => {
+            console.log(
+                `job failure ${queue} ${JSON.stringify(
+                    job
+                )} >> ${failure} (${duration}ms)`
+            );
+        });
+        this.worker.on("error", (error, queue, job) => {
+            console.log(`error ${queue} ${JSON.stringify(job)}  >> ${error}`);
+        });
         this.scheduler = new Scheduler({connection}, this.jobs);
     }
 
@@ -47,6 +70,29 @@ export class JobManager {
     async enqueueIn(time: number, jobType: Type<IJob>, params: JobParams = {}, que: string = "main"): Promise<any> {
         const jobName = await this.tryResolveAndConnect(jobType, params);
         await this.queue.enqueueIn(time, que, jobName, [params]);
+    }
+
+    schedule(minute: JobScheduleTime, hour: JobScheduleTime, dayOfMonth: JobScheduleTime, month: JobScheduleTime, dayOfWeek: JobScheduleTime, jobType: Type<IJob>, params: JobParams = {}, que: string = "main"): IJobTask {
+        const expression = [minute, hour, dayOfMonth, month, dayOfWeek].map(t => {
+            if (isObject(t)) {
+                const range = t as JobScheduleRange;
+                return `${range.min || 0}-${range.max || 0}`;
+            }
+            if (isArray(t)) {
+                return t.join(",");
+            }
+            return `${t}`;
+        }).join(" ");
+        const jobName = this.getConstructorName(jobType);
+        if (!validate(expression)) {
+            console.log(`Can't schedule the task: '${jobName}' because time expression is invalid.`);
+            return null;
+        }
+        return schedule(expression, () => {
+            this.enqueue(jobType, params, que).catch(e => {
+                console.log(`Can't enqueue job: '${jobName}' because: ${e}`);
+            });
+        });
     }
 
     async startProcessing(): Promise<any> {

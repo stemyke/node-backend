@@ -29,8 +29,6 @@ export class JobManager {
             };
             return res;
         }, {});
-        console.log(this.jobs);
-
         this.queue = new Queue({connection}, this.jobs);
         this.worker = new Worker({connection, queues}, this.jobs);
         this.scheduler = new Scheduler({connection}, this.jobs);
@@ -68,7 +66,6 @@ export class JobManager {
         } catch (e) {
             throw `Can't resolve params for job: ${jobName}, with params: ${JSON.stringify(params)}. Reason: ${e}`;
         }
-        console.log("Job?", jobName);
         await this.queue.connect();
         return jobName;
     }

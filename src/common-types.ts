@@ -18,6 +18,8 @@ export type SchemaConverter = (
 
 export const FIXTURE = new InjectionToken<IFixture>("fixture-token");
 
+export const JOB = new InjectionToken<Type<IJob>>("fixture-token");
+
 export const EXPRESS = new InjectionToken<Application>("express");
 
 export const HTTP_SERVER = new InjectionToken<Server>("http-server");
@@ -29,6 +31,12 @@ export class Parameter {
 
     }
 }
+
+export interface IJob {
+    process(): Promise<any>;
+}
+
+export type JobParams = {[name: string]: string | number};
 
 export interface IUser {
     _id?: string;
@@ -83,6 +91,7 @@ export interface IPagination extends IPaginationBase<any> {
 export interface IBackendConfig {
     params?: Parameter[],
     fixtures?: Type<IFixture>[],
+    jobs?: Type<IJob>[],
     restOptions?: RoutingControllersOptions,
     socketOptions?: SocketControllersOptions,
     customValidation?: SchemaConverter | SchemaObject

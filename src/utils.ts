@@ -72,6 +72,8 @@ export function convertValue(value: any, type: string): any {
         case "number":
             const val = parseFloat(value);
             return isNaN(val) ? 0 : val;
+        case "array":
+            return `${value}`.split(", ");
     }
     return value;
 }

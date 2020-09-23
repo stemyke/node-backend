@@ -12,7 +12,7 @@ import {useContainer as useSocketContainer, useSocketServer} from "socket-contro
 
 import {getApiDocs} from "./rest-openapi";
 
-import {EXPRESS, FIXTURE, HTTP_SERVER, IBackendConfig, IRequest, IUser, Parameter, SOCKET_SERVER} from "./common-types";
+import {EXPRESS, FIXTURE, JOB, HTTP_SERVER, IBackendConfig, IRequest, IUser, Parameter, SOCKET_SERVER} from "./common-types";
 
 import {Assets} from "./services/assets";
 import {Cache} from "./services/cache";
@@ -21,6 +21,7 @@ import {Fixtures} from "./services/fixtures";
 import {Gallery} from "./services/gallery";
 import {GalleryCache} from "./services/gallery-cache";
 import {IdGenerator} from "./services/id-generator";
+import {JobManager} from "./services/job-manager";
 import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
 import {TemplateRenderer} from "./services/template-renderer";
@@ -74,10 +75,13 @@ export {
     IFixture,
     SchemaConverter,
     FIXTURE,
+    JOB,
     EXPRESS,
     HTTP_SERVER,
     SOCKET_SERVER,
     Parameter,
+    IJob,
+    JobParams,
     IUser,
     IRequestBase,
     IRequest,
@@ -99,6 +103,7 @@ export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
 export {GalleryCache} from "./services/gallery-cache";
 export {IdGenerator} from "./services/id-generator";
+export {JobManager} from "./services/job-manager";
 export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
 export {TemplateRenderer} from "./services/template-renderer";
@@ -142,6 +147,14 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         };
     });
 
+    const jobProviders = (config.jobs || []).map(jobType => {
+        return {
+            provide: JOB,
+            multi: true,
+            useValue: jobType
+        };
+    });
+
     const app = express();
     const server = createServer(app);
     const io = socketIO(server, {path: "/socket"});
@@ -176,6 +189,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         GalleryCache,
         Logger,
         IdGenerator,
+        JobManager,
         MailSender,
         TemplateRenderer,
         TranslationProvider,
@@ -186,6 +200,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     const injector = ReflectiveInjector.resolveAndCreate([
         ...fixtureTypes,
         ...fixtureProviders,
+        ...jobProviders,
         ...services,
         ...providers,
         ...restOptions.middlewares as Provider[],
@@ -242,6 +257,11 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("mongoPassword", null));
     configuration.add(new Parameter("nodeEnv", "development"));
     configuration.add(new Parameter("appPort", 80));
+    configuration.add(new Parameter("redisHost", "127.0.0.1"));
+    configuration.add(new Parameter("redisPort", 6379));
+    configuration.add(new Parameter("redisPassword", "123456"));
+    configuration.add(new Parameter("redisNamespace", "resque"));
+    configuration.add(new Parameter("workQueues", ["main"]));
 
     (config.params || []).forEach(param => {
         configuration.add(param);

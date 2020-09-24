@@ -266,6 +266,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("redisPassword", "123456"));
     configuration.add(new Parameter("redisNamespace", "resque"));
     configuration.add(new Parameter("workQueues", ["main"]));
+    configuration.add(new Parameter("isWorker", false));
 
     (config.params || []).forEach(param => {
         configuration.add(param);
@@ -296,8 +297,10 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     }
 
     // Load fixtures
-    const fixtures = injector.get(Fixtures);
-    await fixtures.load();
+    if (!configuration.resolve("isWorker")) {
+        const fixtures = injector.get(Fixtures);
+        await fixtures.load();
+    }
 
     return injector;
 }

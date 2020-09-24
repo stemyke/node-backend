@@ -1,4 +1,4 @@
-import {BadRequestError, ExpressErrorMiddlewareInterface, HttpError, Middleware} from "routing-controllers";
+import {BadRequestError, ExpressErrorMiddlewareInterface, Middleware} from "routing-controllers";
 import {Response} from "express";
 import {Injectable} from "injection-js";
 

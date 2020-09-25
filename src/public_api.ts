@@ -40,6 +40,7 @@ import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 import {MessageController} from "./socket-controllers/message.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
+import {isFunction, isString, valueToPromise} from "./utils";
 
 export {
     isNullOrUndefined,
@@ -62,10 +63,12 @@ export {
     readFile,
     readAndDeleteFile,
     writeFile,
+    valueToPromise,
     promiseTimeout,
     getFunctionParams,
     proxyFunction,
     proxyFunctions,
+    ResolveEntity,
     getFileName,
     getExtension,
     idToString,
@@ -231,12 +234,28 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     // Authentication
     restOptions.authorizationChecker = async (action: Action, roles: any[]) => {
         const user = await resolveUser(injector, action.request);
+        if (!user) {
+            throw new HttpError(401, "Authentication failed. (User can't be found.)");
+        }
         const userRoles = Array.isArray(user.roles) ? user.roles : [];
         if (Array.isArray(roles) && roles.length > 0) {
-            const hasRole = roles.some(role => userRoles.indexOf(role) >= 0);
-            if (!hasRole) {
-                throw new HttpError(401, "Authentication failed. (User doesn't have access to this resource)");
+            let lastError = null;
+            for (let role of roles) {
+                if (isFunction(role)) {
+                    try {
+                        if (await valueToPromise(role(user, action))) {
+                            return true;
+                        }
+                    } catch (e) {
+                        lastError = e;
+                    }
+                }
+                if (userRoles.indexOf(role) >= 0) return true;
             }
+            const error = !lastError || (!lastError.message && !isString(lastError))
+                ? "User doesn't have access to this resource"
+                : lastError.message || lastError;
+            throw new HttpError(401, `Authentication failed. (${error})`);
         }
         return true;
     };

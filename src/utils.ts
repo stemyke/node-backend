@@ -1,10 +1,11 @@
-import {mkdir, readFile as fsReadFile, writeFile as fsWriteFile, unlink} from "fs";
+import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
 import {basename, dirname} from "path";
-import {Document, FilterQuery, Model, Schema} from "mongoose";
+import {Document, DocumentQuery, FilterQuery, Model, Schema} from "mongoose";
 import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
 import {ObjectId} from "bson";
-import {IPaginationBase} from "./common-types";
+import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
+import {IPaginationBase, IRequest} from "./common-types";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -179,6 +180,10 @@ export async function writeFile(path: string, data: Buffer): Promise<Buffer> {
     });
 }
 
+export function valueToPromise(value: any): Promise<any> {
+    return value instanceof Promise ? value : Promise.resolve(value);
+}
+
 export function promiseTimeout(timeout: number = 1000): Promise<any> {
     return new Promise<any>((resolve) => {
         setTimeout(() => {
@@ -240,6 +245,40 @@ export function proxyFunctions(schema: Schema, helper: Type<any>, paramName: str
     });
     injectServices(schema, {
         "helper": helper
+    });
+}
+
+export function ResolveEntity<T extends Document>(model: Model<T>, extraCheck?: (query: DocumentQuery<T, any>, action: Action) => T | Promise<T>): ParameterDecorator {
+    const modelName = model.modelName;
+    const paramName = modelName.toLowerCase();
+    return createParamDecorator({
+        required: false,
+        value: async action => {
+            const req = action.request as IRequest;
+            const token = req.header(`x-${paramName}-token`);
+            const id = req.params[`${paramName}Id`] as string;
+            if (!id && !token) {
+                throw new BadRequestError(`${modelName} id or token should be defined!`);
+            }
+            const query = !token
+                ? model.findById(id)
+                : model.findOne({token} as any);
+            const doc = await query;
+            if (!doc) {
+                throw new HttpError(404, !token
+                    ? `${modelName} could not be found with id: ${id}`
+                    : `${modelName} could not be found with token: ${token}`);
+            }
+            if (isFunction(extraCheck)) {
+                try {
+                    const result = await valueToPromise(extraCheck(query, action));
+                    return result || doc;
+                } catch (e) {
+                    throw new BadRequestError(`${modelName} check error: ${e.message || e}`);
+                }
+            }
+            return doc;
+        }
     });
 }
 

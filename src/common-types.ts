@@ -93,9 +93,15 @@ export interface ITranslations {
     [key: string]: any;
 }
 
+export interface IPaginationMeta {
+    total: number;
+    [key: string]: any;
+}
+
 export interface IPaginationBase<T> {
     count: number
     items: T[];
+    meta?: IPaginationMeta;
 }
 
 export interface IPagination extends IPaginationBase<any> {

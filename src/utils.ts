@@ -99,7 +99,8 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     return model.countDocuments(where).then(count => {
         let query = model.find(where).sort(sort);
         return (limit > 0 ? query.skip(page * limit).limit(limit) : query).then(items => {
-            return { count, items };
+            const meta = { total: count };
+            return { count, items, meta };
         });
     });
 }

@@ -93,6 +93,7 @@ export {
     IGallerySize,
     IGalleryImageHandler,
     ITranslations,
+    IPaginationMeta,
     IPaginationBase,
     IPagination,
     IBackendConfig

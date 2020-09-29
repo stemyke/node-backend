@@ -271,12 +271,13 @@ export function ResolveEntity<T extends Document>(model: Model<T>, extraCheck?: 
             }
             if (isFunction(extraCheck)) {
                 try {
-                    const result = await valueToPromise(extraCheck(query, action));
-                    return result || doc;
+                    action.request[paramName] = await valueToPromise(extraCheck(query, action)) || doc;
+                    return action.request[paramName];
                 } catch (e) {
                     throw new BadRequestError(`${modelName} check error: ${e.message || e}`);
                 }
             }
+            action.request[paramName] = doc;
             return doc;
         }
     });

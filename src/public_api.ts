@@ -142,7 +142,8 @@ async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
     if (!payload) {
         throw new HttpError(401, `Authentication failed. (Maybe invalid token)`);
     }
-    return injector.get(UserManager).getById(payload.id);
+    req.user = await injector.get(UserManager).getById(payload.id);
+    return req.user;
 }
 
 export async function setupBackend(config: IBackendConfig, ...providers: Provider[]): Promise<Injector> {

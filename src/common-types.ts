@@ -1,6 +1,6 @@
 import {Application, Request} from "express";
 import {Server} from "http";
-import {Server as SocketServer} from "socket.io";
+import {Server as SocketServer, Socket} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
 import {InjectionToken, Injector, Type} from "injection-js";
@@ -52,12 +52,30 @@ export interface JobScheduleRange {
 
 export type JobScheduleTime = string | number | JobScheduleRange | Array<string | number>;
 
+export interface IProgress {
+    id?: string;
+    message?: any;
+    error?: any;
+    percent?: number;
+    current: number;
+    createSubProgress(progressValue: number, max?: number, message?: string): Promise<IProgress>;
+    setMax(max: number): Promise<any>;
+    setError(error: string): Promise<any>;
+    advance(value?: number): Promise<any>;
+    save(): Promise<any>;
+    toJSON(): any;
+}
+
 export interface IUser {
     _id?: string;
     id?: string;
     email: string;
     password: string;
     roles: string[];
+}
+
+export interface IClientSocket extends Socket {
+    interestedProgresses: Set<string>;
 }
 
 export interface IRequestBase<T> extends Request {

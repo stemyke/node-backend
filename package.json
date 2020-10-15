@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "0.7.0",
+    "version": "1.0.0",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -24,6 +24,7 @@
         "rimraf": "^3.0.2",
         "ws": "^7.3.1",
         "socket.io": "^2.3.0",
+        "socket.io-client": "^2.3.1",
         "socket-controllers": "^0.0.5",
         "routing-controllers": "^0.8.1",
         "routing-controllers-openapi": "^2.0.1",
@@ -60,6 +61,7 @@
         "rimraf": "3.0.2",
         "ws": "7.3.1",
         "socket.io": "2.3.0",
+        "socket.io-client": "2.3.1",
         "socket-controllers": "0.0.5",
         "routing-controllers": "0.8.1",
         "routing-controllers-openapi": "2.0.1",
@@ -81,6 +83,7 @@
         "node-resque": "7.0.6",
         "node-cron": "2.0.3",
         "@types/socket.io": "2.1.11",
+        "@types/socket.io-client": "1.4.34",
         "@types/jsonwebtoken": "^8.5.0",
         "@types/bcrypt": "^3.0.0",
         "@types/body-parser": "1.19.0",

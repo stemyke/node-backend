@@ -5,7 +5,8 @@ import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
 import {ObjectId} from "bson";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
-import {IPaginationBase, IRequest} from "./common-types";
+import {IClientSocket, IPaginationBase, IProgress, IRequest} from "./common-types";
+import {Server} from "socket.io";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -310,4 +311,8 @@ export function createTransformer(transform?: (doc: Document, ret: any, options?
         delete ret._v;
         return isFunction(transform) ? transform(doc, ret, options) || ret : ret;
     };
+}
+
+export function broadcast(socketServer: Server, cb: (client: IClientSocket) => void): void {
+    Array.from(Object.values(this.socketServer.sockets.sockets)).forEach(cb);
 }

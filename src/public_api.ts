@@ -24,6 +24,8 @@ import {IdGenerator} from "./services/id-generator";
 import {JobManager} from "./services/job-manager";
 import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
+import {ProgressHelper} from "./services/progress-helper";
+import {Progresses} from "./services/progresses";
 import {TemplateRenderer} from "./services/template-renderer";
 import {TranslationProvider} from "./services/translation-provider";
 import {Translator} from "./services/translator";
@@ -32,15 +34,17 @@ import {UserManager} from "./services/user-manager";
 import {AssetsController} from "./rest-controllers/assets.controller";
 import {AuthController} from "./rest-controllers/auth.controller";
 import {GalleryController} from "./rest-controllers/gallery.controller";
+import {ProgressesController} from "./rest-controllers/progresses.controller";
 
 import {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
 import {InjectorMiddleware} from "./rest-middlewares/injector.middleware";
 import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
-import {MessageController} from "./socket-controllers/message.controller";
+import {ProgressController} from "./socket-controllers/progress.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 import {isFunction, isString, valueToPromise} from "./utils";
+import {Progress} from "./models/progress";
 
 export {
     isNullOrUndefined,
@@ -72,7 +76,8 @@ export {
     getFileName,
     getExtension,
     idToString,
-    createTransformer
+    createTransformer,
+    broadcast
 } from "./utils";
 
 export {
@@ -90,6 +95,7 @@ export {
     JobScheduleTime,
     JobParams,
     IUser,
+    IClientSocket,
     IRequestBase,
     IRequest,
     IGalleryImage,
@@ -114,6 +120,7 @@ export {IdGenerator} from "./services/id-generator";
 export {JobManager} from "./services/job-manager";
 export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
+export {Progresses} from "./services/progresses";
 export {TemplateRenderer} from "./services/template-renderer";
 export {TranslationProvider} from "./services/translation-provider";
 export {Translator} from "./services/translator";
@@ -181,12 +188,12 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     };
     restOptions.routePrefix = "/api";
     restOptions.middlewares = [ErrorHandlerMiddleware, InjectorMiddleware, LanguageMiddleware].concat(restOptions.middlewares as any || []);
-    restOptions.controllers = [AssetsController, AuthController, GalleryController].concat(restOptions.controllers as any || []);
+    restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController].concat(restOptions.controllers as any || []);
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};
     socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
-    socketOptions.controllers = [MessageController].concat(socketOptions.controllers as any || []);
+    socketOptions.controllers = [ProgressController].concat(socketOptions.controllers as any || []);
 
     // Create injector
     const services = [
@@ -200,6 +207,8 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         IdGenerator,
         JobManager,
         MailSender,
+        ProgressHelper,
+        Progresses,
         TemplateRenderer,
         TranslationProvider,
         Translator,
@@ -288,6 +297,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("redisNamespace", "resque"));
     configuration.add(new Parameter("workQueues", ["main"]));
     configuration.add(new Parameter("isWorker", false));
+    configuration.add(new Parameter("mainEndpoint", ""));
 
     (config.params || []).forEach(param => {
         configuration.add(param);

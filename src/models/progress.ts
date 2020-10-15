@@ -1,6 +1,6 @@
 import {createSchema, ExtractDoc, Type, typedModel} from "ts-mongoose";
 import {IProgress} from "../common-types";
-import {proxyFunction, proxyFunctions} from "../utils";
+import {createTransformer, proxyFunction, proxyFunctions} from "../utils";
 import {ProgressHelper} from "../services/progress-helper";
 
 export const ProgressSchema = createSchema(
@@ -13,6 +13,12 @@ export const ProgressSchema = createSchema(
     },
     {
         timestamps: true,
+        toJSON: {
+            transform: createTransformer((doc: any, ret: any, options?: any) => {
+                ret.percent = doc.percent;
+                return ret;
+            })
+        }
     }
 );
 

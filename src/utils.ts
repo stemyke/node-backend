@@ -303,11 +303,11 @@ export function idToString(value: any): any {
 
 export function createTransformer(transform?: (doc: Document, ret: any, options?: any) => any) {
     return (doc: Document, ret: any, options?: any) => {
-        ret.id = idToString(ret.id) || ret.id;
-        if (doc._id) {
-            ret._id = idToString(doc._id);
-            ret.id = ret.id || ret._id;
-        }
+        // ret.id = idToString(ret.id) || ret.id;
+        // if (doc._id) {
+        //     ret._id = idToString(doc._id);
+        //     ret.id = ret.id || ret._id;
+        // }
         delete ret._v;
         return isFunction(transform) ? transform(doc, ret, options) || ret : ret;
     };

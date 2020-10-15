@@ -77,7 +77,9 @@ export {
     getExtension,
     idToString,
     createTransformer,
-    broadcast
+    broadcast,
+    rand,
+    random,
 } from "./utils";
 
 export {
@@ -298,6 +300,10 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("workQueues", ["main"]));
     configuration.add(new Parameter("isWorker", false));
     configuration.add(new Parameter("mainEndpoint", ""));
+    configuration.add(new Parameter("idChars", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+    configuration.add(new Parameter("idSeparator", "-"));
+    configuration.add(new Parameter("idPrefix", "ID-"));
+    configuration.add(new Parameter("idParts", [4, 4]));
 
     (config.params || []).forEach(param => {
         configuration.add(param);

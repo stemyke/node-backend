@@ -303,16 +303,24 @@ export function idToString(value: any): any {
 
 export function createTransformer(transform?: (doc: Document, ret: any, options?: any) => any) {
     return (doc: Document, ret: any, options?: any) => {
-        // ret.id = idToString(ret.id) || ret.id;
-        // if (doc._id) {
-        //     ret._id = idToString(doc._id);
-        //     ret.id = ret.id || ret._id;
-        // }
+        ret.id = idToString(ret.id) || ret.id;
+        if (doc._id) {
+            ret._id = idToString(doc._id);
+            ret.id = ret.id || ret._id;
+        }
         delete ret._v;
         return isFunction(transform) ? transform(doc, ret, options) || ret : ret;
     };
 }
 
 export function broadcast(socketServer: Server, cb: (client: IClientSocket) => void): void {
-    Array.from(Object.values(this.socketServer.sockets.sockets)).forEach(cb);
+    Array.from(Object.values(socketServer.sockets.sockets)).forEach(cb);
+}
+
+export function rand(min: number, max: number): number {
+    return Math.round(random(min, max));
+}
+
+export function random(min: number, max: number): number {
+    return min + Math.random() * (max - min);
 }

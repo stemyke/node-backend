@@ -49,10 +49,9 @@ export class ProgressHelper {
             throw "Advance value must be bigger than zero";
         }
         progress.current = Math.min(progress.max, progress.current + value);
-        if (this.client) {
-            this.client.emit("background-progress", progress.id);
-        }
         await progress.save();
+        if (!this.client) return;
+        this.client.emit("background-progress", progress.id);
     }
 }
 

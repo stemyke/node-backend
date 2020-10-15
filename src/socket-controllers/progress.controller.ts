@@ -21,7 +21,7 @@ export class ProgressController {
                 client.emit("background-progress-changed", json);
             }
         });
-        console.log(`progress changed: ${client.id}, data: ${json}`);
+        console.log(`progress changed: ${client.id}, data: ${JSON.stringify(json)}`);
     }
 
     @OnMessage("background-progress-interest")
@@ -33,6 +33,6 @@ export class ProgressController {
         if (client.interestedProgresses.has(progressId)) return;
         client.interestedProgresses.add(progressId);
         client.emit("background-progress-changed", json);
-        console.log(`progress interest added: ${client.id}, data: ${json}`);
+        console.log(`progress interest added: ${client.id}, data: ${JSON.stringify(json)}`);
     }
 }

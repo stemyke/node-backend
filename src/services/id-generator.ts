@@ -1,11 +1,20 @@
 import {Injectable} from "injection-js";
-import {v4 as uuidv4} from "uuid";
+import {Configuration} from "./configuration";
+import {rand} from "../utils";
 
 @Injectable()
 export class IdGenerator {
 
-    constructor() {
+    protected prefix: string;
+    protected separator: string;
+    protected chars: string;
+    protected parts: number[];
 
+    constructor(readonly config: Configuration) {
+        this.prefix = config.resolve("idPrefix");
+        this.separator = config.resolve("idSeparator");
+        this.chars = config.resolve("idChars");
+        this.parts = config.resolve("idParts");
     }
 
     async generate(checkCb: (id: string) => Promise<boolean>): Promise<string> {
@@ -24,6 +33,13 @@ export class IdGenerator {
     }
 
     private generateId(): string {
-        return uuidv4();
+        return this.prefix + this.parts.map(num => {
+            let s = "";
+            for (let i = 0; i < num; i++) {
+                const ix = rand(0, this.chars.length - 1);
+                s += this.chars[ix];
+            }
+            return s;
+        }).join(this.separator);
     }
 }

@@ -309,6 +309,7 @@ export function createTransformer(transform?: (doc: Document, ret: any, options?
             ret.id = ret.id || ret._id;
         }
         delete ret._v;
+        delete ret.__v;
         return isFunction(transform) ? transform(doc, ret, options) || ret : ret;
     };
 }

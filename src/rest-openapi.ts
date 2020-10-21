@@ -5,6 +5,8 @@ import {defaultMetadataStorage} from "class-transformer/storage";
 import {ValidationTypes} from "class-validator"
 import {validationMetadatasToSchemas} from "class-validator-jsonschema"
 import {SchemaConverter} from "./common-types";
+import {isFunction} from "./utils";
+import {IsFile} from "./validators";
 
 let apiDocs: string = null;
 
@@ -16,7 +18,17 @@ export function getApiDocs(customValidation: SchemaConverter | SchemaObject): st
     spec.definitions = validationMetadatasToSchemas({
         classTransformerMetadataStorage: defaultMetadataStorage,
         additionalConverters: {
-            [ValidationTypes.CUSTOM_VALIDATION]: customValidation || (() => null)
+            [ValidationTypes.CUSTOM_VALIDATION]: (meta, options) => {
+                const res = isFunction(customValidation) ? customValidation(meta, options) : customValidation;
+                if (!!res) return res;
+                const constraints = meta.constraints || [];
+                if (meta.constraintCls === IsFile) {
+                    return {
+                        multi: constraints[0] || false,
+                        type: "file"
+                    }
+                }
+            }
         }
     });
     spec.components.schemas = spec.definitions;

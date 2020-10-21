@@ -44,7 +44,6 @@ import {ProgressController} from "./socket-controllers/progress.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 import {isFunction, isString, valueToPromise} from "./utils";
-import {Progress} from "./models/progress";
 
 export {
     isNullOrUndefined,
@@ -81,6 +80,8 @@ export {
     rand,
     random,
 } from "./utils";
+
+export {IsFile} from "./validators";
 
 export {
     IFixture,

@@ -1,6 +1,7 @@
 import {Injectable} from "injection-js";
 import {Authorized, Controller, Get, HttpError, Param, Post, QueryParams, UploadedFile} from "routing-controllers";
 import {Assets} from "../services/assets";
+import {IAssetImageParams} from "../models/asset";
 
 @Injectable()
 @Controller("/assets")
@@ -25,7 +26,7 @@ export class AssetsController {
     }
 
     @Get("/image/:id/:rotation")
-    async getImageRotation(@Param("id") id: string, @QueryParams() params: any, @Param("rotation") rotation: number = 0) {
+    async getImageRotation(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Param("rotation") rotation: number = 0) {
         const asset = await this.assets.read(id);
         if (!asset) {
             return new HttpError(404, `Image with id: '${id}' not found.`);
@@ -38,7 +39,7 @@ export class AssetsController {
     }
 
     @Get("/image/:id")
-    async getImage(@Param("id") id: string, @QueryParams() params: any) {
+    async getImage(@Param("id") id: string, @QueryParams() params: IAssetImageParams) {
         return this.getImageRotation(id, params);
     }
 

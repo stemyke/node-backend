@@ -12,7 +12,7 @@ const AssetSchema = createSchema(
         metadata: Type.mixed(),
         ...({} as {
             stream: Readable,
-            getImage: (params?: number) => Promise<Readable>
+            getImage: (params?: IAssetImageParams) => Promise<Readable>
         })
     },
     {

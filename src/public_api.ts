@@ -111,7 +111,7 @@ export {
     IBackendConfig
 } from "./common-types";
 
-export {IAsset} from "./models/asset";
+export {IAsset, IAssetImageParams} from "./models/asset";
 
 export {Assets} from "./services/assets";
 export {Cache} from "./services/cache";

@@ -107,7 +107,7 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     });
 }
 
-export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], page: number, limit: number, sort: string = null): Promise<IPaginationBase<T>> {
+export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], page: number, limit: number): Promise<IPaginationBase<T>> {
     const result = await model.aggregate([
         ...aggregations,
         {

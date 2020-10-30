@@ -73,6 +73,7 @@ export interface IAssetMeta {
     filename?: string;
     classified?: boolean;
     downloadCount?: number;
+    lastDownload?: Date;
     [prop: string]: any;
 }
 

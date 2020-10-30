@@ -34,6 +34,7 @@ export class Assets {
         }
         metadata = metadata || {};
         metadata.downloadCount = metadata.downloadCount || 0;
+        metadata.lastDownload = null;
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         return new Promise<IAsset>(((resolve, reject) => {
             this.asset.write({filename: metadata.filename, contentType, metadata}, stream, (error, file) => {
@@ -68,6 +69,7 @@ export class Assets {
         asset.id = asset._id.toHexString();
         asset.stream = this.asset.read({_id: asset._id});
         asset.metadata.downloadCount++;
+        asset.metadata.lastDownload = new Date();
         await asset.save();
         return asset;
     }

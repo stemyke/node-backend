@@ -59,6 +59,7 @@ export {
     convertValue,
     injectServices,
     paginate,
+    paginateAggregations,
     bufferToStream,
     streamToBuffer,
     mkdirRecursive,

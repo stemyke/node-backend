@@ -84,8 +84,8 @@ export function convertValue(value: any, type: string): any {
     return value;
 }
 
-export function injectServices(schema: Schema<any>, services: {[prop: string]: any}) {
-    const serviceMap: {[prop: string]: any} = {};
+export function injectServices(schema: Schema<any>, services: { [prop: string]: any }) {
+    const serviceMap: { [prop: string]: any } = {};
     Object.keys(services).forEach(prop => {
         schema
             .virtual(prop)
@@ -101,10 +101,33 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     return model.countDocuments(where).then(count => {
         let query = model.find(where).sort(sort);
         return (limit > 0 ? query.skip(page * limit).limit(limit) : query).then(items => {
-            const meta = { total: count };
-            return { count, items, meta };
+            const meta = {total: count};
+            return {count, items, meta};
         });
     });
+}
+
+export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], page: number, limit: number, sort: string = null): Promise<IPaginationBase<T>> {
+    const result = await model.aggregate([
+        ...aggregations,
+        {
+            $group: {
+                _id: "results",
+                result: {$push: "$$CURRENT"}
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                items: limit > 0 ? {$slice: ["$result", page * limit, limit]} : "$result",
+                count: {$size: "$result"},
+                "meta.total": {$size: "$result"},
+            }
+        }
+    ]);
+    const pagination = result[0] as IPaginationBase<T>;
+    pagination.items = pagination.items.map(i => model.hydrate(i));
+    return pagination;
 }
 
 export function bufferToStream(buffer: Buffer): Readable {
@@ -126,7 +149,7 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
 
 export function mkdirRecursive(path: string, mode: number = null): Promise<any> {
     return new Promise<any>((resolve, reject) => {
-        mkdir(path, { mode: mode || 0o777, recursive: true }, err => {
+        mkdir(path, {mode: mode || 0o777, recursive: true}, err => {
             if (err) {
                 reject(err);
                 return;
@@ -163,7 +186,8 @@ export function readFile(path: string): Promise<Buffer> {
 export async function readAndDeleteFile(path: string, timeout: number = 5000): Promise<Buffer> {
     const data = await readFile(path);
     setTimeout(() => {
-        unlink(path, () => {});
+        unlink(path, () => {
+        });
     }, timeout);
     return data;
 }
@@ -197,18 +221,18 @@ export function getFunctionParams(func: Function): string[] {
     // Remove comments of the form /* ... */
     // Removing comments of the form //
     // Remove body of the function { ... }
-    // removing '=>' if func is arrow function
+    // removing "=>" if func is arrow function
     const str = func.toString()
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/\/\/(.)*/g, '')
-        .replace(/{[\s\S]*}/, '')
-        .replace(/=>/g, '')
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/(.)*/g, "")
+        .replace(/{[\s\S]*}/, "")
+        .replace(/=>/g, "")
         .trim();
 
-    // Start parameter names after first '('
+    // Start parameter names after first "("
     const start = str.indexOf("(") + 1;
 
-    // End parameter names is just before last ')'
+    // End parameter names is just before last ")"
     const end = str.length - 1;
     const result = str.substring(start, end).split(", ");
     const params = [];
@@ -216,9 +240,9 @@ export function getFunctionParams(func: Function): string[] {
     result.forEach(element => {
 
         // Removing any default value
-        element = element.replace(/=[\s\S]*/g, '').trim();
+        element = element.replace(/=[\s\S]*/g, "").trim();
 
-        if(element.length > 0)
+        if (element.length > 0)
             params.push(element);
     });
 
@@ -226,7 +250,7 @@ export function getFunctionParams(func: Function): string[] {
 }
 
 export function proxyFunction(name: string): Function {
-    return function() {
+    return function () {
         const args = Array.from(arguments);
         args.unshift(this);
         return (this.helper[name] as Function).apply(this.helper, args);

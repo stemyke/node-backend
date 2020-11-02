@@ -107,9 +107,14 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     });
 }
 
-export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], page: number, limit: number): Promise<IPaginationBase<T>> {
+export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], page: number, limit: number, sort: string = null): Promise<IPaginationBase<T>> {
+    const sortField = !isString(sort) || !sort ? null : (sort.startsWith("-") ? sort.substr(1) : sort);
+    const sortAggregation = !sortField ? [] : [{
+        $sort: {[sortField]: sortField == sort ? 1 : -1}
+    }];
     const result = await model.aggregate([
         ...aggregations,
+        ...sortAggregation,
         {
             $group: {
                 _id: "results",

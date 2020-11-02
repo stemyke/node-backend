@@ -33,7 +33,7 @@ export class Assets {
             return Promise.reject(`Content type should be provided!`);
         }
         metadata = metadata || {};
-        metadata.downloadCount = metadata.downloadCount || 0;
+        metadata.downloadCount = 0;
         metadata.lastDownload = null;
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         return new Promise<IAsset>(((resolve, reject) => {
@@ -68,8 +68,11 @@ export class Assets {
         if (!asset) return null;
         asset.id = asset._id.toHexString();
         asset.stream = this.asset.read({_id: asset._id});
-        asset.metadata.downloadCount++;
+        asset.metadata.downloadCount = isNaN(asset.metadata.downloadCount) || !asset.metadata.lastDownload
+            ? 1
+            : asset.metadata.downloadCount + 1;
         asset.metadata.lastDownload = new Date();
+        asset.markModified("metadata");
         await asset.save();
         return asset;
     }

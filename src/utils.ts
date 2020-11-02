@@ -126,6 +126,9 @@ export async function paginateAggregations<T extends Document>(model: Model<T>, 
         }
     ]);
     const pagination = result[0] as IPaginationBase<T>;
+    if (!pagination) {
+        return {items: [], count: 0, meta: {total: 0}};
+    }
     pagination.items = pagination.items.map(i => model.hydrate(i));
     return pagination;
 }

@@ -1,7 +1,7 @@
 import {createSchema, ExtractDoc, ExtractProps, Type, typedModel} from "ts-mongoose";
 import {Readable} from "stream";
 import sharp_ from "sharp";
-import {bufferToStream, streamToBuffer} from "../utils";
+import {bufferToStream, createTransformer, streamToBuffer} from "../utils";
 
 const sharp = sharp_;
 
@@ -17,6 +17,9 @@ const AssetSchema = createSchema(
     },
     {
         timestamps: false,
+        toJSON: {
+            transform: createTransformer()
+        }
     }
 );
 

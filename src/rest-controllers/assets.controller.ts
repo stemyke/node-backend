@@ -11,13 +11,13 @@ export class AssetsController {
 
     }
 
-    @Authorized("admin")
+    @Authorized()
     @Post("")
     upload(@UploadedFile("file") file: Express.Multer.File) {
         return new Promise<any>((resolve, reject) => {
             this.assets.writeBuffer(file.buffer, {filename: file.filename}, file.mimetype)
-                .then(id => {
-                    resolve({_id: id, id});
+                .then(asset => {
+                    resolve(asset.toJSON());
                 })
                 .catch(reason => {
                     reject({httpCode: 400, message: reason});

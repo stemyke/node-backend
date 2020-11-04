@@ -53,8 +53,11 @@ export class Assets {
         } catch (e) {
             console.log(`Can't determine content type`, e);
         }
-        if (contentType == "image/jpeg" || contentType == "image/jpg") {
-            buffer = await sharp(buffer).rotate().toBuffer();
+        if (contentType == "image/jpeg" || contentType == "image/jpg" || contentType == "image/png") {
+            const output = await sharp(buffer).rotate().toBuffer({resolveWithObject: true});
+            buffer = output.data;
+            metadata = metadata || {};
+            Object.assign(metadata, output.info);
         }
         return this.write(bufferToStream(buffer), contentType, metadata);
     }

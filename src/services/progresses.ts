@@ -16,14 +16,12 @@ export class Progresses {
         let isFinished = false;
         let progress: IProgress = null;
         while (!isFinished) {
+            await promiseTimeout(300);
             progress = await this.get(id);
             if (!progress) {
                 throw `Progress does not exists with id: ${id}`;
             }
             isFinished = progress.percent == 100;
-            if (!isFinished) {
-                await promiseTimeout(300);
-            }
         }
         return progress;
     }

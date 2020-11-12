@@ -145,6 +145,8 @@ export {GalleryController} from "./rest-controllers/gallery.controller";
 export {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
 export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
+export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
+
 const express = express_;
 const socketIO = socket_io;
 const CachemanMongo = cacheman_mongo;

@@ -1,13 +1,24 @@
 import {Injectable} from "injection-js";
-import {Authorized, Controller, Get, HttpError, Param, Post, QueryParams, UploadedFile} from "routing-controllers";
+import {
+    Authorized,
+    Controller,
+    Get,
+    HttpError,
+    Param,
+    Post,
+    QueryParam,
+    QueryParams,
+    UploadedFile
+} from "routing-controllers";
+import {IAssetImageParams} from "../common-types";
 import {Assets} from "../services/assets";
-import {IAssetImageParams} from "../models/asset";
+import {AssetResolver} from "../services/asset-resolver";
 
 @Injectable()
 @Controller("/assets")
 export class AssetsController {
 
-    constructor(readonly assets: Assets) {
+    constructor(readonly assets: Assets, readonly assetResolver: AssetResolver) {
 
     }
 
@@ -27,7 +38,7 @@ export class AssetsController {
 
     @Get("/image/:id/:rotation")
     async getImageRotation(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Param("rotation") rotation: number = 0) {
-        const asset = await this.assets.read(id);
+        const asset = await this.assetResolver.resolve(id, params.lazy);
         if (!asset) {
             return new HttpError(404, `Image with id: '${id}' not found.`);
         }
@@ -44,8 +55,8 @@ export class AssetsController {
     }
 
     @Get("/:id")
-    async getFile(@Param("id") id: string) {
-        const asset = await this.assets.read(id);
+    async getFile(@Param("id") id: string, @QueryParam("lazy") lazy: boolean) {
+        const asset = await this.assetResolver.resolve(id, lazy);
         if (!asset) {
             return new HttpError(404, `File with id: '${id}' not found.`);
         }

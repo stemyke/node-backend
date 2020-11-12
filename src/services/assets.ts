@@ -5,21 +5,17 @@ import {ObjectId} from "bson";
 import {connection, FilterQuery} from "mongoose";
 import {createModel} from "mongoose-gridfs";
 import sharp_ from "sharp";
-import {Asset, AssetDoc, IAsset, IAssetMeta} from "../models/asset";
+
 import {bufferToStream} from "../utils";
+import {IAsset, IAssetConnection, IAssetMeta} from "../common-types";
+import {Asset, AssetDoc} from "../models/asset";
 
 const sharp = sharp_;
-
-interface IConnection {
-    write: (opts: any, stream: Readable, cb: Function) => void;
-    unlink: (opts: any, cb: Function) => void;
-    read: (opts: any) => Readable;
-}
 
 @Injectable()
 export class Assets {
 
-    private asset: IConnection;
+    private asset: IAssetConnection;
 
     constructor() {
         this.asset = createModel({
@@ -71,10 +67,11 @@ export class Assets {
         if (!asset) return null;
         asset.id = asset._id.toHexString();
         asset.stream = this.asset.read({_id: asset._id});
-        asset.metadata.downloadCount = isNaN(asset.metadata.downloadCount) || !asset.metadata.lastDownload
+        const metadata = asset.metadata as IAssetMeta;
+        metadata.downloadCount = isNaN(metadata.downloadCount) || !metadata.lastDownload
             ? 1
-            : asset.metadata.downloadCount + 1;
-        asset.metadata.lastDownload = new Date();
+            : metadata.downloadCount + 1;
+        metadata.lastDownload = new Date();
         asset.markModified("metadata");
         await asset.save();
         return asset;

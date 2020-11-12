@@ -12,9 +12,10 @@ export class JobManager {
     protected queue: Queue;
     protected worker: Worker;
     protected scheduler: Scheduler;
+    protected jobTypes: Type<IJob>[];
 
     constructor(readonly config: Configuration, readonly injector: Injector, @Optional() @Inject(JOB) jobTypes: Type<IJob>[]) {
-        jobTypes = jobTypes || [];
+        this.jobTypes = jobTypes || [];
         const options = {password: config.resolve("redisPassword")};
         const connection = {
             pkg: "ioredis",
@@ -55,6 +56,11 @@ export class JobManager {
             console.log(`error ${queue} ${JSON.stringify(job)}  >> ${error}`);
         });
         this.scheduler = new Scheduler({connection}, this.jobs);
+    }
+
+    async enqueueWithName(name: string, params: JobParams = {}, que: string = "main"): Promise<any> {
+        const jobName = await this.tryResolveFromName(name, params);
+        await this.queue.enqueue(que, jobName, [params]);
     }
 
     async enqueue(jobType: Type<IJob>, params: JobParams = {}, que: string = "main"): Promise<any> {
@@ -102,7 +108,7 @@ export class JobManager {
         await this.scheduler.start();
     }
 
-    protected async tryResolveAndConnect(jobType: Type<IJob>, params: JobParams): Promise<string> {
+    tryResolve(jobType: Type<IJob>, params: JobParams): string {
         const jobName = this.getConstructorName(jobType);
         if (!this.jobs[jobName]) {
             throw `Can't find job with name: ${jobName} so it can't be enqueued!`;
@@ -112,6 +118,21 @@ export class JobManager {
         } catch (e) {
             throw `Can't resolve params for job: ${jobName}, with params: ${JSON.stringify(params)}. Reason: ${e}`;
         }
+        return jobName;
+    }
+
+    protected tryResolveFromName(jobName: string, params: JobParams): Promise<string> {
+        const jobType = this.jobTypes.find(type => {
+            return this.getConstructorName(type) == jobName;
+        });
+        if (!jobType) {
+            throw `Can't find job type with name: ${jobName} so it can't be enqueued!`;
+        }
+        return this.tryResolveAndConnect(jobType, params);
+    }
+
+    protected async tryResolveAndConnect(jobType: Type<IJob>, params: JobParams): Promise<string> {
+        const jobName = this.tryResolve(jobType, params);
         await this.queue.connect();
         return jobName;
     }

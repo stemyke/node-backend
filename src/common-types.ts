@@ -6,6 +6,7 @@ import {SocketControllersOptions} from "socket-controllers";
 import {InjectionToken, Injector, Type} from "injection-js";
 import {SchemaObject} from "openapi3-ts";
 import Buffer from "buffer";
+import {Readable} from "stream";
 
 export interface IFixture {
     load(): Promise<any>;
@@ -63,6 +64,51 @@ export interface IProgress {
     setError(error: string): Promise<any>;
     advance(value?: number): Promise<any>;
     save(): Promise<any>;
+    toJSON(): any;
+}
+
+export interface IAssetConnection {
+    write: (opts: any, stream: Readable, cb: Function) => void;
+    unlink: (opts: any, cb: Function) => void;
+    read: (opts: any) => Readable;
+}
+
+export interface IAssetMeta {
+    filename?: string;
+    classified?: boolean;
+    downloadCount?: number;
+    lastDownload?: Date;
+    [prop: string]: any;
+}
+
+export interface IAssetImageParams {
+    rotation?: number;
+    canvasScaleX?: number;
+    canvasScaleY?: number;
+    scaleX?: number;
+    scaleY?: number;
+    lazy?: boolean;
+}
+
+export interface IAsset {
+    id?: string;
+    filename?: string;
+    contentType?: string;
+    metadata?: IAssetMeta;
+    stream: Readable,
+    getImage(params?: IAssetImageParams): Promise<Readable>;
+    toJSON(): any;
+}
+
+export interface ILazyAsset {
+    id: string;
+    jobName: string;
+    jobParams: any;
+    jobQue: string;
+    progressId?: string;
+    assetId?: string;
+    loadAsset(): Promise<IAsset>;
+    writeAsset(asset: IAsset): Promise<IAsset>;
     toJSON(): any;
 }
 

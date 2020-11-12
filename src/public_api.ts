@@ -14,6 +14,8 @@ import {getApiDocs} from "./rest-openapi";
 
 import {EXPRESS, FIXTURE, JOB, HTTP_SERVER, IBackendConfig, IRequest, IUser, Parameter, SOCKET_SERVER} from "./common-types";
 
+import {AssetHelper} from "./services/asset-helper";
+import {AssetResolver} from "./services/asset-resolver";
 import {Assets} from "./services/assets";
 import {Cache} from "./services/cache";
 import {Configuration} from "./services/configuration";
@@ -22,6 +24,8 @@ import {Gallery} from "./services/gallery";
 import {GalleryCache} from "./services/gallery-cache";
 import {IdGenerator} from "./services/id-generator";
 import {JobManager} from "./services/job-manager";
+import {LazyAssetHelper} from "./services/lazy-asset-helper";
+import {LazyAssets} from "./services/lazy-assets";
 import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
 import {ProgressHelper} from "./services/progress-helper";
@@ -95,9 +99,14 @@ export {
     Parameter,
     IJob,
     IJobTask,
+    JobParams,
     JobScheduleRange,
     JobScheduleTime,
-    JobParams,
+    IProgress,
+    IAssetMeta,
+    IAssetImageParams,
+    IAsset,
+    ILazyAsset,
     IUser,
     IClientSocket,
     IRequestBase,
@@ -112,8 +121,7 @@ export {
     IBackendConfig
 } from "./common-types";
 
-export {IAsset, IAssetImageParams} from "./models/asset";
-
+export {AssetResolver} from "./services/asset-resolver";
 export {Assets} from "./services/assets";
 export {Cache} from "./services/cache";
 export {Configuration} from "./services/configuration";
@@ -122,6 +130,7 @@ export {Gallery} from "./services/gallery";
 export {GalleryCache} from "./services/gallery-cache";
 export {IdGenerator} from "./services/id-generator";
 export {JobManager} from "./services/job-manager";
+export {LazyAssets} from "./services/lazy-assets";
 export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
 export {Progresses} from "./services/progresses";
@@ -201,6 +210,8 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Create injector
     const services = [
+        AssetHelper,
+        AssetResolver,
         Assets,
         Cache,
         Configuration,
@@ -210,6 +221,8 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         Logger,
         IdGenerator,
         JobManager,
+        LazyAssetHelper,
+        LazyAssets,
         MailSender,
         ProgressHelper,
         Progresses,

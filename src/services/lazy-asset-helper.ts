@@ -14,7 +14,7 @@ export class LazyAssetHelper {
 
     async loadAsset(lazyAsset: LazyAssetDoc): Promise<IAsset> {
         if (lazyAsset.assetId) {
-            return this.assets.read(lazyAsset.id);
+            return this.assets.read(lazyAsset.assetId as string);
         }
         if (lazyAsset.progressId) {
             await this.progresses.waitToFinish(lazyAsset.progressId as string);

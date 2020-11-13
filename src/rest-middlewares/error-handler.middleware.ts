@@ -21,7 +21,7 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
     async error(error: any, req: IRequest, res: Response, next: (err?: any) => any) {
         const result = await this.getResult(error, req, res);
         if (this.isDev) {
-            console.log(result);
+            console.log("ERROR", result, res.statusCode);
         }
         res.json(result);
     }
@@ -46,8 +46,6 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
         }
 
         res.status(error.httpCode || 500);
-
-        console.log(error);
 
         if (error instanceof Error) {
             if (error.name) {

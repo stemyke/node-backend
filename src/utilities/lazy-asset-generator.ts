@@ -1,4 +1,4 @@
-import {IJob, ILazyAsset, IProgress} from "../common-types";
+import {IAsset, IJob, ILazyAsset, IProgress} from "../common-types";
 import {Assets} from "../services/assets";
 import {LazyAssets} from "../services/lazy-assets";
 import {AssetResolver} from "../services/asset-resolver";
@@ -17,11 +17,20 @@ export abstract class LazyAssetGenerator implements IJob {
     protected constructor(protected assetResolver: AssetResolver, protected progresses: Progresses, protected lazyId: string) {
     }
 
-    abstract generate(lazyAsset: ILazyAsset, progress: IProgress): Promise<any>;
+    abstract generate(progress: IProgress): Promise<IAsset>;
 
     async process(): Promise<any> {
         const lazyAsset = await this.lazyAssets.read(this.lazyId);
         const progress = await this.progresses.get(lazyAsset.progressId);
-        await this.generate(lazyAsset, progress);
+        try {
+            const asset = await this.generate(progress);
+            await lazyAsset.writeAsset(asset);
+        } catch (e) {
+            await progress.setError(e.message || e);
+            throw e;
+        }
+        if (progress.remaining > 0) {
+            await progress.advance(progress.remaining);
+        }
     }
 }

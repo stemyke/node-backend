@@ -1,3 +1,4 @@
+import {Server} from "socket.io";
 import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
 import {basename, dirname} from "path";
 import {Document, DocumentQuery, FilterQuery, Model, Schema} from "mongoose";
@@ -5,8 +6,7 @@ import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
 import {ObjectId} from "bson";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
-import {IClientSocket, IPaginationBase, IProgress, IRequest} from "./common-types";
-import {Server} from "socket.io";
+import {IClientSocket, IPaginationBase, IRequest} from "./common-types";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -40,6 +40,11 @@ export function isFunction(value: any): value is Function {
 export function ucFirst(value: string): string {
     if (!value) return "";
     return value[0].toUpperCase() + value.substr(1);
+}
+
+export function lcFirst(value: string): string {
+    if (!value) return "";
+    return value[0].toLowerCase() + value.substr(1);
 }
 
 export function getValue(obj: any, key: string, defaultValue?: any, treeFallback: boolean = false): any {
@@ -225,6 +230,10 @@ export function promiseTimeout(timeout: number = 1000): Promise<any> {
     });
 }
 
+export function getConstructorName(type: Type<any>): string {
+    return type.prototype.constructor.name;
+}
+
 export function getFunctionParams(func: Function): string[] {
     // Remove comments of the form /* ... */
     // Removing comments of the form //
@@ -266,9 +275,10 @@ export function proxyFunction(name: string): Function {
 }
 
 export function proxyFunctions(schema: Schema, helper: Type<any>, paramName: string = null): void {
-    paramName = paramName || helper.prototype.constructor.name.toLowerCase().replace("helper", "");
-    Object.getOwnPropertyNames(helper.prototype).forEach(name => {
-        const func = helper.prototype[name];
+    paramName = paramName || lcFirst(getConstructorName(helper)).replace(/helper$/gi, "");
+    const descriptors = Object.getOwnPropertyDescriptors(helper.prototype);
+    Object.keys(descriptors).forEach(name => {
+        const func = descriptors[name].value;
         if (isFunction(func) && name !== "constructor") {
             const paramNames = getFunctionParams(func);
             if (paramNames[0] == paramName) {

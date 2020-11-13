@@ -59,6 +59,7 @@ export interface IProgress {
     error?: any;
     percent?: number;
     current: number;
+    remaining: number;
     createSubProgress(progressValue: number, max?: number, message?: string): Promise<IProgress>;
     setMax(max: number): Promise<any>;
     setError(error: string): Promise<any>;

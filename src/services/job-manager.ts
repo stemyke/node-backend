@@ -2,8 +2,8 @@ import {Inject, Injectable, Injector, Optional, ReflectiveInjector, Type} from "
 import {Queue, Scheduler, Worker} from "node-resque";
 import {schedule, validate} from "node-cron";
 import {IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime} from "../common-types";
+import {getConstructorName, isArray, isObject} from "../utils";
 import {Configuration} from "./configuration";
-import {isArray, isObject} from "../utils";
 
 @Injectable()
 export class JobManager {
@@ -27,7 +27,7 @@ export class JobManager {
         };
         const queues = config.resolve("workQueues");
         this.jobs = jobTypes.reduce((res, jobType) => {
-            res[this.getConstructorName(jobType)] = {
+            res[getConstructorName(jobType)] = {
                 perform: this.toPerformFunction(jobType)
             };
             return res;
@@ -89,7 +89,7 @@ export class JobManager {
             }
             return `${t}`;
         }).join(" ");
-        const jobName = this.getConstructorName(jobType);
+        const jobName = getConstructorName(jobType);
         if (!validate(expression)) {
             console.log(`Can't schedule the task: '${jobName}' because time expression is invalid.`);
             return null;
@@ -109,7 +109,7 @@ export class JobManager {
     }
 
     tryResolve(jobType: Type<IJob>, params: JobParams): string {
-        const jobName = this.getConstructorName(jobType);
+        const jobName = getConstructorName(jobType);
         if (!this.jobs[jobName]) {
             throw `Can't find job with name: ${jobName} so it can't be enqueued!`;
         }
@@ -123,7 +123,8 @@ export class JobManager {
 
     protected tryResolveFromName(jobName: string, params: JobParams): Promise<string> {
         const jobType = this.jobTypes.find(type => {
-            return this.getConstructorName(type) == jobName;
+            console.log(getConstructorName(type), jobName);
+            return getConstructorName(type) == jobName;
         });
         if (!jobType) {
             throw `Can't find job type with name: ${jobName} so it can't be enqueued!`;
@@ -146,10 +147,6 @@ export class JobManager {
         });
         const injector = ReflectiveInjector.resolveAndCreate([...paramProviders, jobType], this.injector);
         return injector.get(jobType) as IJob;
-    }
-
-    protected getConstructorName(jobType: Type<IJob>): string {
-        return jobType.prototype.constructor.name;
     }
 
     protected toPerformFunction(jobType: Type<IJob>): Function {

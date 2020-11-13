@@ -19,10 +19,11 @@ export class LazyAssets {
     }
 
     async create(jobType: Type<IJob>, jobParams: JobParams = {}, jobQue: string = "main"): Promise<ILazyAsset> {
-        const lazyAsset = new LazyAsset();
-        lazyAsset.jobName = this.jobMan.tryResolve(jobType, {...jobParams, lazyId: ""});
-        lazyAsset.jobParams = jobParams;
-        lazyAsset.jobQue = jobQue;
+        const lazyAsset = new LazyAsset({
+            jobName: this.jobMan.tryResolve(jobType, {...jobParams, lazyId: ""}),
+            jobParams,
+            jobQue
+        });
         await lazyAsset.save();
         return lazyAsset as ILazyAsset;
     }

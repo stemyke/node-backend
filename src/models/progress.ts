@@ -26,6 +26,10 @@ ProgressSchema
     .virtual("percent")
     .get(proxyFunction("getPercent"))
 
+ProgressSchema
+    .virtual("remaining")
+    .get(proxyFunction("getRemaining"))
+
 proxyFunctions(ProgressSchema, ProgressHelper);
 
 export const Progress = typedModel('Progress', ProgressSchema);

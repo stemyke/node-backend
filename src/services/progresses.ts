@@ -21,6 +21,9 @@ export class Progresses {
             if (!progress) {
                 throw `Progress does not exists with id: ${id}`;
             }
+            if (progress.error) {
+                throw progress.error;
+            }
             isFinished = progress.percent == 100;
         }
         return progress;

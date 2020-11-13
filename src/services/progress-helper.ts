@@ -20,6 +20,10 @@ export class ProgressHelper {
         return progress.max > 0 ? Math.round(progress.current / progress.max * 100) : 0;
     }
 
+    getRemaining(progress: ProgressDoc): number {
+        return progress.max > 0 ? progress.max - progress.current : 0;
+    }
+
     async createSubProgress(progress: ProgressDoc, progressValue: number, max?: number, message?: string): Promise<IProgress> {
         if (max <= 0 && progressValue > 0) {
             await progress.advance(progressValue);
@@ -83,6 +87,10 @@ export class SubProgress implements IProgress {
 
     get current(): number {
         return this.currentValue;
+    }
+
+    get remaining(): number {
+        return this.max - this.currentValue;
     }
 
     private currentValue: number;

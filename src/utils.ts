@@ -5,6 +5,8 @@ import {Document, DocumentQuery, FilterQuery, Model, Schema} from "mongoose";
 import {Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
 import {ObjectId} from "bson";
+import {from, Observable, Subject, Subscription} from "rxjs";
+import {canReportError} from "rxjs/internal/util/canReportError";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
 import {IClientSocket, IPaginationBase, IRequest} from "./common-types";
 
@@ -350,7 +352,6 @@ export function createTransformer(transform?: (doc: Document, ret: any, options?
             ret._id = idToString(doc._id);
             ret.id = ret.id || ret._id;
         }
-        delete ret._v;
         delete ret.__v;
         return isFunction(transform) ? transform(doc, ret, options) || ret : ret;
     };
@@ -366,4 +367,31 @@ export function rand(min: number, max: number): number {
 
 export function random(min: number, max: number): number {
     return min + Math.random() * (max - min);
+}
+
+export function multiSubscription(...subscriptions: Subscription[]): Subscription {
+    return new Subscription(() => {
+        subscriptions.forEach(s => {
+            s.unsubscribe();
+        });
+    });
+}
+
+export function observableFromFunction(callbackFunc: () => any): Observable<any> {
+    let subject: any;
+    return new Observable<any>((subscriber) => {
+        if (!subject) {
+            subject = new Subject();
+            try {
+                subject = from(callbackFunc());
+            } catch (err) {
+                if (canReportError(subject)) {
+                    subject.error(err);
+                } else {
+                    console.warn(err);
+                }
+            }
+        }
+        return subject.subscribe(subscriber);
+    });
 }

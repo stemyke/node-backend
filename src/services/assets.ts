@@ -37,8 +37,7 @@ export class Assets {
                 if (error) {
                     return reject(error.message || error);
                 }
-                file.id = file._id.toHexString();
-                resolve(file);
+                this.read(file._id.toHexString()).then(resolve);
             });
         }));
     }

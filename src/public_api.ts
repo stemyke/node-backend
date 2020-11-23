@@ -86,6 +86,8 @@ export {
     broadcast,
     rand,
     random,
+    multiSubscription,
+    observableFromFunction
 } from "./utils";
 
 export {IsFile} from "./validators";

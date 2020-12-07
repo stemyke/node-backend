@@ -318,6 +318,14 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     configuration.add(new Parameter("redisPort", 6379));
     configuration.add(new Parameter("redisPassword", "123456"));
     configuration.add(new Parameter("redisNamespace", "resque"));
+    configuration.add(new Parameter("redisCluster", "mymaster"));
+    configuration.add(new Parameter("redisSentinels", null, value => {
+        if (!value) return null;
+        return value.split(", ").map(item => {
+            const values = item.split(":");
+            return {host: values[0], port: Number(values[1])};
+        });
+    }));
     configuration.add(new Parameter("workQueues", ["main"]));
     configuration.add(new Parameter("isWorker", false));
     configuration.add(new Parameter("mainEndpoint", ""));

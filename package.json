@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -43,6 +43,7 @@
         "image-size": "^0.9.1",
         "file-type": "^15.0.1",
         "cacheman-mongodb": "^0.2.0",
+        "ioredis": "^4.19.2",
         "node-resque": "^7.0.6",
         "node-cron": "^2.0.3"
     },
@@ -80,6 +81,7 @@
         "image-size": "0.9.1",
         "file-type": "15.0.1",
         "cacheman-mongodb": "0.2.0",
+        "ioredis": "4.19.2",
         "node-resque": "7.0.6",
         "node-cron": "2.0.3",
         "@types/socket.io": "2.1.11",
@@ -94,6 +96,7 @@
         "@types/rimraf": "3.0.0",
         "@types/mongoose": "5.7.36",
         "@types/node-cron": "2.0.3",
+        "@types/ioredis": "4.17.8",
         "ng-packagr": "10.0.3",
         "cpy": "8.1.0",
         "cli-progress": "3.3.1",

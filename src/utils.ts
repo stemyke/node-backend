@@ -86,7 +86,11 @@ export function convertValue(value: any, type: string): any {
             const val = parseFloat(value);
             return isNaN(val) ? 0 : val;
         case "array":
-            return `${value}`.split(", ");
+            try {
+                return JSON.parse(value);
+            } catch (e) {
+                return `${value}`.split(", ");
+            }
     }
     return value;
 }

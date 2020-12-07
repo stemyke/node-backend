@@ -28,7 +28,7 @@ export const HTTP_SERVER = new InjectionToken<Server>("http-server");
 export const SOCKET_SERVER = new InjectionToken<SocketServer>("socket-server");
 
 export class Parameter {
-    constructor(readonly name: string, readonly defaultValue: any, readonly resolver: (value) => any = null) {
+    constructor(readonly name: string, readonly defaultValue: any, readonly resolver: (value: string) => any = null) {
 
     }
 }

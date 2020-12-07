@@ -1,9 +1,12 @@
 import {Inject, Injectable, Injector, Optional, ReflectiveInjector, Type} from "injection-js";
 import {Queue, Scheduler, Worker} from "node-resque";
 import {schedule, validate} from "node-cron";
+import ioredis from "ioredis";
 import {IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime} from "../common-types";
 import {getConstructorName, isArray, isObject} from "../utils";
 import {Configuration} from "./configuration";
+
+const IORedis = ioredis;
 
 @Injectable()
 export class JobManager {
@@ -17,12 +20,20 @@ export class JobManager {
     constructor(readonly config: Configuration, readonly injector: Injector, @Optional() @Inject(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         const options = {password: config.resolve("redisPassword")};
+        const sentinels: Array<{host: string, port: number}> = config.resolve("redisSentinels");
+        const redis = !sentinels
+            ? null
+            : new IORedis({
+                sentinels,
+                name: config.resolve("redisCluster"),
+            });
         const connection = {
             pkg: "ioredis",
             host: config.resolve("redisHost"),
             password: options.password,
             port: config.resolve("redisPort"),
             namespace: config.resolve("redisNamespace"),
+            redis,
             options
         };
         const queues = config.resolve("workQueues");

@@ -90,7 +90,7 @@ export {
     observableFromFunction
 } from "./utils";
 
-export {IsFile} from "./validators";
+export {IsFile, IsObjectId} from "./validators";
 
 export {
     IFixture,

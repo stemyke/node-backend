@@ -6,7 +6,7 @@ import {ValidationTypes} from "class-validator"
 import {validationMetadatasToSchemas} from "class-validator-jsonschema"
 import {SchemaConverter} from "./common-types";
 import {isFunction} from "./utils";
-import {IsFile} from "./validators";
+import {IsFile, IsObjectId} from "./validators";
 
 let apiDocs: string = null;
 
@@ -28,6 +28,14 @@ export function getApiDocs(customValidation: SchemaConverter | SchemaObject): st
                         type: "file"
                     }
                 }
+                if (meta.constraintCls === IsObjectId) {
+                    return {
+                        endpoint: constraints[0] || false,
+                        multi: constraints[1] || false,
+                        type: "list"
+                    }
+                }
+                return null;
             }
         }
     });

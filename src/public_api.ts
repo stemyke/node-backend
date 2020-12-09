@@ -12,7 +12,18 @@ import {useContainer as useSocketContainer, useSocketServer} from "socket-contro
 
 import {getApiDocs} from "./rest-openapi";
 
-import {EXPRESS, FIXTURE, JOB, HTTP_SERVER, IBackendConfig, IRequest, IUser, Parameter, SOCKET_SERVER} from "./common-types";
+import {
+    EXPRESS,
+    FIXTURE,
+    JOB,
+    HTTP_SERVER,
+    IBackendConfig,
+    IRequest,
+    IUser,
+    Parameter,
+    SOCKET_SERVER,
+    IPaginationParams
+} from "./common-types";
 
 import {AssetHelper} from "./services/asset-helper";
 import {AssetResolver} from "./services/asset-resolver";
@@ -122,6 +133,7 @@ export {
     IPaginationMeta,
     IPaginationBase,
     IPagination,
+    IPaginationParams,
     IBackendConfig
 } from "./common-types";
 

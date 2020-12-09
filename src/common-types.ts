@@ -173,6 +173,14 @@ export interface IPagination extends IPaginationBase<any> {
 
 }
 
+export interface IPaginationParams {
+    page: number;
+    limit: number;
+    sort?: string;
+    populate?: string[];
+    [key: string]: any;
+}
+
 export interface IBackendConfig {
     params?: Parameter[],
     fixtures?: Type<IFixture>[],

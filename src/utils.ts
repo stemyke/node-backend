@@ -2,13 +2,14 @@ import {Server} from "socket.io";
 import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
 import {basename, dirname} from "path";
 import {Document, DocumentQuery, FilterQuery, Model, Schema} from "mongoose";
-import {Injector, Type} from "injection-js";
+import {Injector, Provider, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
 import {ObjectId} from "bson";
 import {from, Observable, Subject, Subscription} from "rxjs";
 import {canReportError} from "rxjs/internal/util/canReportError";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
-import {IClientSocket, IPaginationBase, IRequest} from "./common-types";
+import {IClientSocket, IPaginationBase, IPaginationParams, IRequest} from "./common-types";
+import {InjectionToken} from "injection-js/injection_token";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -95,7 +96,7 @@ export function convertValue(value: any, type: string): any {
     return value;
 }
 
-export function injectServices(schema: Schema<any>, services: { [prop: string]: any }) {
+export function injectServices(schema: Schema<any>, services: { [prop: string]: Type<any> | InjectionToken<any> }) {
     const serviceMap: { [prop: string]: any } = {};
     Object.keys(services).forEach(prop => {
         schema
@@ -108,20 +109,28 @@ export function injectServices(schema: Schema<any>, services: { [prop: string]: 
     });
 }
 
-export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, page: number, limit: number, sort: string = null): Promise<IPaginationBase<T>> {
+export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, params: IPaginationParams): Promise<IPaginationBase<T>> {
     return model.countDocuments(where).then(count => {
-        let query = model.find(where).sort(sort);
-        return (limit > 0 ? query.skip(page * limit).limit(limit) : query).then(items => {
+        let query = model.find(where);
+        if (isString(params.sort)) {
+            query = query.sort(params.sort);
+        }
+        if (isArray(params.populate)) {
+            params.populate.forEach(field => {
+                query = query.populate(field);
+            });
+        }
+        return (params.limit > 0 ? query.skip(params.page * params.limit).limit(params.limit) : query).then(items => {
             const meta = {total: count};
             return {count, items, meta};
         });
     });
 }
 
-export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], page: number, limit: number, sort: string = null): Promise<IPaginationBase<T>> {
-    const sortField = !isString(sort) || !sort ? null : (sort.startsWith("-") ? sort.substr(1) : sort);
+export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], params: IPaginationParams): Promise<IPaginationBase<T>> {
+    const sortField = !isString(params.sort) || !params.sort ? null : (params.sort.startsWith("-") ? params.sort.substr(1) : params.sort);
     const sortAggregation = !sortField ? [] : [{
-        $sort: {[sortField]: sortField == sort ? 1 : -1}
+        $sort: {[sortField]: sortField == params.sort ? 1 : -1}
     }];
     const result = await model.aggregate([
         ...aggregations,
@@ -135,7 +144,7 @@ export async function paginateAggregations<T extends Document>(model: Model<T>, 
         {
             $project: {
                 _id: 0,
-                items: limit > 0 ? {$slice: ["$result", page * limit, limit]} : "$result",
+                items: params.limit > 0 ? {$slice: ["$result", params.page * params.limit, params.limit]} : "$result",
                 count: {$size: "$result"},
                 "meta.total": {$size: "$result"},
             }

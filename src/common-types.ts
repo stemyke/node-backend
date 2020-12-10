@@ -181,6 +181,8 @@ export interface IPaginationParams {
     [key: string]: any;
 }
 
+export type FontFormat = "opentype" | "truetype" | "woff" | "woff2" | "datafork";
+
 export interface IBackendConfig {
     params?: Parameter[],
     fixtures?: Type<IFixture>[],

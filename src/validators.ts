@@ -24,7 +24,7 @@ function checkValue(multi: boolean, value: any): boolean {
 @ValidatorConstraint()
 export class IsFile implements ValidatorConstraintInterface {
     validate(value: any, validationArguments: ValidationArguments) {
-        const [multi] = validationArguments.constraints;
+        const [multi] = (validationArguments.constraints || []);
         return checkValue(multi, value);
     }
 }
@@ -32,7 +32,7 @@ export class IsFile implements ValidatorConstraintInterface {
 @ValidatorConstraint()
 export class IsObjectId implements ValidatorConstraintInterface {
     validate(value: any, validationArguments: ValidationArguments) {
-        const [_, multi] = validationArguments.constraints;
+        const [_, multi] = (validationArguments.constraints || []);
         return checkValue(multi, value);
     }
 }

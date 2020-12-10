@@ -4,16 +4,46 @@ import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {connection, FilterQuery} from "mongoose";
 import {createModel} from "mongoose-gridfs";
+import {Font} from "fontkit";
 import sharp_ from "sharp";
+import fontkit_ from "fontkit";
 
 import {bufferToStream} from "../utils";
-import {IAsset, IAssetConnection, IAssetMeta} from "../common-types";
+import {FontFormat, IAsset, IAssetConnection, IAssetMeta} from "../common-types";
 import {Asset, AssetDoc} from "../models/asset";
 
 const sharp = sharp_;
+const fontKit = fontkit_;
+const imageTypes = ["image/jpeg", "image/jpg", "image/png"];
+const fontTypes = [
+    "application/font-woff", "application/font-woff2", "application/x-font-opentype", "application/x-font-truetype", "application/x-font-datafork",
+    "font/woff", "font/woff2", "font/otf", "font/ttf", "font/datafork"
+];
+const fontProps = [
+    "postscriptName", "fullName", "familyName", "subfamilyName",
+    "copyright", "version", "unitsPerEm", "ascent", "descent", "lineGap",
+    "underlinePosition", "underlineThickness", "italicAngle", "capHeight",
+    "xHeight", "numGlyphs", "characterSet", "availableFeatures"
+];
 
 @Injectable()
 export class Assets {
+
+    static extractFontFormat(font: Font): FontFormat {
+        const name: string = font.constructor.name;
+        const tag: string  = font["directory"].tag;
+        switch (name) {
+            case "TTFFont":
+                return tag === "OTTO" ? "opentype" : "truetype";
+            case "WOFF2Font":
+                return "woff2";
+            case "WOFFFont":
+                return "woff";
+            case "DFont":
+                return "datafork";
+        }
+        return null;
+    }
 
     private asset: IAssetConnection;
 
@@ -48,12 +78,21 @@ export class Assets {
         } catch (e) {
             console.log(`Can't determine content type`, e);
         }
-        if (contentType == "image/jpeg" || contentType == "image/jpg" || contentType == "image/png") {
+        if (imageTypes.indexOf(contentType) >= 0) {
             const output = await sharp(buffer).rotate().toBuffer({resolveWithObject: true});
             buffer = output.data;
             metadata = metadata || {};
             Object.assign(metadata, output.info);
         }
+        if (fontTypes.indexOf(contentType) >= 0) {
+            const font: Font = fontKit.create(buffer);
+            metadata = metadata || {};
+            metadata.format = Assets.extractFontFormat(font);
+            fontProps.forEach(prop => {
+                metadata[prop] = font[prop];
+            });
+        }
+
         return this.write(bufferToStream(buffer), contentType, metadata);
     }
 

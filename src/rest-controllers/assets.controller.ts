@@ -1,3 +1,4 @@
+import {Readable} from "stream";
 import {Injectable} from "injection-js";
 import {
     Authorized,
@@ -37,32 +38,32 @@ export class AssetsController {
     }
 
     @Get("/image/:id/:rotation")
-    async getImageRotation(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Param("rotation") rotation: number = 0) {
+    async getImageRotation(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Param("rotation") rotation: number = 0): Promise<Readable> {
         const asset = await this.assetResolver.resolve(id, params.lazy);
         if (!asset) {
-            return new HttpError(404, `Image with id: '${id}' not found.`);
+            throw new HttpError(404, `Image with id: '${id}' not found.`);
         }
         if (asset.metadata?.classified) {
-            return new HttpError(403, `Image is classified, and can be only downloaded from a custom url.`);
+            throw new HttpError(403, `Image is classified, and can be only downloaded from a custom url.`);
         }
         params.rotation = params.rotation || rotation;
-        return asset.getImage(params);
+        return asset.downloadImage(params);
     }
 
     @Get("/image/:id")
-    async getImage(@Param("id") id: string, @QueryParams() params: IAssetImageParams) {
+    async getImage(@Param("id") id: string, @QueryParams() params: IAssetImageParams): Promise<Readable> {
         return this.getImageRotation(id, params);
     }
 
     @Get("/:id")
-    async getFile(@Param("id") id: string, @QueryParam("lazy") lazy: boolean) {
+    async getFile(@Param("id") id: string, @QueryParam("lazy") lazy: boolean): Promise<Readable> {
         const asset = await this.assetResolver.resolve(id, lazy);
         if (!asset) {
-            return new HttpError(404, `File with id: '${id}' not found.`);
+            throw new HttpError(404, `File with id: '${id}' not found.`);
         }
         if (asset.metadata?.classified) {
-            return new HttpError(403, `Asset is classified, and can be only downloaded from a custom url.`);
+            throw new HttpError(403, `Asset is classified, and can be only downloaded from a custom url.`);
         }
-        return asset.stream;
+        return asset.download();
     }
 }

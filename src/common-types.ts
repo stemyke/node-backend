@@ -78,6 +78,7 @@ export interface IAssetMeta {
     filename?: string;
     classified?: boolean;
     downloadCount?: number;
+    firstDownload?: Date;
     lastDownload?: Date;
     [prop: string]: any;
 }
@@ -97,7 +98,11 @@ export interface IAsset {
     contentType?: string;
     metadata?: IAssetMeta;
     stream: Readable,
+    unlink(): Promise<any>;
+    getStream(): Readable;
+    download(metadata?: IAssetMeta): Promise<Readable>;
     getImage(params?: IAssetImageParams): Promise<Readable>;
+    downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable>;
     toJSON(): any;
 }
 

@@ -1,24 +1,76 @@
 import {Injectable} from "injection-js";
 import sharp_ from "sharp";
 import {Readable} from "stream";
-import {IAssetImageParams} from "../common-types";
+import {connection} from "mongoose";
+import {createModel} from "mongoose-gridfs";
+import fontkit_, {Font} from "fontkit";
+
+import {FontFormat, IAssetConnection, IAssetImageParams, IAssetMeta} from "../common-types";
 import {bufferToStream, streamToBuffer} from "../utils";
 import {AssetDoc} from "../models/asset";
 
 const sharp = sharp_;
+const fontKit = fontkit_;
+
+const fontTypes = [
+    "application/font-woff", "application/font-woff2", "application/x-font-opentype", "application/x-font-truetype", "application/x-font-datafork",
+    "font/woff", "font/woff2", "font/otf", "font/ttf", "font/datafork"
+];
+
+const imageTypes = ["image/jpeg", "image/jpg", "image/png"];
+
+const fontProps = [
+    "postscriptName", "fullName", "familyName", "subfamilyName",
+    "copyright", "version", "unitsPerEm", "ascent", "descent", "lineGap",
+    "underlinePosition", "underlineThickness", "italicAngle", "capHeight",
+    "xHeight", "numGlyphs", "characterSet", "availableFeatures"
+];
 
 @Injectable()
 export class AssetHelper {
 
-    constructor() {
-
+    static isImage(contentType: string): boolean {
+        return imageTypes.indexOf(contentType) >= 0;
     }
 
-    async getImage(asset: AssetDoc, params: IAssetImageParams = null): Promise<Readable> {
-        params = params || {};
+    static async copyImageMeta(buffer: Buffer, metadata: IAssetMeta): Promise<Buffer> {
+        const output = await sharp(buffer).rotate().toBuffer({resolveWithObject: true});
+        Object.assign(metadata, output.info);
+        return output.data;
+    }
 
-        if (Object.keys(params).length == 0) return asset.stream;
-        let buffer = await streamToBuffer(asset.stream);
+    static isFont(contentType: string): boolean {
+        return fontTypes.indexOf(contentType) >= 0;
+    }
+
+    static copyFontMeta(buffer: Buffer, metadata: IAssetMeta): void {
+        const font: Font = fontKit.create(buffer);
+        metadata.format = AssetHelper.extractFontFormat(font);
+        fontProps.forEach(prop => {
+            metadata[prop] = font[prop];
+        });
+    }
+
+    static extractFontFormat(font: Font): FontFormat {
+        const name: string = font.constructor.name;
+        const tag: string  = font["directory"].tag;
+        switch (name) {
+            case "TTFFont":
+                return tag === "OTTO" ? "opentype" : "truetype";
+            case "WOFF2Font":
+                return "woff2";
+            case "WOFFFont":
+                return "woff";
+            case "DFont":
+                return "datafork";
+        }
+        return null;
+    }
+
+    private static async toImage(stream: Readable, params?: IAssetImageParams): Promise<Readable> {
+        params = params || {};
+        if (Object.keys(params).length == 0) return stream;
+        let buffer = await streamToBuffer(stream);
 
         // Parse params
         params.rotation = isNaN(params.rotation) ? 0 : Math.round(params.rotation / 90) * 90;
@@ -57,5 +109,53 @@ export class AssetHelper {
         } catch (e) {
             return bufferToStream(buffer);
         }
+    }
+
+    readonly asset: IAssetConnection;
+
+    constructor() {
+        this.asset = createModel({
+            modelName: "Asset",
+            connection
+        });
+    }
+
+    async unlink(asset: AssetDoc): Promise<any> {
+        return new Promise<string>(((resolve, reject) => {
+            this.asset.unlink({_id: asset._id}, (error) => {
+                if (error) {
+                    error = error.message || error;
+                    if (error !== "not found") {
+                        reject(error.message || error);
+                        return;
+                    }
+                }
+                resolve();
+            });
+        }));
+    }
+
+    getStream(asset: AssetDoc): Readable {
+        return this.asset.read({_id: asset._id});
+    }
+
+    async download(asset: AssetDoc, metadata?: IAssetMeta): Promise<Readable> {
+        metadata = Object.assign(asset.metadata as IAssetMeta, metadata || {});
+        metadata.downloadCount = isNaN(metadata.downloadCount) || !metadata.firstDownload
+            ? 1
+            : metadata.downloadCount + 1;
+        metadata.firstDownload = metadata.firstDownload || new Date();
+        metadata.lastDownload = new Date();
+        asset.markModified("metadata");
+        await asset.save();
+        return asset.stream;
+    }
+
+    async getImage(asset: AssetDoc, params: IAssetImageParams = null): Promise<Readable> {
+        return AssetHelper.toImage(asset.stream, params);
+    }
+
+    async downloadImage(asset: AssetDoc, params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable> {
+        return AssetHelper.toImage(await this.download(asset, metadata), params);
     }
 }

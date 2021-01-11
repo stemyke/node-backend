@@ -1,5 +1,5 @@
 import {createSchema, ExtractDoc, Type, typedModel} from "ts-mongoose";
-import {createTransformer, proxyFunctions} from "../utils";
+import {createTransformer, proxyFunction, proxyFunctions} from "../utils";
 import {IAsset} from "../common-types";
 import {AssetHelper} from "../services/asset-helper";
 
@@ -17,6 +17,10 @@ const AssetSchema = createSchema(
         }
     }
 );
+
+AssetSchema
+    .virtual("stream")
+    .get(proxyFunction("getStream"))
 
 proxyFunctions(AssetSchema, AssetHelper);
 

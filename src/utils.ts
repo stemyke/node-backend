@@ -140,7 +140,8 @@ export function lookupPipelines(from: string, localField: string, as: string = n
         },
         {
             $unwind: {
-                path: `$${as}`
+                path: `$${as}`,
+                preserveNullAndEmptyArrays: true
             }
         }
     ];

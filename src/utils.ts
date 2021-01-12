@@ -1,15 +1,15 @@
+import {from, Observable, Subject, Subscription} from "rxjs";
+import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
 import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
 import {basename, dirname} from "path";
-import {Document, DocumentQuery, FilterQuery, Model, Schema} from "mongoose";
-import {Injector, Provider, Type} from "injection-js";
+import {Document, DocumentQuery, FilterQuery, Model, model, Schema, Types} from "mongoose";
+import {getValue as getMongoValue, setValue as setMongoValue} from "mongoose/lib/utils";
+import {InjectionToken, Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
 import {ObjectId} from "bson";
-import {from, Observable, Subject, Subscription} from "rxjs";
-import {canReportError} from "rxjs/internal/util/canReportError";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
 import {IClientSocket, IPaginationBase, IPaginationParams, IRequest} from "./common-types";
-import {InjectionToken} from "injection-js/injection_token";
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -147,6 +147,31 @@ export function lookupPipelines(from: string, localField: string, as: string = n
     return shouldUnwind ? pipelines : pipelines.slice(0, 0);
 }
 
+export function hydratePopulated<T extends Document>(modelType: Model<T>, json: any): T {
+    let object = modelType.hydrate(json);
+
+    for (const [path, obj] of Object.entries(modelType.schema.obj)) {
+        let { ref, type } = obj as any;
+        if (Array.isArray(type) && type.length > 0) {
+            ref = type[0].ref;
+        }
+        if (!ref) continue;
+        const value = getMongoValue(path, json);
+        const hydrateVal = val => {
+            if (val == null || val instanceof Types.ObjectId) return val;
+            return hydratePopulated(model(ref), val);
+        };
+        if (Array.isArray(value)) {
+            setMongoValue(path, value.map(hydrateVal), object);
+            continue;
+        }
+        setMongoValue(path, hydrateVal(value), object);
+    }
+
+    return object;
+
+}
+
 export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], params: IPaginationParams): Promise<IPaginationBase<T>> {
     const sortField = !isString(params.sort) || !params.sort ? null : (params.sort.startsWith("-") ? params.sort.substr(1) : params.sort);
     const sortAggregation = !sortField ? [] : [{
@@ -174,7 +199,7 @@ export async function paginateAggregations<T extends Document>(model: Model<T>, 
     if (!pagination) {
         return {items: [], count: 0, meta: {total: 0}};
     }
-    pagination.items = pagination.items.map(i => model.hydrate(i));
+    pagination.items = pagination.items.map(i => hydratePopulated(model, i));
     return pagination;
 }
 

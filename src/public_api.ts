@@ -76,6 +76,7 @@ export {
     injectServices,
     paginate,
     lookupPipelines,
+    hydratePopulated,
     paginateAggregations,
     bufferToStream,
     streamToBuffer,

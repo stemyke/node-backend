@@ -127,6 +127,26 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     });
 }
 
+export function lookupPipelines(from: string, localField: string, as: string = null, foreignField: string = "_id", shouldUnwind: boolean = true): any[] {
+    as = as || localField.replace("Id", "");
+    const pipelines = [
+        {
+            $lookup: {
+                from,
+                localField,
+                foreignField,
+                as
+            }
+        },
+        {
+            $unwind: {
+                path: `$${as}`
+            }
+        }
+    ];
+    return shouldUnwind ? pipelines : pipelines.slice(0, 0);
+}
+
 export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], params: IPaginationParams): Promise<IPaginationBase<T>> {
     const sortField = !isString(params.sort) || !params.sort ? null : (params.sort.startsWith("-") ? params.sort.substr(1) : params.sort);
     const sortAggregation = !sortField ? [] : [{

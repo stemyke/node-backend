@@ -75,6 +75,7 @@ export {
     convertValue,
     injectServices,
     paginate,
+    lookupPipelines,
     paginateAggregations,
     bufferToStream,
     streamToBuffer,

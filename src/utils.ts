@@ -173,7 +173,7 @@ export function hydratePopulated<T extends Document>(modelType: Model<T>, json: 
 
 }
 
-export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], params: IPaginationParams): Promise<IPaginationBase<T>> {
+export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], params: IPaginationParams, metaProjection: any = {}): Promise<IPaginationBase<T>> {
     const sortField = !isString(params.sort) || !params.sort ? null : (params.sort.startsWith("-") ? params.sort.substr(1) : params.sort);
     const sortAggregation = !sortField ? [] : [{
         $sort: {[sortField]: sortField == params.sort ? 1 : -1}
@@ -192,7 +192,10 @@ export async function paginateAggregations<T extends Document>(model: Model<T>, 
                 _id: 0,
                 items: params.limit > 0 ? {$slice: ["$result", params.page * params.limit, params.limit]} : "$result",
                 count: {$size: "$result"},
-                "meta.total": {$size: "$result"},
+                meta: {
+                    total: {$size: "$result"},
+                    ...metaProjection
+                }
             }
         }
     ]);

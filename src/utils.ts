@@ -457,3 +457,11 @@ export function observableFromFunction(callbackFunc: () => any): Observable<any>
         return subject.subscribe(subscriber);
     });
 }
+
+export function padLeft(value: any, count: number = 3, padWith: string = "0"): string {
+    return `${value}`.padStart(count, padWith);
+}
+
+export function padRight(value: any, count: number = 3, padWith: string = "0"): string {
+    return `${value}`.padEnd(count, padWith);
+}

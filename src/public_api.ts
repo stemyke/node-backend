@@ -100,7 +100,9 @@ export {
     rand,
     random,
     multiSubscription,
-    observableFromFunction
+    observableFromFunction,
+    padLeft,
+    padRight
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";
@@ -210,7 +212,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     const io = socketIO(server, {path: "/socket"});
 
     // Setup rest API
-    app.use(json());
+    app.use(json({limit: "250mb"}));
 
     const restOptions = config.restOptions || {};
     restOptions.defaultErrorHandler = false;

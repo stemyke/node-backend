@@ -7,6 +7,7 @@ import {InjectionToken, Injector, Type} from "injection-js";
 import {SchemaObject} from "openapi3-ts";
 import Buffer from "buffer";
 import {Readable} from "stream";
+import {Moment} from "moment";
 
 export interface IFixture {
     load(): Promise<any>;
@@ -113,6 +114,7 @@ export interface ILazyAsset {
     jobQue: string;
     progressId?: string;
     assetId?: string;
+    startWorking(): void;
     loadAsset(): Promise<IAsset>;
     writeAsset(asset: IAsset): Promise<IAsset>;
     toJSON(): any;
@@ -131,6 +133,9 @@ export interface IClientSocket extends Socket {
 }
 
 export interface IRequestBase<T> extends Request {
+    id?: string;
+    started?: Moment;
+    ended?: Moment;
     injector?: Injector;
     language?: string;
     user?: T;

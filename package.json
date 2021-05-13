@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "1.6.5",
+    "version": "1.7.0",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -46,7 +46,8 @@
         "ioredis": "^4.19.2",
         "node-resque": "^7.0.6",
         "node-cron": "^2.0.3",
-        "fontkit": "^1.8.1"
+        "fontkit": "^1.8.1",
+        "moment": "^2.29.1"
     },
     "devDependencies": {
         "axios": "0.19.2",
@@ -86,6 +87,7 @@
         "node-resque": "7.0.6",
         "node-cron": "2.0.3",
         "fontkit": "1.8.1",
+        "moment": "2.29.1",
         "@types/socket.io": "2.1.11",
         "@types/socket.io-client": "1.4.34",
         "@types/jsonwebtoken": "^8.5.0",

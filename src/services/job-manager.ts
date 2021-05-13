@@ -134,7 +134,6 @@ export class JobManager {
 
     protected tryResolveFromName(jobName: string, params: JobParams): Promise<string> {
         const jobType = this.jobTypes.find(type => {
-            console.log(getConstructorName(type), jobName);
             return getConstructorName(type) == jobName;
         });
         if (!jobType) {

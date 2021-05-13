@@ -54,6 +54,8 @@ import {ProgressesController} from "./rest-controllers/progresses.controller";
 import {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
 import {InjectorMiddleware} from "./rest-middlewares/injector.middleware";
 import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
+import {RequestEndedMiddleware} from "./rest-middlewares/request-ended.middleware";
+import {RequestStartedMiddleware} from "./rest-middlewares/request-started.middleware";
 
 import {ProgressController} from "./socket-controllers/progress.controller";
 
@@ -223,8 +225,10 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         }
     };
     restOptions.routePrefix = "/api";
-    restOptions.middlewares = [ErrorHandlerMiddleware, InjectorMiddleware, LanguageMiddleware].concat(restOptions.middlewares as any || []);
-    restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController].concat(restOptions.controllers as any || []);
+    restOptions.middlewares = [ErrorHandlerMiddleware, InjectorMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
+        .concat(restOptions.middlewares as any || []);
+    restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController]
+        .concat(restOptions.controllers as any || []);
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};

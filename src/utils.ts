@@ -3,6 +3,7 @@ import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
 import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
 import {basename, dirname} from "path";
+import {GridFSBucket} from "mongodb";
 import {Document, DocumentQuery, FilterQuery, Model, model, Schema, Types} from "mongoose";
 import {getValue as getMongoValue, setValue as setMongoValue} from "mongoose/lib/utils";
 import {InjectionToken, Injector, Type} from "injection-js";
@@ -464,4 +465,20 @@ export function padLeft(value: any, count: number = 3, padWith: string = "0"): s
 
 export function padRight(value: any, count: number = 3, padWith: string = "0"): string {
     return `${value}`.padEnd(count, padWith);
+}
+
+export function deleteFromBucket(bucket: GridFSBucket, fileId: ObjectId): Promise<string> {
+    return new Promise<string>(((resolve, reject) => {
+        bucket.delete(fileId, error => {
+            let err = error as any;
+            if (error) {
+                err = error.message || error;
+                if (err !== "not found") {
+                    reject(error.message || error);
+                    return;
+                }
+            }
+            resolve(fileId.toHexString());
+        });
+    }));
 }

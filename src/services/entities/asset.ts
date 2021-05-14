@@ -1,13 +1,11 @@
-import {Injectable} from "injection-js";
 import sharp_ from "sharp";
 import {Readable} from "stream";
-import {connection} from "mongoose";
-import {createModel} from "mongoose-gridfs";
+import {Collection, GridFSBucket} from "mongodb";
+import {ObjectId} from "bson";
 import fontkit_, {Font} from "fontkit";
 
-import {FontFormat, IAssetConnection, IAssetImageParams, IAssetMeta} from "../common-types";
-import {bufferToStream, streamToBuffer} from "../utils";
-import {AssetDoc} from "../models/asset";
+import {FontFormat, IAsset, IAssetImageParams, IAssetMeta} from "../../common-types";
+import {bufferToStream, deleteFromBucket, streamToBuffer} from "../../utils";
 
 const sharp = sharp_;
 const fontKit = fontkit_;
@@ -26,8 +24,7 @@ const fontProps = [
     "xHeight", "numGlyphs", "characterSet", "availableFeatures"
 ];
 
-@Injectable()
-export class AssetHelper {
+export class Asset implements IAsset {
 
     static isImage(contentType: string): boolean {
         return imageTypes.indexOf(contentType) >= 0;
@@ -45,7 +42,7 @@ export class AssetHelper {
 
     static copyFontMeta(buffer: Buffer, metadata: IAssetMeta): void {
         const font: Font = fontKit.create(buffer);
-        metadata.format = AssetHelper.extractFontFormat(font);
+        metadata.format = Asset.extractFontFormat(font);
         fontProps.forEach(prop => {
             metadata[prop] = font[prop];
         });
@@ -111,51 +108,55 @@ export class AssetHelper {
         }
     }
 
-    readonly asset: IAssetConnection;
-
-    constructor() {
-        this.asset = createModel({
-            modelName: "Asset",
-            connection
-        });
+    get id(): string {
+        return this.fileId.toHexString();
     }
 
-    async unlink(asset: AssetDoc): Promise<any> {
-        return new Promise<string>(((resolve, reject) => {
-            this.asset.unlink({_id: asset._id}, (error) => {
-                if (error) {
-                    error = error.message || error;
-                    if (error !== "not found") {
-                        reject(error.message || error);
-                        return;
-                    }
-                }
-                resolve();
-            });
-        }));
+    get stream(): Readable {
+        return this.bucket.openDownloadStream(this.fileId);
     }
 
-    getStream(asset: AssetDoc): Readable {
-        return this.asset.read({_id: asset._id});
+    constructor(readonly fileId: ObjectId,
+                readonly filename: string,
+                readonly contentType: string,
+                readonly metadata: IAssetMeta,
+                protected bucket: GridFSBucket,
+                protected collection: Collection) {
     }
 
-    async download(asset: AssetDoc, metadata?: IAssetMeta): Promise<Readable> {
-        metadata = Object.assign(asset.metadata as IAssetMeta, metadata || {});
+    async unlink(): Promise<string> {
+        return deleteFromBucket(this.bucket, this.fileId);
+    }
+
+    getBuffer(): Promise<Buffer> {
+        return streamToBuffer(this.stream);
+    }
+
+    async download(metadata?: IAssetMeta): Promise<Readable> {
+        metadata = Object.assign(this.metadata as IAssetMeta, metadata || {});
         metadata.downloadCount = isNaN(metadata.downloadCount) || !metadata.firstDownload
             ? 1
             : metadata.downloadCount + 1;
         metadata.firstDownload = metadata.firstDownload || new Date();
         metadata.lastDownload = new Date();
-        asset.markModified("metadata");
-        await asset.save();
-        return asset.stream;
+        await this.collection.updateOne({_id: this.fileId}, {$set: {metadata}});
+        return this.stream;
     }
 
-    async getImage(asset: AssetDoc, params: IAssetImageParams = null): Promise<Readable> {
-        return AssetHelper.toImage(asset.stream, params);
+    async getImage(params: IAssetImageParams = null): Promise<Readable> {
+        return Asset.toImage(this.stream, params);
     }
 
-    async downloadImage(asset: AssetDoc, params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable> {
-        return AssetHelper.toImage(await this.download(asset, metadata), params);
+    async downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable> {
+        return Asset.toImage(await this.download(metadata), params);
+    }
+
+    toJSON(): any {
+        return {
+            id: this.id,
+            filename: this.filename,
+            contentType: this.contentType,
+            metadata: this.metadata
+        };
     }
 }

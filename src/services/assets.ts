@@ -2,17 +2,23 @@ import {Injectable} from "injection-js";
 import {fromBuffer} from "file-type";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
+import {Collection, GridFSBucket} from "mongodb";
 import {FilterQuery} from "mongoose";
 
 import {bufferToStream} from "../utils";
 import {IAsset, IAssetMeta} from "../common-types";
-import {Asset, AssetDoc} from "../models/asset";
-import {AssetHelper} from "./asset-helper";
+import {MongoConnector} from "./mongo-connector";
+import {Asset} from "./entities/asset";
 
 @Injectable()
 export class Assets {
 
-    constructor(private helper: AssetHelper) {
+    protected bucket: GridFSBucket;
+    protected collection: Collection;
+
+    constructor(readonly connector: MongoConnector) {
+        this.bucket = new GridFSBucket(connector.database, {bucketName: "assets"});
+        this.collection = connector.database.collection("assets.files");
     }
 
     write(stream: Readable, contentType: string, metadata: IAssetMeta = null): Promise<IAsset> {
@@ -25,12 +31,19 @@ export class Assets {
         metadata.lastDownload = null;
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         return new Promise<IAsset>(((resolve, reject) => {
-            this.helper.asset.write({filename: metadata.filename, contentType, metadata}, stream, (error, file) => {
-                if (error) {
-                    return reject(error.message || error);
-                }
-                this.read(file._id.toHexString()).then(resolve);
-            });
+            const uploadStream = this.bucket.openUploadStream(metadata.filename);
+            stream.pipe(uploadStream)
+                .on("error", error => {
+                    reject(error.message || error);
+                })
+                .on("finish", () => {
+                    const asset = new Asset(uploadStream.id as ObjectId, metadata.filename, contentType, metadata, this.bucket, this.collection);
+                    this.collection.updateOne({_id: uploadStream.id}, {$set: asset.toJSON()}).then(() => {
+                        resolve(asset);
+                    }, error => {
+                        reject(error.message || error);
+                    });
+                });
         }));
     }
 
@@ -41,11 +54,11 @@ export class Assets {
             console.log(`Can't determine content type`, e);
         }
         metadata = metadata || {};
-        if (AssetHelper.isImage(contentType)) {
-            buffer = await AssetHelper.copyImageMeta(buffer, metadata);
+        if (Asset.isImage(contentType)) {
+            buffer = await Asset.copyImageMeta(buffer, metadata);
         }
-        if (AssetHelper.isFont(contentType)) {
-            AssetHelper.copyFontMeta(buffer, metadata);
+        if (Asset.isFont(contentType)) {
+            Asset.copyFontMeta(buffer, metadata);
         }
         return this.write(bufferToStream(buffer), contentType, metadata);
     }
@@ -54,8 +67,9 @@ export class Assets {
         return this.find({_id: new ObjectId(id)});
     }
 
-    async find(where: FilterQuery<AssetDoc>): Promise<IAsset> {
-        return Asset.findOne(where);
+    async find(where: FilterQuery<IAsset>): Promise<IAsset> {
+        const data = await this.collection.findOne(where);
+        return !data ? null : new Asset(data._id, data.filename, data.contentType, data.metadata, this.bucket, this.collection);
     }
 
     async unlink(id: string): Promise<any> {

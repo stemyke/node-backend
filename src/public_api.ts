@@ -3,7 +3,6 @@ import {join} from "path";
 import {json} from "body-parser";
 import {createServer} from "http";
 import {verify} from "jsonwebtoken";
-import {connect} from "mongoose";
 import cacheman_mongo from "cacheman-mongodb";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
 import socket_io from "socket.io";
@@ -15,17 +14,16 @@ import {getApiDocs} from "./rest-openapi";
 import {
     EXPRESS,
     FIXTURE,
-    JOB,
     HTTP_SERVER,
     IBackendConfig,
+    IPaginationParams,
     IRequest,
     IUser,
+    JOB,
     Parameter,
-    SOCKET_SERVER,
-    IPaginationParams
+    SOCKET_SERVER
 } from "./common-types";
 
-import {AssetHelper} from "./services/asset-helper";
 import {AssetResolver} from "./services/asset-resolver";
 import {Assets} from "./services/assets";
 import {Cache} from "./services/cache";
@@ -39,6 +37,7 @@ import {LazyAssetHelper} from "./services/lazy-asset-helper";
 import {LazyAssets} from "./services/lazy-assets";
 import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
+import {MongoConnector} from "./services/mongo-connector";
 import {ProgressHelper} from "./services/progress-helper";
 import {Progresses} from "./services/progresses";
 import {TemplateRenderer} from "./services/template-renderer";
@@ -104,7 +103,8 @@ export {
     multiSubscription,
     observableFromFunction,
     padLeft,
-    padRight
+    padRight,
+    deleteFromBucket
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";
@@ -156,6 +156,7 @@ export {JobManager} from "./services/job-manager";
 export {LazyAssets} from "./services/lazy-assets";
 export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
+export {MongoConnector} from "./services/mongo-connector";
 export {Progresses} from "./services/progresses";
 export {TemplateRenderer} from "./services/template-renderer";
 export {TranslationProvider} from "./services/translation-provider";
@@ -237,7 +238,6 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Create injector
     const services = [
-        AssetHelper,
         AssetResolver,
         Assets,
         Cache,
@@ -251,6 +251,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         LazyAssetHelper,
         LazyAssets,
         MailSender,
+        MongoConnector,
         ProgressHelper,
         Progresses,
         TemplateRenderer,
@@ -373,14 +374,8 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Connect to mongo if necessary
     if (configuration.hasParam("mongoUri")) {
-        const db = (await connect(configuration.resolve("mongoUri"), {
-            dbName: configuration.resolve("mongoDb"),
-            user: configuration.resolve("mongoUser"),
-            pass: configuration.resolve("mongoPassword"),
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        })).connection.db;
-        CachemanMongo["appInstance"] = new CachemanMongo(db, {compression: true, collection: "cache"});
+        const connector = injector.get(MongoConnector);
+        await connector.connect();
     }
 
     // Load fixtures

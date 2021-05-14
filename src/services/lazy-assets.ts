@@ -1,21 +1,17 @@
 import {Injectable, Type} from "injection-js";
 import {ObjectId} from "bson";
-import {connection, FilterQuery} from "mongoose";
-import {createModel} from "mongoose-gridfs";
-import {IAssetConnection, IJob, ILazyAsset, JobParams} from "../common-types";
+import {FilterQuery} from "mongoose";
+import {IJob, ILazyAsset, JobParams} from "../common-types";
+import {deleteFromBucket} from "../utils";
 import {LazyAsset, LazyAssetDoc} from "../models/lazy-asset";
 import {JobManager} from "./job-manager";
+import {MongoConnector} from "./mongo-connector";
 
 @Injectable()
 export class LazyAssets {
 
-    private asset: IAssetConnection;
+    constructor(readonly jobMan: JobManager, readonly connector: MongoConnector) {
 
-    constructor(readonly jobMan: JobManager) {
-        this.asset = createModel({
-            modelName: "Asset",
-            connection
-        });
     }
 
     async create(jobType: Type<IJob>, jobParams: JobParams = {}, jobQue: string = "main"): Promise<ILazyAsset> {
@@ -29,7 +25,7 @@ export class LazyAssets {
     }
 
     async read(id: string): Promise<ILazyAsset> {
-        return this.find({_id: new ObjectId(id)});
+        return (await LazyAsset.findById(id)) as ILazyAsset;
     }
 
     async find(where: FilterQuery<LazyAssetDoc>): Promise<ILazyAsset> {
@@ -37,24 +33,9 @@ export class LazyAssets {
     }
 
     async unlink(id: string): Promise<any> {
-        const asset = await LazyAsset.findOne({_id: new ObjectId(id)});
+        const asset = await LazyAsset.findById(id);
         if (!asset || !asset.assetId) return;
         await asset.remove();
-        await this.unlinkAsset(asset.assetId as string);
-    }
-
-    private unlinkAsset(id: string): Promise<any> {
-        return new Promise<string>(((resolve, reject) => {
-            this.asset.unlink({_id: new ObjectId(id)}, (error) => {
-                if (error) {
-                    error = error.message || error;
-                    if (error !== "not found") {
-                        reject(error.message || error);
-                        return;
-                    }
-                }
-                resolve();
-            });
-        }));
+        await deleteFromBucket(this.connector.bucket, new ObjectId(asset.assetId as string));
     }
 }

@@ -69,12 +69,6 @@ export interface IProgress {
     toJSON(): any;
 }
 
-export interface IAssetConnection {
-    write: (opts: any, stream: Readable, cb: Function) => void;
-    unlink: (opts: any, cb: Function) => void;
-    read: (opts: any) => Readable;
-}
-
 export interface IAssetMeta {
     filename?: string;
     classified?: boolean;
@@ -100,10 +94,10 @@ export interface IAsset {
     metadata?: IAssetMeta;
     stream: Readable,
     unlink(): Promise<any>;
-    getStream(): Readable;
+    getBuffer(): Promise<Buffer>;
     download(metadata?: IAssetMeta): Promise<Readable>;
-    getImage(params?: IAssetImageParams): Promise<Readable>;
     downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable>;
+    getImage(params?: IAssetImageParams): Promise<Readable>;
     toJSON(): any;
 }
 

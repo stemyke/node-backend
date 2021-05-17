@@ -69,6 +69,17 @@ export class JobManager {
         this.scheduler = new Scheduler({connection}, this.jobs);
     }
 
+    async process(jobType: Type<IJob>, params: JobParams = {}): Promise<any> {
+        let instance: IJob = null;
+        try {
+            instance = this.resolveJobInstance(jobType, params);
+        } catch (e) {
+            const jobName = getConstructorName(jobType);
+            throw `Can't resolve params for job: ${jobName}, with params: ${JSON.stringify(params)}. Reason: ${e}`;
+        }
+        return instance.process();
+    }
+
     async enqueueWithName(name: string, params: JobParams = {}, que: string = "main"): Promise<any> {
         const jobName = await this.tryResolveFromName(name, params);
         await this.queue.enqueue(que, jobName, [params]);

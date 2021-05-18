@@ -45,7 +45,7 @@ export interface IJobTask {
     getStatus: () => string;
 }
 
-export type JobParams = {[name: string]: string | number};
+export type JobParams = {[name: string]: string | number | boolean};
 
 export interface JobScheduleRange {
     min: number;

@@ -27,7 +27,8 @@ export class AssetsController {
     @Post("")
     upload(@UploadedFile("file") file: Express.Multer.File) {
         return new Promise<any>((resolve, reject) => {
-            this.assets.writeBuffer(file.buffer, {filename: file.filename}, file.mimetype)
+            const contentType = file.mimetype === "application/octet-stream" ? null : file.mimetype;
+            this.assets.writeBuffer(file.buffer, {filename: file.filename}, contentType)
                 .then(asset => {
                     resolve(asset.toJSON());
                 })

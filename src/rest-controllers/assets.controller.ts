@@ -25,17 +25,15 @@ export class AssetsController {
 
     @Authorized()
     @Post("")
-    upload(@UploadedFile("file") file: Express.Multer.File) {
-        return new Promise<any>((resolve, reject) => {
+    async upload(@UploadedFile("file") file: Express.Multer.File) {
+        try {
             const contentType = file.mimetype === "application/octet-stream" ? null : file.mimetype;
-            this.assets.writeBuffer(file.buffer, {filename: file.filename}, contentType)
-                .then(asset => {
-                    resolve(asset.toJSON());
-                })
-                .catch(reason => {
-                    reject({httpCode: 400, message: reason});
-                });
-        });
+            const asset = await this.assets.writeBuffer(file.buffer, {filename: file.filename}, contentType);
+            return asset.toJSON();
+        } catch (e) {
+            const msg = e?.message || e || "Unknown error";
+            throw new HttpError(400, `Asset can't be uploaded.\n${msg}`);
+        }
     }
 
     @Get("/image/:id/:rotation")

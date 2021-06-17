@@ -8,6 +8,7 @@ import {FilterQuery} from "mongoose";
 import {bufferToStream} from "../utils";
 import {IAsset, IAssetMeta} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
+import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
 
 @Injectable()
@@ -16,7 +17,7 @@ export class Assets {
     protected bucket: GridFSBucket;
     protected collection: Collection;
 
-    constructor(readonly connector: MongoConnector) {
+    constructor(readonly connector: MongoConnector, readonly assetProcessor: AssetProcessor) {
         this.bucket = new GridFSBucket(connector.database, {bucketName: "assets"});
         this.collection = connector.database.collection("assets.files");
     }
@@ -25,10 +26,11 @@ export class Assets {
         if (!contentType) {
             return Promise.reject(`Content type should be provided!`);
         }
-        metadata = metadata || {};
-        metadata.downloadCount = 0;
-        metadata.firstDownload = null;
-        metadata.lastDownload = null;
+        metadata = Object.assign({
+            downloadCount: 0,
+            firstDownload: null,
+            lastDownload: null
+        }, metadata || {});
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         return new Promise<IAsset>(((resolve, reject) => {
             const uploadStream = this.bucket.openUploadStream(metadata.filename);
@@ -54,12 +56,7 @@ export class Assets {
             console.log(`Can't determine content type`, e);
         }
         metadata = metadata || {};
-        if (Asset.isImage(contentType)) {
-            buffer = await Asset.copyImageMeta(buffer, metadata);
-        }
-        if (Asset.isFont(contentType)) {
-            Asset.copyFontMeta(buffer, metadata);
-        }
+        buffer = await this.assetProcessor.process(buffer, metadata, contentType);
         return this.write(bufferToStream(buffer), contentType, metadata);
     }
 

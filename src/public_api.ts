@@ -3,7 +3,6 @@ import {join} from "path";
 import {json} from "body-parser";
 import {createServer} from "http";
 import {verify} from "jsonwebtoken";
-import cacheman_mongo from "cacheman-mongodb";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
 import socket_io from "socket.io";
 import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
@@ -24,6 +23,7 @@ import {
     SOCKET_SERVER
 } from "./common-types";
 
+import {AssetProcessor} from "./services/asset-processor";
 import {AssetResolver} from "./services/asset-resolver";
 import {Assets} from "./services/assets";
 import {Cache} from "./services/cache";
@@ -144,6 +144,7 @@ export {
     IBackendConfig
 } from "./common-types";
 
+export {AssetProcessor} from "./services/asset-processor";
 export {AssetResolver} from "./services/asset-resolver";
 export {Assets} from "./services/assets";
 export {Cache} from "./services/cache";
@@ -173,7 +174,6 @@ export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
 
 const express = express_;
 const socketIO = socket_io;
-const CachemanMongo = cacheman_mongo;
 
 async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
     if (req.user) return req.user;
@@ -238,6 +238,7 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
 
     // Create injector
     const services = [
+        AssetProcessor,
         AssetResolver,
         Assets,
         Cache,

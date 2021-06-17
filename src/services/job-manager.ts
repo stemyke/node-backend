@@ -19,54 +19,12 @@ export class JobManager {
 
     constructor(readonly config: Configuration, readonly injector: Injector, @Optional() @Inject(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
-        const options = {password: config.resolve("redisPassword")};
-        const sentinels: Array<{host: string, port: number}> = config.resolve("redisSentinels");
-        const redis = !sentinels
-            ? null
-            : new IORedis({
-                sentinels,
-                name: config.resolve("redisCluster"),
-            });
-        const connection = {
-            pkg: "ioredis",
-            host: config.resolve("redisHost"),
-            password: options.password,
-            port: config.resolve("redisPort"),
-            namespace: config.resolve("redisNamespace"),
-            redis,
-            options
-        };
-        const queues = config.resolve("workQueues");
         this.jobs = jobTypes.reduce((res, jobType) => {
             res[getConstructorName(jobType)] = {
                 perform: this.toPerformFunction(jobType)
             };
             return res;
         }, {});
-        this.queue = new Queue({connection}, this.jobs);
-        this.worker = new Worker({connection, queues}, this.jobs);
-        this.worker.on("job", (queue, job) => {
-            console.log(`working job ${queue} ${JSON.stringify(job)}`);
-        });
-        this.worker.on("reEnqueue", (queue, job, plugin) => {
-            console.log(`reEnqueue job (${plugin}) ${queue} ${JSON.stringify(job)}`);
-        });
-        this.worker.on("success", (queue, job, result, duration) => {
-            console.log(
-                `job success ${queue} ${JSON.stringify(job)} >> ${result} (${duration}ms)`
-            );
-        });
-        this.worker.on("failure", (queue, job, failure, duration) => {
-            console.log(
-                `job failure ${queue} ${JSON.stringify(
-                    job
-                )} >> ${failure} (${duration}ms)`
-            );
-        });
-        this.worker.on("error", (error, queue, job) => {
-            console.log(`error ${queue} ${JSON.stringify(job)}  >> ${error}`);
-        });
-        this.scheduler = new Scheduler({connection}, this.jobs);
     }
 
     async process(jobType: Type<IJob>, params: JobParams = {}): Promise<any> {
@@ -124,6 +82,7 @@ export class JobManager {
     }
 
     async startProcessing(): Promise<any> {
+        this.initialize();
         await this.worker.connect();
         await this.worker.start();
         await this.scheduler.connect();
@@ -143,6 +102,53 @@ export class JobManager {
         return jobName;
     }
 
+    protected initialize(): void {
+        if (this.queue) return;
+        const config = this.config;
+        const options = {password: config.resolve("redisPassword")};
+        const sentinels: Array<{host: string, port: number}> = config.resolve("redisSentinels");
+        const redis = !sentinels
+            ? null
+            : new IORedis({
+                sentinels,
+                name: config.resolve("redisCluster"),
+            });
+        const connection = {
+            pkg: "ioredis",
+            host: config.resolve("redisHost"),
+            password: options.password,
+            port: config.resolve("redisPort"),
+            namespace: config.resolve("redisNamespace"),
+            redis,
+            options
+        };
+        const queues = config.resolve("workQueues");
+        this.queue = new Queue({connection}, this.jobs);
+        this.worker = new Worker({connection, queues}, this.jobs);
+        this.worker.on("job", (queue, job) => {
+            console.log(`working job ${queue} ${JSON.stringify(job)}`);
+        });
+        this.worker.on("reEnqueue", (queue, job, plugin) => {
+            console.log(`reEnqueue job (${plugin}) ${queue} ${JSON.stringify(job)}`);
+        });
+        this.worker.on("success", (queue, job, result, duration) => {
+            console.log(
+                `job success ${queue} ${JSON.stringify(job)} >> ${result} (${duration}ms)`
+            );
+        });
+        this.worker.on("failure", (queue, job, failure, duration) => {
+            console.log(
+                `job failure ${queue} ${JSON.stringify(
+                    job
+                )} >> ${failure} (${duration}ms)`
+            );
+        });
+        this.worker.on("error", (error, queue, job) => {
+            console.log(`error ${queue} ${JSON.stringify(job)}  >> ${error}`);
+        });
+        this.scheduler = new Scheduler({connection}, this.jobs);
+    }
+
     protected tryResolveFromName(jobName: string, params: JobParams): Promise<string> {
         const jobType = this.jobTypes.find(type => {
             return getConstructorName(type) == jobName;
@@ -154,6 +160,7 @@ export class JobManager {
     }
 
     protected async tryResolveAndConnect(jobType: Type<IJob>, params: JobParams): Promise<string> {
+        this.initialize();
         const jobName = this.tryResolve(jobType, params);
         await this.queue.connect();
         return jobName;

@@ -2,67 +2,13 @@ import sharp_ from "sharp";
 import {Readable} from "stream";
 import {Collection, GridFSBucket} from "mongodb";
 import {ObjectId} from "bson";
-import fontkit_, {Font} from "fontkit";
 
-import {FontFormat, IAsset, IAssetImageParams, IAssetMeta} from "../../common-types";
+import {IAsset, IAssetImageParams, IAssetMeta} from "../../common-types";
 import {bufferToStream, deleteFromBucket, streamToBuffer} from "../../utils";
 
 const sharp = sharp_;
-const fontKit = fontkit_;
-
-const fontTypes = [
-    "application/font-woff", "application/font-woff2", "application/x-font-opentype", "application/x-font-truetype", "application/x-font-datafork",
-    "font/woff", "font/woff2", "font/otf", "font/ttf", "font/datafork"
-];
-
-const imageTypes = ["image/jpeg", "image/jpg", "image/png"];
-
-const fontProps = [
-    "postscriptName", "fullName", "familyName", "subfamilyName",
-    "copyright", "version", "unitsPerEm", "ascent", "descent", "lineGap",
-    "underlinePosition", "underlineThickness", "italicAngle", "capHeight",
-    "xHeight", "numGlyphs", "characterSet", "availableFeatures"
-];
 
 export class Asset implements IAsset {
-
-    static isImage(contentType: string): boolean {
-        return imageTypes.indexOf(contentType) >= 0;
-    }
-
-    static async copyImageMeta(buffer: Buffer, metadata: IAssetMeta): Promise<Buffer> {
-        const output = await sharp(buffer).rotate().toBuffer({resolveWithObject: true});
-        Object.assign(metadata, output.info);
-        return output.data;
-    }
-
-    static isFont(contentType: string): boolean {
-        return fontTypes.indexOf(contentType) >= 0;
-    }
-
-    static copyFontMeta(buffer: Buffer, metadata: IAssetMeta): void {
-        const font: Font = fontKit.create(buffer);
-        metadata.format = Asset.extractFontFormat(font);
-        fontProps.forEach(prop => {
-            metadata[prop] = font[prop];
-        });
-    }
-
-    static extractFontFormat(font: Font): FontFormat {
-        const name: string = font.constructor.name;
-        const tag: string  = font["directory"].tag;
-        switch (name) {
-            case "TTFFont":
-                return tag === "OTTO" ? "opentype" : "truetype";
-            case "WOFF2Font":
-                return "woff2";
-            case "WOFFFont":
-                return "woff";
-            case "DFont":
-                return "datafork";
-        }
-        return null;
-    }
 
     private static async toImage(stream: Readable, params?: IAssetImageParams): Promise<Readable> {
         params = params || {};

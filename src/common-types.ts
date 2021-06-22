@@ -1,4 +1,4 @@
-import {Application, Request} from "express";
+import {Application, Express, Request} from "express";
 import {Server} from "http";
 import {Server as SocketServer, Socket} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
@@ -28,11 +28,16 @@ export const HTTP_SERVER = new InjectionToken<Server>("http-server");
 
 export const SOCKET_SERVER = new InjectionToken<SocketServer>("socket-server");
 
+export type ParamResolver = (value: string) => any;
+
 export class Parameter {
-    constructor(readonly name: string, readonly defaultValue: any, readonly resolver: (value: string) => any = null) {
+
+    constructor(readonly name: string, public defaultValue: any, public resolver: ParamResolver = null) {
 
     }
 }
+
+export const PARAMETER = new InjectionToken<Parameter>("parameter-token");
 
 export interface IJob {
     process(): Promise<any>;
@@ -188,10 +193,11 @@ export interface IPaginationParams {
 export type FontFormat = "opentype" | "truetype" | "woff" | "woff2" | "datafork";
 
 export interface IBackendConfig {
-    params?: Parameter[],
-    fixtures?: Type<IFixture>[],
-    jobs?: Type<IJob>[],
-    restOptions?: RoutingControllersOptions,
-    socketOptions?: SocketControllersOptions,
-    customValidation?: SchemaConverter | SchemaObject
+    routePrefix?: string;
+    params?: Parameter[];
+    fixtures?: Type<IFixture>[];
+    jobs?: Type<IJob>[];
+    restOptions?: RoutingControllersOptions;
+    socketOptions?: SocketControllersOptions;
+    customValidation?: SchemaConverter | SchemaObject;
 }

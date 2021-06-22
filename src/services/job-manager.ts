@@ -19,7 +19,7 @@ export class JobManager {
 
     constructor(readonly config: Configuration, readonly injector: Injector, @Optional() @Inject(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
-        this.jobs = jobTypes.reduce((res, jobType) => {
+        this.jobs = this.jobTypes.reduce((res, jobType) => {
             res[getConstructorName(jobType)] = {
                 perform: this.toPerformFunction(jobType)
             };

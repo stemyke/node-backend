@@ -1,10 +1,7 @@
-import express_ from "express";
 import {join} from "path";
 import {json} from "body-parser";
-import {createServer} from "http";
 import {verify} from "jsonwebtoken";
 import {Injector, Provider, ReflectiveInjector} from "injection-js";
-import socket_io from "socket.io";
 import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
@@ -19,6 +16,7 @@ import {
     IRequest,
     IUser,
     JOB,
+    PARAMETER,
     Parameter,
     SOCKET_SERVER
 } from "./common-types";
@@ -26,6 +24,7 @@ import {
 import {AssetProcessor} from "./services/asset-processor";
 import {AssetResolver} from "./services/asset-resolver";
 import {Assets} from "./services/assets";
+import {BackendProvider} from "./services/backend-provider";
 import {Cache} from "./services/cache";
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
@@ -117,7 +116,9 @@ export {
     EXPRESS,
     HTTP_SERVER,
     SOCKET_SERVER,
+    ParamResolver,
     Parameter,
+    PARAMETER,
     IJob,
     IJobTask,
     JobParams,
@@ -147,6 +148,7 @@ export {
 export {AssetProcessor} from "./services/asset-processor";
 export {AssetResolver} from "./services/asset-resolver";
 export {Assets} from "./services/assets";
+export {BackendProvider} from "./services/backend-provider";
 export {Cache} from "./services/cache";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
@@ -172,9 +174,6 @@ export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
 
-const express = express_;
-const socketIO = socket_io;
-
 async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
     if (req.user) return req.user;
     const auth = req.header("Authorization") || "";
@@ -192,58 +191,64 @@ async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
     return req.user;
 }
 
-export async function setupBackend(config: IBackendConfig, ...providers: Provider[]): Promise<Injector> {
-    const fixtureTypes = (config.fixtures || []);
-    const fixtureProviders = fixtureTypes.map(fixture => {
+export function createServices(): ReflectiveInjector {
+    // List of parameters
+    const params = [
+        new Parameter("templatesDir", join(__dirname, "templates")),
+        new Parameter("galleryDir", join(__dirname, "gallery")),
+        new Parameter("cacheDir", join(__dirname, "cache")),
+        new Parameter("defaultLanguage", "en"),
+        new Parameter("smtpHost", "smtp.sendgrid.net"),
+        new Parameter("smtpPort", 587),
+        new Parameter("smtpUser", "apikey"),
+        new Parameter("smtpPassword", ""),
+        new Parameter("mailSenderAddress", "info@stemy.hu"),
+        new Parameter("translationsTemplate", "https://translation.service/[lang]"),
+        new Parameter("jwtSecret", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9"),
+        new Parameter("mongoDb", "node-backend"),
+        new Parameter("mongoUser", null),
+        new Parameter("mongoPassword", null),
+        new Parameter("nodeEnv", "development"),
+        new Parameter("appPort", 80),
+        new Parameter("redisHost", "127.0.0.1"),
+        new Parameter("redisPort", 6379),
+        new Parameter("redisPassword", "123456"),
+        new Parameter("redisNamespace", "resque"),
+        new Parameter("redisCluster", "mymaster"),
+        new Parameter("redisSentinels", null, value => {
+            if (!value) return null;
+            return value.split(", ").map(item => {
+                const values = item.split(":");
+                return {host: values[0], port: Number(values[1])};
+            });
+        }),
+        new Parameter("workQueues", ["main"]),
+        new Parameter("isWorker", false),
+        new Parameter("mainEndpoint", ""),
+        new Parameter("idChars", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+        new Parameter("idSeparator", "-"),
+        new Parameter("idPrefix", "ID-"),
+        new Parameter("idParts", [4, 4]),
+        new Parameter("jsonLimit", "250mb"),
+    ];
+
+    // Convert parameters to providers
+    const paramProviders = params.map(p => {
         return {
-            provide: FIXTURE,
+            provide: PARAMETER,
             multi: true,
-            useExisting: fixture
-        };
-    });
-
-    const jobProviders = (config.jobs || []).map(jobType => {
-        return {
-            provide: JOB,
-            multi: true,
-            useValue: jobType
-        };
-    });
-
-    const app = express();
-    const server = createServer(app);
-    const io = socketIO(server, {path: "/socket"});
-
-    // Setup rest API
-    app.use(json({limit: "250mb"}));
-
-    const restOptions = config.restOptions || {};
-    restOptions.defaultErrorHandler = false;
-    restOptions.cors = {
-        credentials: true,
-        origin: (origin, callback) => {
-            callback(null, true);
+            useValue: p
         }
-    };
-    restOptions.routePrefix = "/api";
-    restOptions.middlewares = [ErrorHandlerMiddleware, InjectorMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
-        .concat(restOptions.middlewares as any || []);
-    restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController]
-        .concat(restOptions.controllers as any || []);
+    });
 
-    // Setup socket API
-    const socketOptions = config.socketOptions || {};
-    socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
-    socketOptions.controllers = [ProgressController].concat(socketOptions.controllers as any || []);
-
-    // Create injector
+    // List of services
     const services = [
         AssetProcessor,
         AssetResolver,
         Assets,
+        BackendProvider,
         Cache,
         Configuration,
-        Fixtures,
         Gallery,
         GalleryCache,
         Logger,
@@ -261,29 +266,110 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         UserManager
     ];
 
-    const injector = ReflectiveInjector.resolveAndCreate([
+    // Create injector
+    return ReflectiveInjector.resolveAndCreate([
+        ...paramProviders,
+        ...services
+    ]);
+}
+
+export async function setupBackend(config: IBackendConfig, providers?: Provider[], parent?: ReflectiveInjector): Promise<ReflectiveInjector> {
+
+    providers = Array.isArray(providers) ? providers : [];
+    parent = parent || createServices();
+
+    // Create fixtures
+    const fixtureTypes = (config.fixtures || []);
+    const fixtureProviders = fixtureTypes.map(fixture => {
+        return {
+            provide: FIXTURE,
+            multi: true,
+            useExisting: fixture
+        };
+    });
+
+    // Create params
+    const paramProviders = (config.params || []).map(p => {
+        return {
+            provide: PARAMETER,
+            multi: true,
+            useValue: p
+        }
+    });
+
+    // Create jobs
+    const jobProviders = (config.jobs || []).map(jobType => {
+        return {
+            provide: JOB,
+            multi: true,
+            useValue: jobType
+        };
+    });
+
+    // Setup rest API
+    const restOptions = config.restOptions || {};
+    restOptions.defaultErrorHandler = false;
+    restOptions.cors = {
+        credentials: true,
+        origin: (origin, callback) => {
+            callback(null, true);
+        }
+    };
+    restOptions.routePrefix = config.routePrefix || "/api";
+    restOptions.middlewares = [ErrorHandlerMiddleware, InjectorMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
+        .concat(restOptions.middlewares as any || []);
+    restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController]
+        .concat(restOptions.controllers as any || []);
+
+    // Setup socket API
+    const socketOptions = config.socketOptions || {};
+    socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
+    socketOptions.controllers = [ProgressController].concat(socketOptions.controllers as any || []);
+
+    const subServices = [
+        {
+            provide: Configuration,
+            deps: [PARAMETER],
+            useFactory: (params) => {
+                return new Configuration(params)
+            }
+        },
+        Fixtures
+    ];
+
+    const injector = parent.resolveAndCreateChild([
+        ...subServices,
         ...fixtureTypes,
         ...fixtureProviders,
+        ...paramProviders,
         ...jobProviders,
-        ...services,
-        ...providers,
         ...restOptions.middlewares as Provider[],
         ...restOptions.controllers as Provider[],
         ...socketOptions.middlewares as Provider[],
         ...socketOptions.controllers as Provider[],
+        ...providers,
         {
             provide: EXPRESS,
-            useValue: app
+            deps: [BackendProvider],
+            useFactory: (bp: BackendProvider) => {
+                return bp.express;
+            }
         },
         {
             provide: HTTP_SERVER,
-            useValue: server
+            deps: [BackendProvider],
+            useFactory: (bp: BackendProvider) => {
+                return bp.server;
+            }
         },
         {
             provide: SOCKET_SERVER,
-            useValue: io
+            deps: [BackendProvider],
+            useFactory: (bp: BackendProvider) => {
+                return bp.io;
+            }
         },
-    ]) as Injector;
+    ]);
 
     Injector["appInjector"] = injector;
 
@@ -319,59 +405,27 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
         return resolveUser(injector, action.request);
     };
 
-    // Add parameters
-    const configuration = injector.get(Configuration);
-    configuration.add(new Parameter("templatesDir", join(__dirname, "templates")));
-    configuration.add(new Parameter("galleryDir", join(__dirname, "gallery")));
-    configuration.add(new Parameter("cacheDir", join(__dirname, "cache")));
-    configuration.add(new Parameter("defaultLanguage", "en"));
-    configuration.add(new Parameter("smtpHost", "smtp.sendgrid.net"));
-    configuration.add(new Parameter("smtpPort", 587));
-    configuration.add(new Parameter("smtpUser", "apikey"));
-    configuration.add(new Parameter("smtpPassword", ""));
-    configuration.add(new Parameter("mailSenderAddress", "info@stemy.hu"));
-    configuration.add(new Parameter("translationsTemplate", "https://translation.service/[lang]"));
-    configuration.add(new Parameter("jwtSecret", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9"));
-    configuration.add(new Parameter("mongoDb", "node-backend"));
-    configuration.add(new Parameter("mongoUser", null));
-    configuration.add(new Parameter("mongoPassword", null));
-    configuration.add(new Parameter("nodeEnv", "development"));
-    configuration.add(new Parameter("appPort", 80));
-    configuration.add(new Parameter("redisHost", "127.0.0.1"));
-    configuration.add(new Parameter("redisPort", 6379));
-    configuration.add(new Parameter("redisPassword", "123456"));
-    configuration.add(new Parameter("redisNamespace", "resque"));
-    configuration.add(new Parameter("redisCluster", "mymaster"));
-    configuration.add(new Parameter("redisSentinels", null, value => {
-        if (!value) return null;
-        return value.split(", ").map(item => {
-            const values = item.split(":");
-            return {host: values[0], port: Number(values[1])};
-        });
-    }));
-    configuration.add(new Parameter("workQueues", ["main"]));
-    configuration.add(new Parameter("isWorker", false));
-    configuration.add(new Parameter("mainEndpoint", ""));
-    configuration.add(new Parameter("idChars", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
-    configuration.add(new Parameter("idSeparator", "-"));
-    configuration.add(new Parameter("idPrefix", "ID-"));
-    configuration.add(new Parameter("idParts", [4, 4]));
-
-    (config.params || []).forEach(param => {
-        configuration.add(param);
-    });
-
     // Final setup
-    useRoutingContainer(injector);
-    useSocketContainer(injector);
+    const configuration = injector.get(Configuration);
+    const bp = injector.get(BackendProvider);
 
-    useExpressServer(app, restOptions);
-    useSocketServer(io, socketOptions);
-
-    // Setup rest ai docs
-    app.get("/api-docs", (req, res) => {
-        res.status(200).end(getApiDocs(config.customValidation));
-    });
+    if (config.restOptions) {
+        bp.express.use(json({
+            limit: configuration.hasParam("jsonLimit")
+                ? configuration.resolve("jsonLimit")
+                : "250mb"
+        }));
+        useRoutingContainer(injector);
+        useExpressServer(bp.express, restOptions);
+        // Setup rest ai docs
+        bp.express.get("/api-docs", (req, res) => {
+            res.status(200).end(getApiDocs(config.customValidation));
+        });
+    }
+    if (config.socketOptions) {
+        useSocketContainer(injector);
+        useSocketServer(bp.io, socketOptions);
+    }
 
     // Connect to mongo if necessary
     if (configuration.hasParam("mongoUri")) {
@@ -380,10 +434,10 @@ export async function setupBackend(config: IBackendConfig, ...providers: Provide
     }
 
     // Load fixtures
-    if (!configuration.resolve("isWorker")) {
-        const fixtures = injector.get(Fixtures);
-        await fixtures.load();
-    }
+    // if (!configuration.resolve("isWorker")) {
+    //     const fixtures = injector.get(Fixtures);
+    //     await fixtures.load();
+    // }
 
     return injector;
 }

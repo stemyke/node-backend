@@ -1,7 +1,6 @@
-import {Injectable} from "injection-js";
-import {Parameter} from "../common-types";
+import {Inject, Injectable, Optional} from "injection-js";
+import {PARAMETER, Parameter} from "../common-types";
 import {convertValue, getType, isFunction} from "../utils";
-import {Logger} from "./logger";
 import dotenv from "dotenv";
 
 @Injectable()
@@ -9,13 +8,19 @@ export class Configuration {
 
     protected paramMap: {[name: string]: Parameter};
 
-    constructor(readonly logger: Logger) {
+    constructor(@Optional() @Inject(PARAMETER) params: Parameter[]) {
         dotenv.config();
         this.paramMap = {};
+        console.log(params);
+        (params || []).forEach(param => this.add(param));
+        console.log(this.paramMap);
     }
 
-    add(param: Parameter): void {
-        this.paramMap[param.name] = param;
+    protected add(param: Parameter): void {
+        const existingParam = this.paramMap[param.name] || param;
+        existingParam.defaultValue = param.defaultValue;
+        existingParam.resolver = param.resolver || existingParam.resolver;
+        this.paramMap[param.name] = existingParam;
     }
 
     hasParam(name: string): boolean {

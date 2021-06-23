@@ -1,14 +1,14 @@
-import {Inject, Injectable, Optional} from "injection-js";
+import {injectable, injectAll} from "tsyringe";
 import {PARAMETER, Parameter} from "../common-types";
 import {convertValue, getType, isFunction} from "../utils";
 import dotenv from "dotenv";
 
-@Injectable()
+@injectable()
 export class Configuration {
 
     protected paramMap: {[name: string]: Parameter};
 
-    constructor(@Optional() @Inject(PARAMETER) params: Parameter[]) {
+    constructor(@injectAll(PARAMETER) params: Parameter[]) {
         dotenv.config();
         this.paramMap = {};
         console.log(params);

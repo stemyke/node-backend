@@ -50,7 +50,7 @@ import {GalleryController} from "./rest-controllers/gallery.controller";
 import {ProgressesController} from "./rest-controllers/progresses.controller";
 
 import {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
-import {InjectorMiddleware} from "./rest-middlewares/injector.middleware";
+import {ContainerMiddleware} from "./rest-middlewares/container.middleware";
 import {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 import {RequestEndedMiddleware} from "./rest-middlewares/request-ended.middleware";
 import {RequestStartedMiddleware} from "./rest-middlewares/request-started.middleware";
@@ -109,16 +109,16 @@ export {
 export {IsFile, IsObjectId} from "./validators";
 
 export {
-    IFixture,
-    SchemaConverter,
     FIXTURE,
     JOB,
     EXPRESS,
     HTTP_SERVER,
     SOCKET_SERVER,
+    PARAMETER,
+    IFixture,
+    SchemaConverter,
     ParamResolver,
     Parameter,
-    PARAMETER,
     IJob,
     IJobTask,
     JobParams,
@@ -316,7 +316,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
         }
     };
     restOptions.routePrefix = config.routePrefix || "/api";
-    restOptions.middlewares = [ErrorHandlerMiddleware, InjectorMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
+    restOptions.middlewares = [ErrorHandlerMiddleware, ContainerMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
         .concat(restOptions.middlewares as any || []);
     restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController]
         .concat(restOptions.controllers as any || []);

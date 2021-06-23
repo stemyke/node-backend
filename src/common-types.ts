@@ -1,13 +1,28 @@
-import {Application, Express, Request} from "express";
-import {Server} from "http";
-import {Server as SocketServer, Socket} from "socket.io";
+import {Request} from "express";
+import {Socket} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
-import {InjectionToken, Injector, Type} from "injection-js";
+import {InjectionToken} from "tsyringe";
 import {SchemaObject} from "openapi3-ts";
 import Buffer from "buffer";
 import {Readable} from "stream";
 import {Moment} from "moment";
+
+// --- Injection tokens ---
+
+export const FIXTURE: InjectionToken = Symbol.for("fixture-token");
+
+export const JOB: InjectionToken = Symbol.for("job-token");
+
+export const EXPRESS: InjectionToken = Symbol.for("express-token");
+
+export const HTTP_SERVER: InjectionToken = Symbol.for("http-server-token");
+
+export const SOCKET_SERVER: InjectionToken = Symbol.for("socket-server-token");
+
+export const PARAMETER: InjectionToken = Symbol.for("parameter-token");
+
+// --- Interfaces and utility classes ---
 
 export interface IFixture {
     load(): Promise<any>;
@@ -18,16 +33,6 @@ export type SchemaConverter = (
     options: any
 ) => SchemaObject;
 
-export const FIXTURE = new InjectionToken<IFixture>("fixture-token");
-
-export const JOB = new InjectionToken<Type<IJob>>("fixture-token");
-
-export const EXPRESS = new InjectionToken<Application>("express");
-
-export const HTTP_SERVER = new InjectionToken<Server>("http-server");
-
-export const SOCKET_SERVER = new InjectionToken<SocketServer>("socket-server");
-
 export type ParamResolver = (value: string) => any;
 
 export class Parameter {
@@ -36,8 +41,6 @@ export class Parameter {
 
     }
 }
-
-export const PARAMETER = new InjectionToken<Parameter>("parameter-token");
 
 export interface IJob {
     process(): Promise<any>;

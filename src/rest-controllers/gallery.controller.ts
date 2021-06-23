@@ -1,8 +1,8 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {Controller, Get, Param} from "routing-controllers";
 import {GalleryCache} from "../services/gallery-cache";
 
-@Injectable()
+@injectable()
 @Controller("/gallery")
 export class GalleryController {
 

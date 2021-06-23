@@ -7,7 +7,7 @@ import {LazyAsset, LazyAssetDoc} from "../models/lazy-asset";
 import {JobManager} from "./job-manager";
 import {MongoConnector} from "./mongo-connector";
 
-@Injectable()
+@injectable()
 export class LazyAssets {
 
     constructor(readonly jobMan: JobManager, readonly connector: MongoConnector) {

@@ -1,4 +1,4 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import socket_io_client from "socket.io-client"
 import {IProgress} from "../common-types";
 import {ProgressDoc} from "../models/progress";
@@ -6,7 +6,7 @@ import {Configuration} from "./configuration";
 
 const socketIOClient = socket_io_client;
 
-@Injectable()
+@injectable()
 export class ProgressHelper {
 
     protected client: SocketIOClient.Socket;

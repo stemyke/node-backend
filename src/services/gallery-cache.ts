@@ -1,8 +1,8 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {IGalleryImage, IGalleryImageHandler, IGallerySize} from "../common-types";
 import {GalleryImage} from "./gallery-image";
 
-@Injectable()
+@injectable()
 export class GalleryCache {
 
     private readonly imgCache: { [id: string]: IGalleryImage };

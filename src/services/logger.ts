@@ -1,6 +1,6 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 
-@Injectable()
+@injectable()
 export class Logger {
 
 }

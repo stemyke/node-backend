@@ -1,9 +1,9 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {IAsset} from "../common-types";
 import {Assets} from "./assets";
 import {LazyAssets} from "./lazy-assets";
 
-@Injectable()
+@injectable()
 export class AssetResolver {
 
     constructor(readonly assets: Assets, readonly lazyAssets: LazyAssets) {

@@ -1,6 +1,6 @@
 import {Response} from "express";
 import {sign} from "jsonwebtoken";
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {Authorized, Body, Controller, CurrentUser, Get, HttpError, Post, Res} from "routing-controllers";
 import {compare} from "bcrypt";
 
@@ -8,7 +8,7 @@ import {Configuration} from "../services/configuration";
 import {UserManager} from "../services/user-manager";
 import {IUser} from "../common-types";
 
-@Injectable()
+@injectable()
 @Controller()
 export class AuthController {
 

@@ -1,9 +1,9 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {Controller, Get, Param} from "routing-controllers";
 import {Progresses} from "../services/progresses";
 import {Configuration} from "../services/configuration";
 
-@Injectable()
+@injectable()
 @Controller("/progresses")
 export class ProgressesController {
 

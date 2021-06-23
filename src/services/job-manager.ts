@@ -1,4 +1,4 @@
-import {Inject, Injectable, Injector, Optional, ReflectiveInjector, Type} from "injection-js";
+import {injectAll} from "tsyringe";
 import {Queue, Scheduler, Worker} from "node-resque";
 import {schedule, validate} from "node-cron";
 import ioredis from "ioredis";
@@ -8,7 +8,7 @@ import {Configuration} from "./configuration";
 
 const IORedis = ioredis;
 
-@Injectable()
+@injectable()
 export class JobManager {
 
     protected jobs: any;
@@ -17,7 +17,7 @@ export class JobManager {
     protected scheduler: Scheduler;
     protected jobTypes: Type<IJob>[];
 
-    constructor(readonly config: Configuration, readonly injector: Injector, @Optional() @Inject(JOB) jobTypes: Type<IJob>[]) {
+    constructor(readonly config: Configuration, readonly injector: Injector, @injectAll(JOB) jobTypes: constructor<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
             res[getConstructorName(jobType)] = {

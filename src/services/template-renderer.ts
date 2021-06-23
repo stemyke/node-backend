@@ -1,12 +1,12 @@
 import {lstatSync, readdir, readFileSync} from "fs";
 import {join} from "path";
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import * as Handlebars from "handlebars";
 
 import {Translator} from "./translator";
 import {Configuration} from "./configuration";
 
-@Injectable()
+@injectable()
 export class TemplateRenderer {
 
     templates: {[name: string]: Function};

@@ -1,4 +1,4 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {fromBuffer} from "file-type";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
@@ -11,7 +11,7 @@ import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
 
-@Injectable()
+@injectable()
 export class Assets {
 
     protected bucket: GridFSBucket;

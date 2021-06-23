@@ -1,11 +1,11 @@
 import {ExpressMiddlewareInterface, Middleware} from "routing-controllers";
-import {Injector} from "injection-js";
 import {IRequest} from "../common-types";
+import {DependencyContainer} from "tsyringe";
 
 @Middleware({ type: "before" })
-export class InjectorMiddleware implements ExpressMiddlewareInterface {
+export class ContainerMiddleware implements ExpressMiddlewareInterface {
 
-    constructor(readonly injector: Injector) {
+    constructor(readonly container: DependencyContainer) {
 
     }
 
@@ -13,5 +13,4 @@ export class InjectorMiddleware implements ExpressMiddlewareInterface {
         request.injector = this.injector;
         next(null);
     }
-
 }

@@ -1,9 +1,9 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {getValue, isDefined, isString} from "../utils";
 import {ITranslations} from "../common-types";
 import {TranslationProvider} from "./translation-provider";
 
-@Injectable()
+@injectable()
 export class Translator {
 
     protected cache: { [lang: string]: ITranslations };

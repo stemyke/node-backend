@@ -1,12 +1,12 @@
 import {BadRequestError, ExpressErrorMiddlewareInterface, Middleware} from "routing-controllers";
 import {Response} from "express";
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 
 import {IRequest} from "../common-types";
 import {Translator} from "../services/translator";
 import {Configuration} from "../services/configuration";
 
-@Injectable()
+@injectable()
 @Middleware({ type: "after" })
 export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
 

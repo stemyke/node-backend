@@ -1,9 +1,9 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import axios from "axios";
 import {Configuration} from "./configuration";
 import {ITranslations} from "../common-types";
 
-@Injectable()
+@injectable()
 export class TranslationProvider {
 
     protected cache: { [lang: string]: Promise<ITranslations> };

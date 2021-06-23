@@ -1,4 +1,4 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import sharp_ from "sharp";
 import {access, constants, lstat, readdir, readFile, writeFile} from "fs";
 import {join, dirname} from "path";
@@ -9,7 +9,7 @@ import {mkdirRecursive} from "../utils";
 
 const sharp = sharp_;
 
-@Injectable()
+@injectable()
 export class Gallery {
 
     private readonly dir: string;

@@ -1,11 +1,11 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {ObjectId} from "bson";
 import {FilterQuery} from "mongoose";
 import {Progress, ProgressDoc} from "../models/progress";
 import {IProgress} from "../common-types";
 import {promiseTimeout} from "../utils";
 
-@Injectable()
+@injectable()
 export class Progresses {
 
     constructor() {

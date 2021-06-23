@@ -1,8 +1,8 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {Configuration} from "./configuration";
 import {rand} from "../utils";
 
-@Injectable()
+@injectable()
 export class IdGenerator {
 
     protected prefix: string;

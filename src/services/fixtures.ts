@@ -1,10 +1,10 @@
-import {Inject, Injectable, Optional} from "injection-js";
+import {injectable, injectAll} from "tsyringe";
 import {FIXTURE, IFixture} from "../common-types";
 
-@Injectable()
+@injectable()
 export class Fixtures {
 
-    constructor(@Optional() @Inject(FIXTURE) protected fixtures: IFixture[]) {
+    constructor(@injectAll(FIXTURE) protected fixtures: IFixture[]) {
 
     }
 

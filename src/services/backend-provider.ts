@@ -1,12 +1,12 @@
 import {createServer, Server} from "http";
 import express_, {Express} from "express";
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import socket_io, {Server as SocketServer} from "socket.io";
 
 const express = express_;
 const socketIO = socket_io;
 
-@Injectable()
+@injectable()
 export class BackendProvider {
 
     readonly express: Express;

@@ -1,4 +1,4 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {createTransport} from "nodemailer";
 import * as Mail from "nodemailer/lib/mailer";
 
@@ -15,7 +15,7 @@ export interface MailOptions {
     attachments?: Mail.Attachment[]
 }
 
-@Injectable()
+@injectable()
 export class MailSender {
 
     readonly transporter: Mail;

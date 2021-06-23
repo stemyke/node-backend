@@ -1,5 +1,5 @@
 import {Readable} from "stream";
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {
     Authorized,
     Controller,
@@ -15,7 +15,7 @@ import {IAssetImageParams} from "../common-types";
 import {Assets} from "../services/assets";
 import {AssetResolver} from "../services/asset-resolver";
 
-@Injectable()
+@injectable()
 @Controller("/assets")
 export class AssetsController {
 

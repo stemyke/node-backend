@@ -1,9 +1,9 @@
-import {Injectable} from "injection-js";
+import {injectable} from "tsyringe";
 import {Db, GridFSBucket} from "mongodb";
 import {connect, Connection} from "mongoose";
 import {Configuration} from "./configuration";
 
-@Injectable()
+@injectable()
 export class MongoConnector {
 
     get connection(): Connection {

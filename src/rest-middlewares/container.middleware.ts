@@ -10,7 +10,7 @@ export class ContainerMiddleware implements ExpressMiddlewareInterface {
     }
 
     use(request: IRequest, response: any, next: (err?: any) => any): void {
-        request.injector = this.injector;
+        request.container = this.container;
         next(null);
     }
 }

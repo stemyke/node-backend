@@ -1,3 +1,4 @@
+import {InjectionToken, DependencyContainer} from "tsyringe";
 import {from, Observable, Subject, Subscription} from "rxjs";
 import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
@@ -6,11 +7,18 @@ import {basename, dirname} from "path";
 import {GridFSBucket} from "mongodb";
 import {Document, DocumentQuery, FilterQuery, Model, model, Schema, Types} from "mongoose";
 import {getValue as getMongoValue, setValue as setMongoValue} from "mongoose/lib/utils";
-import {InjectionToken, Injector, Type} from "injection-js";
 import {PassThrough, Readable} from "stream";
 import {ObjectId} from "bson";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
-import {IClientSocket, IPaginationBase, IPaginationParams, IRequest} from "./common-types";
+import {IClientSocket, IPaginationBase, IPaginationParams, IRequest, Type} from "./common-types";
+
+export interface IDIContainers {
+    appContainer: DependencyContainer
+}
+
+export const diContainers: IDIContainers = {
+    appContainer: null
+};
 
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
@@ -97,14 +105,14 @@ export function convertValue(value: any, type: string): any {
     return value;
 }
 
-export function injectServices(schema: Schema<any>, services: { [prop: string]: Type<any> | InjectionToken<any> }) {
+export function injectServices(schema: Schema<any>, services: { [prop: string]: InjectionToken<any> }) {
     const serviceMap: { [prop: string]: any } = {};
     Object.keys(services).forEach(prop => {
         schema
             .virtual(prop)
             .get(() => {
-                const injector = Injector["appInjector"] as Injector;
-                serviceMap[prop] = serviceMap[prop] || (!injector ? {} : injector.get(services[prop]));
+                const diContainer = diContainers.appContainer;
+                serviceMap[prop] = serviceMap[prop] || (!diContainer ? {} : diContainer.resolve(services[prop]));
                 return serviceMap[prop];
             });
     });

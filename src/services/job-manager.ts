@@ -1,8 +1,8 @@
-import {injectAll} from "tsyringe";
+import {injectable, injectAll, DependencyContainer} from "tsyringe";
 import {Queue, Scheduler, Worker} from "node-resque";
 import {schedule, validate} from "node-cron";
 import ioredis from "ioredis";
-import {IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime} from "../common-types";
+import {IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime, Type} from "../common-types";
 import {getConstructorName, isArray, isObject} from "../utils";
 import {Configuration} from "./configuration";
 
@@ -17,7 +17,7 @@ export class JobManager {
     protected scheduler: Scheduler;
     protected jobTypes: Type<IJob>[];
 
-    constructor(readonly config: Configuration, readonly injector: Injector, @injectAll(JOB) jobTypes: constructor<IJob>[]) {
+    constructor(readonly config: Configuration, readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
             res[getConstructorName(jobType)] = {
@@ -167,14 +167,13 @@ export class JobManager {
     }
 
     protected resolveJobInstance(jobType: Type<IJob>, params: JobParams): IJob {
-        const paramProviders = Object.keys(params).map((name) => {
-            return {
-                provide: name,
-                useValue: params[name]
-            }
+        const container = this.container.createChildContainer();
+        Object.keys(params).map((name) => {
+            container.register(name, {useValue: params[name]});
         });
-        const injector = ReflectiveInjector.resolveAndCreate([...paramProviders, jobType], this.injector);
-        return injector.get(jobType) as IJob;
+        container.register(jobType, jobType);
+
+        return container.resolve(jobType) as IJob;
     }
 
     protected toPerformFunction(jobType: Type<IJob>): Function {

@@ -2,7 +2,7 @@ import {Request} from "express";
 import {Socket} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
-import {InjectionToken} from "tsyringe";
+import {InjectionToken, DependencyContainer} from "tsyringe";
 import {SchemaObject} from "openapi3-ts";
 import Buffer from "buffer";
 import {Readable} from "stream";
@@ -22,7 +22,20 @@ export const SOCKET_SERVER: InjectionToken = Symbol.for("socket-server-token");
 
 export const PARAMETER: InjectionToken = Symbol.for("parameter-token");
 
+// --- DI functions ---
+export const Type = Function;
+
+export interface Type<T = object> extends Function {
+    new (...args: any[]): T;
+}
+
+export interface TokenProvider {
+    token: InjectionToken,
+    use:
+}
+
 // --- Interfaces and utility classes ---
+
 
 export interface IFixture {
     load(): Promise<any>;
@@ -138,7 +151,7 @@ export interface IRequestBase<T> extends Request {
     id?: string;
     started?: Moment;
     ended?: Moment;
-    injector?: Injector;
+    container?: DependencyContainer;
     language?: string;
     user?: T;
 }

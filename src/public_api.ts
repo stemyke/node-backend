@@ -1,7 +1,7 @@
 import {join} from "path";
 import {json} from "body-parser";
 import {verify} from "jsonwebtoken";
-import {Injector, Provider, ReflectiveInjector} from "injection-js";
+import {DependencyContainer, container} from "tsyringe";
 import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
@@ -115,6 +115,8 @@ export {
     HTTP_SERVER,
     SOCKET_SERVER,
     PARAMETER,
+    Type,
+
     IFixture,
     SchemaConverter,
     ParamResolver,
@@ -174,12 +176,12 @@ export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
 
-async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
+async function resolveUser(container: DependencyContainer, req: IRequest): Promise<IUser> {
     if (req.user) return req.user;
     const auth = req.header("Authorization") || "";
     let payload = null;
     try {
-        const config = injector.get(Configuration);
+        const config = container.resolve(Configuration);
         payload = verify(auth.split(" ")[1], config.resolve("jwtSecret")) as any;
     } catch (e) {
         throw new HttpError(401, `Authentication failed. (${e.message})`);
@@ -187,11 +189,11 @@ async function resolveUser(injector: Injector, req: IRequest): Promise<IUser> {
     if (!payload) {
         throw new HttpError(401, `Authentication failed. (Maybe invalid token)`);
     }
-    req.user = await injector.get(UserManager).getById(payload.id);
+    req.user = await container.resolve(UserManager).getById(payload.id);
     return req.user;
 }
 
-export function createServices(): ReflectiveInjector {
+export function createServices(): DependencyContainer {
     // List of parameters
     const params = [
         new Parameter("templatesDir", join(__dirname, "templates")),
@@ -266,8 +268,9 @@ export function createServices(): ReflectiveInjector {
         UserManager
     ];
 
-    // Create injector
-    return ReflectiveInjector.resolveAndCreate([
+    // Create container
+    const diContainer = container.createChildContainer();
+    return con.resolveAndCreate([
         ...paramProviders,
         ...services
     ]);

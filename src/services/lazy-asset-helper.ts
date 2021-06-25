@@ -1,4 +1,4 @@
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import {IAsset} from "../common-types";
 import {LazyAsset, LazyAssetDoc} from "../models/lazy-asset";
 import {Assets} from "./assets";
@@ -6,6 +6,7 @@ import {Progresses} from "./progresses";
 import {JobManager} from "./job-manager";
 
 @injectable()
+@singleton()
 export class LazyAssetHelper {
 
     constructor(private assets: Assets, private progresses: Progresses, private jobMan: JobManager) {

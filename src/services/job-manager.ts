@@ -1,4 +1,4 @@
-import {injectable, injectAll, DependencyContainer} from "tsyringe";
+import {injectable, injectAll, DependencyContainer, singleton} from "tsyringe";
 import {Queue, Scheduler, Worker} from "node-resque";
 import {schedule, validate} from "node-cron";
 import ioredis from "ioredis";
@@ -9,6 +9,7 @@ import {Configuration} from "./configuration";
 const IORedis = ioredis;
 
 @injectable()
+@singleton()
 export class JobManager {
 
     protected jobs: any;

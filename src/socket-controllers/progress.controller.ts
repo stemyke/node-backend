@@ -1,14 +1,15 @@
-import {Inject} from "injection-js";
+import {inject, injectable} from "tsyringe";
 import {ConnectedSocket, MessageBody, OnMessage, SocketController,} from "socket-controllers";
 import {Server} from "socket.io";
 import {IClientSocket, SOCKET_SERVER} from "../common-types";
 import {broadcast} from "../utils";
 import {Progresses} from "../services/progresses";
 
+@injectable()
 @SocketController()
 export class ProgressController {
 
-    constructor(readonly progresses: Progresses, @Inject(SOCKET_SERVER) readonly socketServer: Server) {
+    constructor(readonly progresses: Progresses, @inject(SOCKET_SERVER) readonly socketServer: Server) {
     }
 
     @OnMessage("background-progress")

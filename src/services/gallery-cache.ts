@@ -1,8 +1,9 @@
-import {injectable} from "tsyringe";
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import {IGalleryImage, IGalleryImageHandler, IGallerySize} from "../common-types";
 import {GalleryImage} from "./gallery-image";
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class GalleryCache {
 
     private readonly imgCache: { [id: string]: IGalleryImage };

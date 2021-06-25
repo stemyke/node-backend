@@ -1,9 +1,10 @@
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import {Db, GridFSBucket} from "mongodb";
 import {connect, Connection} from "mongoose";
 import {Configuration} from "./configuration";
 
 @injectable()
+@singleton()
 export class MongoConnector {
 
     get connection(): Connection {

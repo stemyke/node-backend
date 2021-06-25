@@ -1,7 +1,9 @@
+import {injectable} from "tsyringe";
 import {ExpressMiddlewareInterface, Middleware} from "routing-controllers";
 import moment from "moment";
 import {IRequest} from "../common-types";
 
+@injectable()
 @Middleware({ type: "after" })
 export class RequestEndedMiddleware implements ExpressMiddlewareInterface {
 

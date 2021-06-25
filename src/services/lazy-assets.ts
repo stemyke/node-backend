@@ -1,13 +1,14 @@
-import {Injectable, Type} from "injection-js";
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import {ObjectId} from "bson";
 import {FilterQuery} from "mongoose";
-import {IJob, ILazyAsset, JobParams} from "../common-types";
+import {IJob, ILazyAsset, JobParams, Type} from "../common-types";
 import {deleteFromBucket} from "../utils";
 import {LazyAsset, LazyAssetDoc} from "../models/lazy-asset";
 import {JobManager} from "./job-manager";
 import {MongoConnector} from "./mongo-connector";
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class LazyAssets {
 
     constructor(readonly jobMan: JobManager, readonly connector: MongoConnector) {

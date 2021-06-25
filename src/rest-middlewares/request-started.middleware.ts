@@ -1,8 +1,10 @@
+import {injectable} from "tsyringe";
 import {ExpressMiddlewareInterface, Middleware} from "routing-controllers";
 import {ObjectId} from "bson";
 import moment from "moment";
 import {IRequest} from "../common-types";
 
+@injectable()
 @Middleware({ type: "before" })
 export class RequestStartedMiddleware implements ExpressMiddlewareInterface {
 

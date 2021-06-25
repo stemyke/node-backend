@@ -1,7 +1,8 @@
-import {injectable, injectAll} from "tsyringe";
+import {injectable, injectAll, Lifecycle, scoped} from "tsyringe";
 import {FIXTURE, IFixture} from "../common-types";
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class Fixtures {
 
     constructor(@injectAll(FIXTURE) protected fixtures: IFixture[]) {

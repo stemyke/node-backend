@@ -1,10 +1,11 @@
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import cacheman_mongo from "cacheman-mongodb";
 import {MongoConnector} from "./mongo-connector";
 
 const CachemanMongo = cacheman_mongo;
 
 @injectable()
+@singleton()
 export class Cache {
 
     protected cacheManMongo: typeof CachemanMongo;

@@ -1,4 +1,4 @@
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import {ObjectId} from "bson";
 import {FilterQuery} from "mongoose";
 import {Progress, ProgressDoc} from "../models/progress";
@@ -6,11 +6,8 @@ import {IProgress} from "../common-types";
 import {promiseTimeout} from "../utils";
 
 @injectable()
+@singleton()
 export class Progresses {
-
-    constructor() {
-
-    }
 
     async waitToFinish(id: string): Promise<IProgress> {
         let isFinished = false;

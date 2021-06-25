@@ -1,4 +1,4 @@
-import {injectable} from "tsyringe";
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import sharp_ from "sharp";
 import {access, constants, lstat, readdir, readFile, writeFile} from "fs";
 import {join, dirname} from "path";
@@ -10,6 +10,7 @@ import {mkdirRecursive} from "../utils";
 const sharp = sharp_;
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class Gallery {
 
     private readonly dir: string;

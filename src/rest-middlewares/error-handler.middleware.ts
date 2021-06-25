@@ -1,6 +1,6 @@
+import {injectable} from "tsyringe";
 import {BadRequestError, ExpressErrorMiddlewareInterface, Middleware} from "routing-controllers";
 import {Response} from "express";
-import {injectable} from "tsyringe";
 
 import {IRequest} from "../common-types";
 import {Translator} from "../services/translator";

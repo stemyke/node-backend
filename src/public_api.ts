@@ -1,13 +1,14 @@
 import {join} from "path";
 import {json} from "body-parser";
 import {verify} from "jsonwebtoken";
-import {DependencyContainer, container} from "tsyringe";
+import {container, DependencyContainer} from "tsyringe";
 import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
 import {getApiDocs} from "./rest-openapi";
 
 import {
+    DiWrapper,
     EXPRESS,
     FIXTURE,
     HTTP_SERVER,
@@ -18,7 +19,8 @@ import {
     JOB,
     PARAMETER,
     Parameter,
-    SOCKET_SERVER
+    Provider,
+    SOCKET_SERVER, Type
 } from "./common-types";
 
 import {AssetProcessor} from "./services/asset-processor";
@@ -34,7 +36,6 @@ import {IdGenerator} from "./services/id-generator";
 import {JobManager} from "./services/job-manager";
 import {LazyAssetHelper} from "./services/lazy-asset-helper";
 import {LazyAssets} from "./services/lazy-assets";
-import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
 import {MongoConnector} from "./services/mongo-connector";
 import {ProgressHelper} from "./services/progress-helper";
@@ -58,7 +59,7 @@ import {RequestStartedMiddleware} from "./rest-middlewares/request-started.middl
 import {ProgressController} from "./socket-controllers/progress.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
-import {isFunction, isString, valueToPromise} from "./utils";
+import {diContainers, isFunction, isString, valueToPromise} from "./utils";
 
 export {
     isNullOrUndefined,
@@ -116,7 +117,11 @@ export {
     SOCKET_SERVER,
     PARAMETER,
     Type,
-
+    ClassBasedProvider,
+    ValueBasedProvider,
+    FactoryBasedProvider,
+    TokenBasedProvider,
+    Provider,
     IFixture,
     SchemaConverter,
     ParamResolver,
@@ -159,7 +164,6 @@ export {GalleryCache} from "./services/gallery-cache";
 export {IdGenerator} from "./services/id-generator";
 export {JobManager} from "./services/job-manager";
 export {LazyAssets} from "./services/lazy-assets";
-export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
 export {MongoConnector} from "./services/mongo-connector";
 export {Progresses} from "./services/progresses";
@@ -207,6 +211,7 @@ export function createServices(): DependencyContainer {
         new Parameter("mailSenderAddress", "info@stemy.hu"),
         new Parameter("translationsTemplate", "https://translation.service/[lang]"),
         new Parameter("jwtSecret", "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9"),
+        new Parameter("mongoUri", ""),
         new Parameter("mongoDb", "node-backend"),
         new Parameter("mongoUser", null),
         new Parameter("mongoPassword", null),
@@ -251,9 +256,9 @@ export function createServices(): DependencyContainer {
         BackendProvider,
         Cache,
         Configuration,
+        Fixtures,
         Gallery,
         GalleryCache,
-        Logger,
         IdGenerator,
         JobManager,
         LazyAssetHelper,
@@ -266,17 +271,17 @@ export function createServices(): DependencyContainer {
         TranslationProvider,
         Translator,
         UserManager
-    ];
+    ] as Type<any>[];
 
     // Create container
     const diContainer = container.createChildContainer();
-    return con.resolveAndCreate([
-        ...paramProviders,
-        ...services
-    ]);
+    services.forEach(service => {
+        diContainer.register(service, service);
+    });
+    return diContainer;
 }
 
-export async function setupBackend(config: IBackendConfig, providers?: Provider[], parent?: ReflectiveInjector): Promise<ReflectiveInjector> {
+export async function setupBackend(config: IBackendConfig, providers?: Provider<any>[], parent?: DependencyContainer): Promise<DependencyContainer> {
 
     providers = Array.isArray(providers) ? providers : [];
     parent = parent || createServices();
@@ -286,8 +291,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
     const fixtureProviders = fixtureTypes.map(fixture => {
         return {
             provide: FIXTURE,
-            multi: true,
-            useExisting: fixture
+            useClass: fixture
         };
     });
 
@@ -295,7 +299,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
     const paramProviders = (config.params || []).map(p => {
         return {
             provide: PARAMETER,
-            multi: true,
             useValue: p
         }
     });
@@ -304,7 +307,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
     const jobProviders = (config.jobs || []).map(jobType => {
         return {
             provide: JOB,
-            multi: true,
             useValue: jobType
         };
     });
@@ -329,56 +331,47 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
     socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
     socketOptions.controllers = [ProgressController].concat(socketOptions.controllers as any || []);
 
-    const subServices = [
-        {
-            provide: Configuration,
-            deps: [PARAMETER],
-            useFactory: (params) => {
-                return new Configuration(params)
-            }
-        },
-        Fixtures
-    ];
-
-    const injector = parent.resolveAndCreateChild([
-        ...subServices,
+    const allProviders: Provider<any>[] = [
         ...fixtureTypes,
         ...fixtureProviders,
         ...paramProviders,
         ...jobProviders,
-        ...restOptions.middlewares as Provider[],
-        ...restOptions.controllers as Provider[],
-        ...socketOptions.middlewares as Provider[],
-        ...socketOptions.controllers as Provider[],
+        ...restOptions.middlewares as Type<any>[],
+        ...restOptions.controllers as Type<any>[],
+        ...socketOptions.middlewares as Type<any>[],
+        ...socketOptions.controllers as Type<any>[],
         ...providers,
         {
             provide: EXPRESS,
-            deps: [BackendProvider],
-            useFactory: (bp: BackendProvider) => {
+            useFactory: (container: DependencyContainer) => {
                 return bp.express;
             }
         },
         {
             provide: HTTP_SERVER,
-            deps: [BackendProvider],
-            useFactory: (bp: BackendProvider) => {
+            useFactory: (container: DependencyContainer) => {
                 return bp.server;
             }
         },
         {
             provide: SOCKET_SERVER,
-            deps: [BackendProvider],
-            useFactory: (bp: BackendProvider) => {
+            useFactory: (container: DependencyContainer) => {
                 return bp.io;
             }
         },
-    ]);
+    ];
 
-    Injector["appInjector"] = injector;
+    // Create DI container
+
+    const diContainer = parent.createChildContainer();
+
+
+
+    diContainers.appContainer = diContainers.appContainer || diContainer;
 
     // Authentication
     restOptions.authorizationChecker = async (action: Action, roles: any[]) => {
-        const user = await resolveUser(injector, action.request);
+        const user = await resolveUser(diContainer, action.request);
         if (!user) {
             throw new HttpError(401, "Authentication failed. (User can't be found.)");
         }
@@ -405,12 +398,13 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
         return true;
     };
     restOptions.currentUserChecker = async (action: Action) => {
-        return resolveUser(injector, action.request);
+        return resolveUser(diContainer, action.request);
     };
 
     // Final setup
-    const configuration = injector.get(Configuration);
-    const bp = injector.get(BackendProvider);
+    const configuration = diContainer.resolve(Configuration);
+    const bp = diContainer.resolve(BackendProvider);
+    const diWrapper = new DiWrapper(diContainer)
 
     if (config.restOptions) {
         bp.express.use(json({
@@ -418,7 +412,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
                 ? configuration.resolve("jsonLimit")
                 : "250mb"
         }));
-        useRoutingContainer(injector);
+        useRoutingContainer(diWrapper);
         useExpressServer(bp.express, restOptions);
         // Setup rest ai docs
         bp.express.get("/api-docs", (req, res) => {
@@ -426,21 +420,21 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider[
         });
     }
     if (config.socketOptions) {
-        useSocketContainer(injector);
+        useSocketContainer(diWrapper);
         useSocketServer(bp.io, socketOptions);
     }
 
     // Connect to mongo if necessary
-    if (configuration.hasParam("mongoUri")) {
-        const connector = injector.get(MongoConnector);
+    if (configuration.hasParam("mongoUri") && configuration.resolve("mongoUri")) {
+        const connector = diContainer.resolve(MongoConnector);
         await connector.connect();
     }
 
     // Load fixtures
-    // if (!configuration.resolve("isWorker")) {
-    //     const fixtures = injector.get(Fixtures);
-    //     await fixtures.load();
-    // }
+    if (!configuration.resolve("isWorker")) {
+        const fixtures = diContainer.resolve(Fixtures);
+        await fixtures.load();
+    }
 
-    return injector;
+    return diContainer;
 }

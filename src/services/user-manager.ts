@@ -1,3 +1,4 @@
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import {IUser} from "../common-types";
 
 const sampleUser: IUser = {
@@ -7,6 +8,8 @@ const sampleUser: IUser = {
     roles: ["admin"]
 };
 
+@injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class UserManager {
 
     async getByCredentials(credentials: any): Promise<IUser> {

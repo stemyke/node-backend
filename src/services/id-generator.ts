@@ -1,8 +1,9 @@
-import {injectable} from "tsyringe";
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import {Configuration} from "./configuration";
 import {rand} from "../utils";
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class IdGenerator {
 
     protected prefix: string;

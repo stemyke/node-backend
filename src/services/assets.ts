@@ -1,4 +1,4 @@
-import {injectable} from "tsyringe";
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import {fromBuffer} from "file-type";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
@@ -12,6 +12,7 @@ import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class Assets {
 
     protected bucket: GridFSBucket;

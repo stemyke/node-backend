@@ -2,7 +2,14 @@ import {Request} from "express";
 import {Socket} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
-import {InjectionToken, DependencyContainer} from "tsyringe";
+import {
+    ClassProvider,
+    DependencyContainer,
+    FactoryProvider,
+    InjectionToken,
+    TokenProvider,
+    ValueProvider
+} from "tsyringe";
 import {SchemaObject} from "openapi3-ts";
 import Buffer from "buffer";
 import {Readable} from "stream";
@@ -29,13 +36,34 @@ export interface Type<T = object> extends Function {
     new (...args: any[]): T;
 }
 
-export interface TokenProvider {
-    token: InjectionToken,
-    use:
+export interface ClassBasedProvider<T> extends ClassProvider<T> {
+    provide: InjectionToken;
+}
+
+export interface ValueBasedProvider<T> extends ValueProvider<T> {
+    provide: InjectionToken;
+}
+
+export interface FactoryBasedProvider<T> extends FactoryProvider<T> {
+    provide: InjectionToken;
+}
+
+export interface TokenBasedProvider<T> extends TokenProvider<T> {
+    provide: InjectionToken;
+}
+
+export type Provider<T> = Type<T> | ClassBasedProvider<T> | ValueBasedProvider<T> | FactoryBasedProvider<T> | TokenBasedProvider<T>;
+
+export class DiWrapper {
+    constructor(private container: DependencyContainer) {
+    }
+
+    get(token: InjectionToken): any {
+        return this.container.resolve(token);
+    }
 }
 
 // --- Interfaces and utility classes ---
-
 
 export interface IFixture {
     load(): Promise<any>;

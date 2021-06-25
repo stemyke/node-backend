@@ -1,4 +1,4 @@
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import {createTransport} from "nodemailer";
 import * as Mail from "nodemailer/lib/mailer";
 
@@ -16,6 +16,7 @@ export interface MailOptions {
 }
 
 @injectable()
+@singleton()
 export class MailSender {
 
     readonly transporter: Mail;

@@ -1,4 +1,4 @@
-import {IAsset, IJob, ILazyAsset, IProgress} from "../common-types";
+import {IAsset, IJob, IProgress} from "../common-types";
 import {Assets} from "../services/assets";
 import {LazyAssets} from "../services/lazy-assets";
 import {AssetResolver} from "../services/asset-resolver";

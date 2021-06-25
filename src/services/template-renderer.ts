@@ -1,12 +1,13 @@
 import {lstatSync, readdir, readFileSync} from "fs";
 import {join} from "path";
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import * as Handlebars from "handlebars";
 
 import {Translator} from "./translator";
 import {Configuration} from "./configuration";
 
 @injectable()
+@singleton()
 export class TemplateRenderer {
 
     templates: {[name: string]: Function};

@@ -49,6 +49,10 @@ export function isFunction(value: any): value is Function {
     return typeof value === "function";
 }
 
+export function isType(value: any): value is Type {
+    return typeof value === "function";
+}
+
 export function ucFirst(value: string): string {
     if (!value) return "";
     return value[0].toUpperCase() + value.substr(1);

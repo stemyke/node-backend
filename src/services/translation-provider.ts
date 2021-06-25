@@ -1,9 +1,10 @@
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import axios from "axios";
 import {Configuration} from "./configuration";
 import {ITranslations} from "../common-types";
 
 @injectable()
+@singleton()
 export class TranslationProvider {
 
     protected cache: { [lang: string]: Promise<ITranslations> };

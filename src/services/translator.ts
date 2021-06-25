@@ -1,9 +1,10 @@
-import {injectable} from "tsyringe";
+import {injectable, singleton} from "tsyringe";
 import {getValue, isDefined, isString} from "../utils";
 import {ITranslations} from "../common-types";
 import {TranslationProvider} from "./translation-provider";
 
 @injectable()
+@singleton()
 export class Translator {
 
     protected cache: { [lang: string]: ITranslations };

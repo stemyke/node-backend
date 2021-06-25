@@ -1,9 +1,10 @@
-import {injectable} from "tsyringe";
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import {IAsset} from "../common-types";
 import {Assets} from "./assets";
 import {LazyAssets} from "./lazy-assets";
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class AssetResolver {
 
     constructor(readonly assets: Assets, readonly lazyAssets: LazyAssets) {

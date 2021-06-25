@@ -1,7 +1,9 @@
+import {injectable} from "tsyringe";
 import {ExpressMiddlewareInterface, Middleware} from "routing-controllers";
 import {IRequest} from "../common-types";
 import {Configuration} from "../services/configuration";
 
+@injectable()
 @Middleware({ type: "before" })
 export class LanguageMiddleware implements ExpressMiddlewareInterface {
 

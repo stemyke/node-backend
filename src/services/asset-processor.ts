@@ -1,4 +1,4 @@
-import {injectable} from "tsyringe";
+import {injectable, Lifecycle, scoped} from "tsyringe";
 import fontKit_, {Font} from "fontkit";
 import sharp_ from "sharp";
 import {FontFormat, IAssetMeta} from "../common-types";
@@ -21,6 +21,7 @@ const fontProps = [
 ];
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class AssetProcessor {
 
     static extractFontFormat(font: Font): FontFormat {

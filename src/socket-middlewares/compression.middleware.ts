@@ -1,5 +1,7 @@
-import { Middleware, MiddlewareInterface } from 'socket-controllers';
+import {injectable} from "tsyringe";
+import {Middleware, MiddlewareInterface} from "socket-controllers";
 
+@injectable()
 @Middleware()
 export class CompressionMiddleware implements MiddlewareInterface {
 

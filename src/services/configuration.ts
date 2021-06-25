@@ -1,9 +1,10 @@
-import {injectable, injectAll} from "tsyringe";
+import {injectable, injectAll, scoped, Lifecycle} from "tsyringe";
 import {PARAMETER, Parameter} from "../common-types";
 import {convertValue, getType, isFunction} from "../utils";
 import dotenv from "dotenv";
 
 @injectable()
+@scoped(Lifecycle.ContainerScoped)
 export class Configuration {
 
     protected paramMap: {[name: string]: Parameter};

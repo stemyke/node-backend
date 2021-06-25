@@ -7,7 +7,7 @@
             "fs": "fs",
             "http": "http",
             "axios": "axios",
-            "injection-js": "injection-js",
+            "tsyringe": "tsyringe",
             "express": "express",
             "socket.io": "socket.io",
             "routing-controllers-openapi": "routing-controllers-openapi",

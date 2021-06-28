@@ -49,7 +49,7 @@ export function isFunction(value: any): value is Function {
     return typeof value === "function";
 }
 
-export function isType(value: any): value is Type {
+export function isType(value: any): value is Type<any> {
     return typeof value === "function";
 }
 

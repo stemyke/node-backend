@@ -1,15 +1,15 @@
-import {injectable, injectAll, DependencyContainer, singleton} from "tsyringe";
+import {DependencyContainer, inject, injectable, injectAll, Lifecycle, scoped} from "tsyringe";
 import {Queue, Scheduler, Worker} from "node-resque";
 import {schedule, validate} from "node-cron";
 import ioredis from "ioredis";
-import {IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime, Type} from "../common-types";
+import {DI_CONTAINER, IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime, Type} from "../common-types";
 import {getConstructorName, isArray, isObject} from "../utils";
 import {Configuration} from "./configuration";
 
 const IORedis = ioredis;
 
 @injectable()
-@singleton()
+@scoped(Lifecycle.ContainerScoped)
 export class JobManager {
 
     protected jobs: any;
@@ -18,7 +18,7 @@ export class JobManager {
     protected scheduler: Scheduler;
     protected jobTypes: Type<IJob>[];
 
-    constructor(readonly config: Configuration, readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
+    constructor(readonly config: Configuration, @inject(DI_CONTAINER) readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
             res[getConstructorName(jobType)] = {

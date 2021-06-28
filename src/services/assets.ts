@@ -19,7 +19,7 @@ export class Assets {
     protected collection: Collection;
 
     constructor(readonly connector: MongoConnector, readonly assetProcessor: AssetProcessor) {
-        this.bucket = new GridFSBucket(connector.database, {bucketName: "assets"});
+        this.bucket = connector.bucket;
         this.collection = connector.database.collection("assets.files");
     }
 

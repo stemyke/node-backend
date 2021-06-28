@@ -12,9 +12,7 @@ export class Configuration {
     constructor(@injectAll(PARAMETER) params: Parameter[]) {
         dotenv.config();
         this.paramMap = {};
-        console.log(params);
         (params || []).forEach(param => this.add(param));
-        console.log(this.paramMap);
     }
 
     protected add(param: Parameter): void {

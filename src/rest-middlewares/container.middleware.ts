@@ -1,13 +1,13 @@
-import {injectable} from "tsyringe";
+import {inject, injectable} from "tsyringe";
 import {ExpressMiddlewareInterface, Middleware} from "routing-controllers";
-import {IRequest} from "../common-types";
+import {DI_CONTAINER, IRequest} from "../common-types";
 import {DependencyContainer} from "tsyringe";
 
 @injectable()
 @Middleware({ type: "before" })
 export class ContainerMiddleware implements ExpressMiddlewareInterface {
 
-    constructor(readonly container: DependencyContainer) {
+    constructor(@inject(DI_CONTAINER) readonly container: DependencyContainer) {
 
     }
 

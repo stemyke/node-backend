@@ -8,11 +8,13 @@ import {useContainer as useSocketContainer, useSocketServer} from "socket-contro
 import {getApiDocs} from "./rest-openapi";
 
 import {
+    DI_CONTAINER,
     DiWrapper,
     EXPRESS,
     FIXTURE,
     HTTP_SERVER,
     IBackendConfig,
+    InjectionProvider,
     IPaginationParams,
     IRequest,
     IUser,
@@ -20,7 +22,8 @@ import {
     PARAMETER,
     Parameter,
     Provider,
-    SOCKET_SERVER, Type
+    SOCKET_SERVER,
+    Type
 } from "./common-types";
 
 import {AssetProcessor} from "./services/asset-processor";
@@ -59,7 +62,7 @@ import {RequestStartedMiddleware} from "./rest-middlewares/request-started.middl
 import {ProgressController} from "./socket-controllers/progress.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
-import {diContainers, isFunction, isString, valueToPromise} from "./utils";
+import {diContainers, isFunction, isString, isType, valueToPromise} from "./utils";
 
 export {
     isNullOrUndefined,
@@ -69,6 +72,7 @@ export {
     isArray,
     isString,
     isFunction,
+    isType,
     ucFirst,
     lcFirst,
     getValue,
@@ -116,11 +120,13 @@ export {
     HTTP_SERVER,
     SOCKET_SERVER,
     PARAMETER,
+    DI_CONTAINER,
     Type,
     ClassBasedProvider,
     ValueBasedProvider,
     FactoryBasedProvider,
     TokenBasedProvider,
+    InjectionProvider,
     Provider,
     IFixture,
     SchemaConverter,
@@ -243,7 +249,6 @@ export function createServices(): DependencyContainer {
     const paramProviders = params.map(p => {
         return {
             provide: PARAMETER,
-            multi: true,
             useValue: p
         }
     });
@@ -275,8 +280,12 @@ export function createServices(): DependencyContainer {
 
     // Create container
     const diContainer = container.createChildContainer();
+    paramProviders.forEach(provider => {
+        diContainer.register(provider.provide, provider);
+    });
     services.forEach(service => {
-        diContainer.register(service, service);
+        if (!container.isRegistered(service))
+            diContainer.register(service, service);
     });
     return diContainer;
 }
@@ -331,7 +340,20 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
     socketOptions.controllers = [ProgressController].concat(socketOptions.controllers as any || []);
 
-    const allProviders: Provider<any>[] = [
+    // Create providers
+
+    const allProviders: Provider<any>[] = [];
+
+    // Add multi tokens to sub container
+    [PARAMETER].forEach(provide => {
+        const values = parent.resolveAll(provide);
+        values.forEach(useValue => {
+            allProviders.push({provide, useValue});
+        });
+    });
+
+    // Add other providers
+    allProviders.push(
         ...fixtureTypes,
         ...fixtureProviders,
         ...paramProviders,
@@ -344,28 +366,38 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         {
             provide: EXPRESS,
             useFactory: (container: DependencyContainer) => {
-                return bp.express;
+                return container.resolve(BackendProvider).express;
             }
         },
         {
             provide: HTTP_SERVER,
             useFactory: (container: DependencyContainer) => {
-                return bp.server;
+                return container.resolve(BackendProvider).server;
             }
         },
         {
             provide: SOCKET_SERVER,
             useFactory: (container: DependencyContainer) => {
-                return bp.io;
+                return container.resolve(BackendProvider).io;
             }
-        },
-    ];
+        }
+    )
 
     // Create DI container
 
     const diContainer = parent.createChildContainer();
 
+    allProviders.forEach(provider => {
+        if (isType(provider)) {
+            diContainer.register(provider, provider);
+            return;
+        }
+        diContainer.register(provider.provide, provider as any);
+    });
 
+    diContainer.register(DI_CONTAINER, {
+        useValue: diContainer
+    });
 
     diContainers.appContainer = diContainers.appContainer || diContainer;
 
@@ -425,9 +457,11 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     }
 
     // Connect to mongo if necessary
-    if (configuration.hasParam("mongoUri") && configuration.resolve("mongoUri")) {
-        const connector = diContainer.resolve(MongoConnector);
-        await connector.connect();
+    if (configuration.hasParam("mongoUri")) {
+        if (configuration.resolve("mongoUri")) {
+            const connector = diContainer.resolve(MongoConnector);
+            await connector.connect();
+        }
     }
 
     // Load fixtures

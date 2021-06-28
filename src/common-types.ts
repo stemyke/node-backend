@@ -29,6 +29,8 @@ export const SOCKET_SERVER: InjectionToken = Symbol.for("socket-server-token");
 
 export const PARAMETER: InjectionToken = Symbol.for("parameter-token");
 
+export const DI_CONTAINER: InjectionToken = Symbol.for("di-container-token");
+
 // --- DI functions ---
 export const Type = Function;
 
@@ -52,7 +54,9 @@ export interface TokenBasedProvider<T> extends TokenProvider<T> {
     provide: InjectionToken;
 }
 
-export type Provider<T> = Type<T> | ClassBasedProvider<T> | ValueBasedProvider<T> | FactoryBasedProvider<T> | TokenBasedProvider<T>;
+export type InjectionProvider<T> = ClassBasedProvider<T> | ValueBasedProvider<T> | FactoryBasedProvider<T> | TokenBasedProvider<T>;
+
+export type Provider<T> = Type<T> | InjectionProvider<T>;
 
 export class DiWrapper {
     constructor(private container: DependencyContainer) {

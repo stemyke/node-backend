@@ -5,7 +5,7 @@
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
         "build": "node build/build.js",
-        "public": "npm publish dist --access public",
+        "public": "npm publish ./dist --access public",
         "notify": "sudo sysctl fs.inotify.max_user_watches=524288 && sudo sysctl -p --system"
     },
     "builders": "builders.json",

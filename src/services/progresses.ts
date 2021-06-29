@@ -1,13 +1,28 @@
 import {injectable, singleton} from "tsyringe";
+import socket_io_client from "socket.io-client"
 import {ObjectId} from "bson";
 import {FilterQuery} from "mongoose";
-import {Progress, ProgressDoc} from "../models/progress";
 import {IProgress} from "../common-types";
 import {promiseTimeout} from "../utils";
+import {Configuration} from "./configuration";
+import {Progress} from "./entities/progress";
+import {MongoConnector} from "./mongo-connector";
+import {Collection} from "mongodb";
+
+const socketIOClient = socket_io_client;
 
 @injectable()
 @singleton()
 export class Progresses {
+
+    protected client: SocketIOClient.Socket;
+    readonly collection: Collection;
+
+    constructor(readonly connector: MongoConnector, readonly config: Configuration) {
+        const mainEndpoint = this.config.resolve("mainEndpoint");
+        this.client = !mainEndpoint ? null : socketIOClient(mainEndpoint, {path: "/socket"});
+        this.collection = connector.database.collection("progresses");
+    }
 
     async waitToFinish(id: string): Promise<IProgress> {
         let isFinished = false;
@@ -32,22 +47,30 @@ export class Progresses {
         return this.find({_id: new ObjectId(id)});
     }
 
-    async find(where: FilterQuery<ProgressDoc>): Promise<IProgress> {
-        const progress = await Progress.findOne(where);
-        if (!progress) return null;
-        return progress;
+    async find(where: FilterQuery<IProgress>): Promise<IProgress> {
+        const data = await this.collection.findOne(where);
+        return !data ? null : new Progress(
+            data._id, data.current, data.max, data.message, data.error,
+            this.client, this.collection
+        );
     }
 
     async create(max: number = 100): Promise<IProgress> {
-        const progress = new Progress();
-        progress.current = 0;
-        await progress.setMax(max);
-        return progress;
+        if (isNaN(max) || max <= 0) {
+            throw "Max progress value must be bigger than zero";
+        }
+        const res = await this.collection.insertOne({
+            current: 0,
+            max
+        });
+        return new Progress(
+            res.insertedId, 0, max, "", "",
+            this.client, this.collection
+        );
     }
 
-    remove(id: string): Promise<any> {
-        return new Promise<any>(resolve => {
-            Progress.findByIdAndDelete(id).then(resolve, resolve);
-        });
+    async remove(id: string): Promise<any> {
+        await this.collection.deleteOne({_id: new ObjectId(id)});
+        return id;
     }
 }

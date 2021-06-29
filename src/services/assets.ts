@@ -15,8 +15,8 @@ import {Asset} from "./entities/asset";
 @scoped(Lifecycle.ContainerScoped)
 export class Assets {
 
-    protected bucket: GridFSBucket;
-    protected collection: Collection;
+    readonly bucket: GridFSBucket;
+    readonly collection: Collection;
 
     constructor(readonly connector: MongoConnector, readonly assetProcessor: AssetProcessor) {
         this.bucket = connector.bucket;

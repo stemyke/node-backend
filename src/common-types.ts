@@ -146,7 +146,7 @@ export interface IAsset {
     contentType?: string;
     metadata?: IAssetMeta;
     stream: Readable,
-    unlink(): Promise<any>;
+    unlink(): Promise<string>;
     getBuffer(): Promise<Buffer>;
     download(metadata?: IAssetMeta): Promise<Readable>;
     downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable>;
@@ -161,6 +161,7 @@ export interface ILazyAsset {
     jobQue: string;
     progressId?: string;
     assetId?: string;
+    unlink(): Promise<string>;
     startWorking(): void;
     loadAsset(): Promise<IAsset>;
     writeAsset(asset: IAsset): Promise<IAsset>;

@@ -1,62 +1,92 @@
-import {injectable, singleton} from "tsyringe";
-import socket_io_client from "socket.io-client"
-import {IProgress} from "../common-types";
-import {ProgressDoc} from "../models/progress";
-import {Configuration} from "./configuration";
+import {ObjectId} from "bson";
+import {Collection} from "mongodb";
+import {IProgress} from "../../common-types";
 
-const socketIOClient = socket_io_client;
+export class Progress implements IProgress {
 
-@injectable()
-@singleton()
-export class ProgressHelper {
-
-    protected client: SocketIOClient.Socket;
-
-    constructor(readonly config: Configuration) {
-        const mainEndpoint = this.config.resolve("mainEndpoint");
-        this.client = !mainEndpoint ? null : socketIOClient(mainEndpoint, {path: "/socket"});
+    get id(): string {
+        return this.progressId.toHexString();
     }
 
-    getPercent(progress: ProgressDoc): number {
-        return progress.max > 0 ? Math.round(progress.current / progress.max * 100) : 0;
+    get current(): number {
+        return this.mCurrent;
     }
 
-    getRemaining(progress: ProgressDoc): number {
-        return progress.max > 0 ? progress.max - progress.current : 0;
+    get max(): number {
+        return this.mMax;
     }
 
-    async createSubProgress(progress: ProgressDoc, progressValue: number, max?: number, message?: string): Promise<IProgress> {
+    get message(): string {
+        return this.mMessage;
+    }
+
+    get error(): string {
+        return this.mError;
+    }
+
+    get percent(): number {
+        return this.mMax > 0 ? Math.round(this.mCurrent / this.mMax * 100) : 0;
+    }
+
+    get remaining(): number {
+        return this.mMax > 0 ? this.mMax - this.mCurrent : 0;
+    }
+
+    constructor(readonly progressId: ObjectId,
+                protected mCurrent: number,
+                protected mMax: number,
+                protected mMessage: string,
+                protected mError: string,
+                protected client: SocketIOClient.Socket,
+                protected collection: Collection) {
+    }
+
+    async createSubProgress(progressValue: number, max?: number, message?: string): Promise<IProgress> {
         if (max <= 0 && progressValue > 0) {
-            await progress.advance(progressValue);
+            await this.advance(progressValue);
         }
         if (message !== null) {
-            progress.message = message;
-            await progress.save();
+            this.mMessage = message;
+            await this.save();
         }
-        return new SubProgress(progress, progress.current, progressValue, Math.max(max, 1));
+        return new SubProgress(this, this.mCurrent, progressValue, Math.max(max, 1));
     }
 
-    async setMax(progress: ProgressDoc, max: number): Promise<any> {
+    async setMax(max: number): Promise<any> {
         if (isNaN(max) || max <= 0) {
             throw "Max progress value must be bigger than zero";
         }
-        progress.max = max;
-        await progress.save();
+        this.mMax = max;
+        await this.save();
     }
 
-    async setError(progress: ProgressDoc, error: string): Promise<any> {
-        progress.error = error;
-        await progress.save();
+    async setError(error: string): Promise<any> {
+        this.mError = error;
+        await this.save();
     }
 
-    async advance(progress: ProgressDoc, value: number = 1): Promise<any> {
+    async advance(value: number = 1): Promise<any> {
         if (isNaN(value) || value <= 0) {
             throw "Advance value must be bigger than zero";
         }
-        progress.current = Math.min(progress.max, progress.current + value);
-        await progress.save();
+        this.mCurrent = Math.min(this.mMax, this.mCurrent + value);
+        await this.save();
         if (!this.client) return;
-        this.client.emit("background-progress", progress.id);
+        this.client.emit("background-progress", this.id);
+    }
+
+    toJSON(): any {
+        return {
+            id: this.id,
+            current: this.current,
+            max: this.max,
+            message: this.message,
+            error: this.error
+        };
+    }
+
+    save(): Promise<any> {
+        return this.collection.updateOne({_id: this.progressId}, {$set: this.toJSON()});
     }
 }
 

@@ -37,11 +37,9 @@ import {Gallery} from "./services/gallery";
 import {GalleryCache} from "./services/gallery-cache";
 import {IdGenerator} from "./services/id-generator";
 import {JobManager} from "./services/job-manager";
-import {LazyAssetHelper} from "./services/lazy-asset-helper";
 import {LazyAssets} from "./services/lazy-assets";
 import {MailSender} from "./services/mail-sender";
 import {MongoConnector} from "./services/mongo-connector";
-import {ProgressHelper} from "./services/progress-helper";
 import {Progresses} from "./services/progresses";
 import {TemplateRenderer} from "./services/template-renderer";
 import {TranslationProvider} from "./services/translation-provider";
@@ -266,11 +264,9 @@ export function createServices(): DependencyContainer {
         GalleryCache,
         IdGenerator,
         JobManager,
-        LazyAssetHelper,
         LazyAssets,
         MailSender,
         MongoConnector,
-        ProgressHelper,
         Progresses,
         TemplateRenderer,
         TranslationProvider,
@@ -462,12 +458,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
             const connector = diContainer.resolve(MongoConnector);
             await connector.connect();
         }
-    }
-
-    // Load fixtures
-    if (!configuration.resolve("isWorker")) {
-        const fixtures = diContainer.resolve(Fixtures);
-        await fixtures.load();
     }
 
     return diContainer;

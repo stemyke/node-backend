@@ -326,6 +326,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         }
     };
     restOptions.routePrefix = config.routePrefix || "/api";
+    restOptions.routePrefix = restOptions.routePrefix == "/" ? "" : restOptions.routePrefix;
     restOptions.middlewares = [ErrorHandlerMiddleware, ContainerMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
         .concat(restOptions.middlewares as any || []);
     restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController]

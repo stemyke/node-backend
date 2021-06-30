@@ -41,6 +41,10 @@ export function isArray(value: any): value is Array<any> {
     return Array.isArray(value);
 }
 
+export function isBoolean(value: any): value is boolean {
+    return typeof value === "boolean";
+}
+
 export function isString(value: any): value is string {
     return typeof value === "string";
 }
@@ -61,6 +65,14 @@ export function ucFirst(value: string): string {
 export function lcFirst(value: string): string {
     if (!value) return "";
     return value[0].toLowerCase() + value.substr(1);
+}
+
+export function firstItem<T>(value: T[]): T {
+    return value[0];
+}
+
+export function lastItem<T>(value: T[]): T {
+    return value[value.length - 1];
 }
 
 export function getValue(obj: any, key: string, defaultValue?: any, treeFallback: boolean = false): any {

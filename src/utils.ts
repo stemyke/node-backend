@@ -20,6 +20,8 @@ export const diContainers: IDIContainers = {
     appContainer: null
 };
 
+export type FilterPredicate = (value: any, key?: any, target?: any, source?: any) => boolean;
+
 export function isNullOrUndefined(value: any): boolean {
     return value == null || typeof value == "undefined";
 }
@@ -45,12 +47,25 @@ export function isBoolean(value: any): value is boolean {
     return typeof value === "boolean";
 }
 
+export function isDate(value: any): value is Date {
+    return null !== value && !isNaN(value) && "undefined" !== typeof value.getDate;
+}
+
+export function isPrimitive(value: any): boolean {
+    const type = typeof value;
+    return value == null || (type !== "object" && type !== "function");
+}
+
 export function isString(value: any): value is string {
     return typeof value === "string";
 }
 
 export function isFunction(value: any): value is Function {
     return typeof value === "function";
+}
+
+export function isConstructor(value: any) {
+    return (value && typeof value === "function" && value.prototype && value.prototype.constructor) === value;
 }
 
 export function isType(value: any): value is Type<any> {
@@ -505,4 +520,50 @@ export function deleteFromBucket(bucket: GridFSBucket, fileId: ObjectId): Promis
             resolve(fileId.toHexString());
         });
     }));
+}
+
+const defaultPredicate: FilterPredicate = () => true;
+
+function copyRecursive(target: any, source: any, predicate?: FilterPredicate): any {
+    predicate = predicate || defaultPredicate;
+    if (isPrimitive(source) || isDate(source)) return source;
+    const isClass = isConstructor(source);
+    if (isFunction(source) && !isClass) return source;
+    if (isClass) {
+        target = target || Object.create(source.prototype);
+        Object.getOwnPropertyNames(source.prototype).reduce((result, key) => {
+            if (!predicate(source[key], key, result, source)) return result;
+            result[key] = copyRecursive(result[key], source[key], predicate);
+            return result;
+        }, Object.assign({}, target));
+        return target;
+    }
+    if (isArray(source)) {
+        target = isArray(target) ? Array.from(target) : [];
+        source.forEach((item, index) => {
+            if (!predicate(item, index, target, source)) return;
+            if (target.length > index)
+                target[index] = copyRecursive(target[index], item, predicate);
+            else
+                target.push(copyRecursive(null, item, predicate));
+        });
+        return target;
+    }
+    return Object.keys(source).reduce((result, key) => {
+        if (!predicate(source[key], key, result, source)) return result;
+        result[key] = copyRecursive(result[key], source[key], predicate);
+        return result;
+    }, Object.assign({}, target));
+}
+
+export function filter<T>(obj: T, predicate: FilterPredicate): Partial<T> {
+    return copyRecursive(null, obj, predicate);
+}
+
+export function copy<T>(obj: T): T {
+    return copyRecursive(null, obj);
+}
+
+export function assign<T>(target: T, source: any, predicate?: FilterPredicate): T {
+    return copyRecursive(target, source, predicate);
 }

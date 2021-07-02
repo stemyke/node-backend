@@ -63,14 +63,18 @@ import {CompressionMiddleware} from "./socket-middlewares/compression.middleware
 import {diContainers, isFunction, isString, isType, valueToPromise} from "./utils";
 
 export {
+    FilterPredicate,
     isNullOrUndefined,
     isDefined,
     getType,
     isObject,
     isArray,
     isBoolean,
+    isDate,
+    isPrimitive,
     isString,
     isFunction,
+    isConstructor,
     isType,
     ucFirst,
     lcFirst,
@@ -109,7 +113,10 @@ export {
     observableFromFunction,
     padLeft,
     padRight,
-    deleteFromBucket
+    deleteFromBucket,
+    filter,
+    copy,
+    assign
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";

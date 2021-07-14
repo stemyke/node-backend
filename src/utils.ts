@@ -64,12 +64,12 @@ export function isFunction(value: any): value is Function {
     return typeof value === "function";
 }
 
-export function isConstructor(value: any) {
+export function isConstructor(value: any): boolean {
     return (value && typeof value === "function" && value.prototype && value.prototype.constructor) === value;
 }
 
 export function isType(value: any): value is Type<any> {
-    return typeof value === "function";
+    return isConstructor(value);
 }
 
 export function ucFirst(value: string): string {

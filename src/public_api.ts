@@ -31,6 +31,7 @@ import {AssetResolver} from "./services/asset-resolver";
 import {Assets} from "./services/assets";
 import {BackendProvider} from "./services/backend-provider";
 import {Cache} from "./services/cache";
+import {CacheProcessor} from "./services/cache-processor";
 import {Configuration} from "./services/configuration";
 import {Fixtures} from "./services/fixtures";
 import {Gallery} from "./services/gallery";
@@ -171,6 +172,7 @@ export {AssetResolver} from "./services/asset-resolver";
 export {Assets} from "./services/assets";
 export {BackendProvider} from "./services/backend-provider";
 export {Cache} from "./services/cache";
+export {CacheProcessor} from "./services/cache-processor";
 export {Configuration} from "./services/configuration";
 export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
@@ -251,6 +253,7 @@ export function createServices(): DependencyContainer {
         new Parameter("idPrefix", "ID-"),
         new Parameter("idParts", [4, 4]),
         new Parameter("jsonLimit", "250mb"),
+        new Parameter("cacheCollection", "cache"),
     ];
 
     // Convert parameters to providers
@@ -268,6 +271,7 @@ export function createServices(): DependencyContainer {
         Assets,
         BackendProvider,
         Cache,
+        CacheProcessor,
         Configuration,
         Fixtures,
         Gallery,

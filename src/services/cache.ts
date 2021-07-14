@@ -1,66 +1,60 @@
-import {injectable, singleton} from "tsyringe";
-import cacheman_mongo from "cacheman-mongodb";
+import {injectable, Lifecycle, scoped} from "tsyringe";
+import {Collection} from "mongodb";
 import {MongoConnector} from "./mongo-connector";
-
-const CachemanMongo = cacheman_mongo;
+import {Configuration} from "./configuration";
+import {CacheProcessor} from "./cache-processor";
 
 @injectable()
-@singleton()
+@scoped(Lifecycle.ContainerScoped)
 export class Cache {
 
-    protected cacheManMongo: typeof CachemanMongo;
+    protected collection: Collection;
 
-    constructor(readonly connector: MongoConnector) {
+    constructor(readonly connector: MongoConnector, protected config: Configuration, protected cacheProcessor: CacheProcessor) {
 
     }
 
-    protected prepare(): void {
-        if (this.cacheManMongo instanceof CachemanMongo) return;
+    protected async prepare(): Promise<any> {
+        if (this.collection) return;
         if (!this.connector.database) {
             throw new Error(`You can't use cache without mongo connection!`);
         }
-        this.cacheManMongo = new CachemanMongo(
-            this.connector.database,
-            {compression: true, collection: "cache"}
+        this.collection = this.connector.database.collection(this.config.resolve("cacheCollection"));
+        await this.collection.createIndex(
+            {expireAt: 1},
+            {expireAfterSeconds: 0}
         );
     }
 
-    set(key: string, value: any, ttl?: number): Promise<any> {
-        this.prepare();
-        return new Promise<any>((resolve, reject) => {
-            this.cacheManMongo.set(key, value, ttl, (err, value) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                resolve(value);
-            });
-        });
+    async set(key: string, value: any, ttl?: number, expirationTimeStamp: number = null): Promise<any> {
+        await this.prepare();
+        const item: any = {
+            _id: key,
+            data: await this.cacheProcessor.serialize(value),
+            expirationTimeStamp
+        };
+        if (ttl) {
+            const now = Math.round(new Date().getTime() / 1000);
+            item.expiresAt = now + ttl;
+        }
+        await this.collection.updateOne({_id: key}, {$set: item}, {upsert: true});
     }
 
-    get(key: string): Promise<any> {
-        this.prepare();
-        return new Promise<any>((resolve, reject) => {
-            this.cacheManMongo.get(key, (err, value) => {
-                if (err || value === null) {
-                    reject(err || `Cache probably doesn't exists with key: ${key}`);
-                    return;
-                }
-                resolve(value);
-            });
-        });
+    async get(key: string): Promise<any> {
+        await this.prepare();
+        let item = await this.collection.findOne({_id: key});
+        const now = Math.round(new Date().getTime() / 1000);
+        if (item && item.expiresAt && item.expiresAt < now) {
+            item = null;
+        }
+        if (!item) {
+            throw new Error(`Cache probably doesn't exists with key: ${key}`);
+        }
+        return await this.cacheProcessor.deserialize(item.data);
     }
 
-    delete(key: string): Promise<any> {
-        this.prepare();
-        return new Promise<any>((resolve, reject) => {
-            this.cacheManMongo.del(key, err => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                resolve();
-            });
-        });
+    async delete(key: string): Promise<any> {
+        await this.prepare();
+        await this.collection.deleteOne({_id: key});
     }
 }

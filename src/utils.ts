@@ -511,9 +511,9 @@ export function deleteFromBucket(bucket: GridFSBucket, fileId: ObjectId): Promis
         bucket.delete(fileId, error => {
             let err = error as any;
             if (error) {
-                err = error.message || error;
-                if (err !== "not found") {
-                    reject(error.message || error);
+                err = error.message || error || "";
+                if (!isString(err) || !err.startsWith("FileNotFound")) {
+                    reject(err);
                     return;
                 }
             }

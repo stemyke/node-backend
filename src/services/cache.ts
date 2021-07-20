@@ -26,12 +26,13 @@ export class Cache {
         );
     }
 
-    async set(key: string, value: any, ttl?: number, expirationTimestamp: number = null): Promise<any> {
+    async set(key: string, value: any, ttl?: number, expirationTimestamp: number = null, tags: any = {}): Promise<any> {
         await this.prepare();
         const item: any = {
             _id: key,
             data: await this.cacheProcessor.serialize(value),
-            expirationTimestamp
+            tags: await this.cacheProcessor.serialize(tags),
+            expirationTimestamp,
         };
         if (ttl) {
             const now = Math.round(new Date().getTime() / 1000);

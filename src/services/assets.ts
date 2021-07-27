@@ -57,8 +57,15 @@ export class Assets {
             console.log(`Can't determine content type`, e);
         }
         metadata = metadata || {};
-        buffer = await this.assetProcessor.process(buffer, metadata, contentType);
-        return this.write(bufferToStream(buffer), contentType, metadata);
+        const processedBuffer = await this.assetProcessor.process(buffer, metadata, contentType);
+        if (processedBuffer !== buffer) {
+            try {
+                contentType = (await fromBuffer(buffer)).mime.trim();
+            } catch (e) {
+                console.log(`Can't determine content type`, e);
+            }
+        }
+        return this.write(bufferToStream(processedBuffer), contentType, metadata);
     }
 
     async read(id: string): Promise<IAsset> {

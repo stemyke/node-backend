@@ -8,12 +8,13 @@ import {
     Param,
     Post,
     QueryParam,
-    QueryParams,
+    QueryParams, Res,
     UploadedFile
 } from "routing-controllers";
 import {IAssetImageParams} from "../common-types";
 import {Assets} from "../services/assets";
 import {AssetResolver} from "../services/asset-resolver";
+import {Response} from "express";
 
 @injectable()
 @Controller("/assets")
@@ -55,13 +56,17 @@ export class AssetsController {
     }
 
     @Get("/:id")
-    async getFile(@Param("id") id: string, @QueryParam("lazy") lazy: boolean): Promise<Readable> {
+    async getFile(@Param("id") id: string, @QueryParam("lazy") lazy: boolean, @Res() res: Response): Promise<Readable> {
         const asset = await this.assetResolver.resolve(id, lazy);
         if (!asset) {
             throw new HttpError(404, `File with id: '${id}' not found.`);
         }
         if (asset.metadata?.classified) {
             throw new HttpError(403, `Asset is classified, and can be only downloaded from a custom url.`);
+        }
+        const ext = asset.metadata?.extension;
+        if (ext) {
+            res.header("content-disposition", `attachment; filename=${asset.filename}.${ext}`);
         }
         return asset.download();
     }

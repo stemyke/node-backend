@@ -1,5 +1,5 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
-import {fromBuffer} from "file-type";
+import {fromBuffer, fromStream} from "file-type";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {Collection, GridFSBucket} from "mongodb";
@@ -23,11 +23,22 @@ export class Assets {
         this.collection = connector.database.collection("assets.files");
     }
 
-    write(stream: Readable, contentType: string, metadata: IAssetMeta = null): Promise<IAsset> {
-        if (!contentType) {
-            return Promise.reject(`Content type should be provided!`);
+    async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
+        let extension: string = null;
+        try {
+            const fileType = await fromStream(stream);
+            contentType = fileType.mime;
+            extension = fileType.ext;
+        } catch (e) {
+            if (!contentType) {
+                throw `Can't determine content type`;
+            }
+            console.log(`Can't determine content type`, e);
         }
+        contentType = contentType.trim();
+        extension = (extension || "").trim();
         metadata = Object.assign({
+            extension,
             downloadCount: 0,
             firstDownload: null,
             lastDownload: null
@@ -52,20 +63,16 @@ export class Assets {
 
     async writeBuffer(buffer: Buffer, metadata: IAssetMeta = null, contentType: string = null): Promise<IAsset> {
         try {
-            contentType = (contentType || (await fromBuffer(buffer)).mime).trim();
+            contentType = (await fromBuffer(buffer)).mime;
         } catch (e) {
+            if (!contentType) {
+                throw `Can't determine content type`;
+            }
             console.log(`Can't determine content type`, e);
         }
         metadata = metadata || {};
-        const processed = await this.assetProcessor.process(buffer, metadata, contentType);
-        if (processed !== buffer) {
-            try {
-                contentType = (await fromBuffer(processed)).mime.trim();
-            } catch (e) {
-                console.log(`Can't determine content type`, e);
-            }
-        }
-        return this.write(bufferToStream(processed), contentType, metadata);
+        buffer = await this.assetProcessor.process(buffer, metadata, contentType);
+        return this.write(bufferToStream(buffer), contentType, metadata);
     }
 
     async read(id: string): Promise<IAsset> {

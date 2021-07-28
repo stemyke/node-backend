@@ -37,7 +37,8 @@
             "socket.io-client": "socket.io-client",
             "cacheman-mongodb": "cacheman-mongodb",
             "bcrypt": "bcrypt",
-            "moment": "moment"
+            "moment": "moment",
+            "child_process": "child_process"
         }
     },
     "deleteDestPath": false,

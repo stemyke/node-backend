@@ -8,7 +8,8 @@ import {
     Param,
     Post,
     QueryParam,
-    QueryParams, Res,
+    QueryParams,
+    Res,
     UploadedFile
 } from "routing-controllers";
 import {IAssetImageParams} from "../common-types";
@@ -66,7 +67,7 @@ export class AssetsController {
         }
         const ext = asset.metadata?.extension;
         if (ext) {
-            res.header("content-disposition", `attachment; filename=${asset.filename}.${ext}`);
+            res.header("content-disposition", `inline; filename=${asset.filename}.${ext}`);
         }
         return asset.download();
     }

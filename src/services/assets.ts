@@ -5,7 +5,7 @@ import {ObjectId} from "bson";
 import {Collection, GridFSBucket} from "mongodb";
 import {FilterQuery} from "mongoose";
 
-import {bufferToStream} from "../utils";
+import {bufferToStream, streamPassThrough} from "../utils";
 import {IAsset, IAssetMeta} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
@@ -25,8 +25,10 @@ export class Assets {
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
         let extension: string = null;
+        const fileTypeStream = streamPassThrough(stream);
+        const uploadableStream = streamPassThrough(stream);
         try {
-            const fileType = await fromStream(stream);
+            const fileType = await fromStream(fileTypeStream);
             contentType = fileType.mime;
             extension = fileType.ext;
         } catch (e) {
@@ -46,7 +48,7 @@ export class Assets {
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         return new Promise<IAsset>(((resolve, reject) => {
             const uploadStream = this.bucket.openUploadStream(metadata.filename);
-            stream.pipe(uploadStream)
+            uploadableStream.pipe(uploadStream)
                 .on("error", error => {
                     reject(error.message || error);
                 })

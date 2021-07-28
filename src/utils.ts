@@ -1,3 +1,4 @@
+import {exec as execChildProcess} from "child_process";
 import {InjectionToken, DependencyContainer} from "tsyringe";
 import {from, Observable, Subject, Subscription} from "rxjs";
 import {canReportError} from "rxjs/internal/util/canReportError";
@@ -262,6 +263,11 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
         stream.on("error", reject);
         stream.on("end", () => resolve(Buffer.concat(concat)));
     })
+}
+
+export function streamPassThrough(stream: Readable): PassThrough {
+    const pt = new PassThrough();
+    return !stream? pt : stream.pipe(pt);
 }
 
 export function mkdirRecursive(path: string, mode: number = null): Promise<any> {
@@ -566,4 +572,28 @@ export function copy<T>(obj: T): T {
 
 export function assign<T>(target: T, source: any, predicate?: FilterPredicate): T {
     return copyRecursive(target, source, predicate);
+}
+
+export function runCommand(scriptPath: string, expectedCode: number = 0): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const cp = execChildProcess(scriptPath, (error, stdout) => {
+            if (error && expectedCode !== error.code) {
+                console.log(error);
+                reject(error);
+                return;
+            }
+            const lines = (stdout || "").split("\n");
+            let line = null;
+            while (!line && lines.length > 0) {
+                line = lines.pop();
+            }
+            resolve(line);
+        });
+        cp.stdout.on("data", function(data) {
+            console.log(data.toString());
+        });
+        cp.stderr.on("data", function(data) {
+            console.error(data.toString());
+        });
+    });
 }

@@ -91,6 +91,7 @@ export {
     paginateAggregations,
     bufferToStream,
     streamToBuffer,
+    streamPassThrough,
     mkdirRecursive,
     deleteFile,
     readFile,
@@ -117,7 +118,8 @@ export {
     deleteFromBucket,
     filter,
     copy,
-    assign
+    assign,
+    runCommand
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";

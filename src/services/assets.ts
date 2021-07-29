@@ -5,7 +5,7 @@ import {ObjectId} from "bson";
 import {Collection, GridFSBucket} from "mongodb";
 import {FilterQuery} from "mongoose";
 
-import {bufferToStream, streamPassThrough} from "../utils";
+import {bufferToStream, copyStream} from "../utils";
 import {IAsset, IAssetMeta} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
@@ -25,8 +25,8 @@ export class Assets {
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
         let extension: string = null;
-        const fileTypeStream = streamPassThrough(stream);
-        const uploadableStream = streamPassThrough(stream);
+        const fileTypeStream = copyStream(stream);
+        const uploadStream = copyStream(stream);
         try {
             const fileType = await fromStream(fileTypeStream);
             contentType = fileType.mime;
@@ -47,14 +47,14 @@ export class Assets {
         }, metadata || {});
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         return new Promise<IAsset>(((resolve, reject) => {
-            const uploadStream = this.bucket.openUploadStream(metadata.filename);
-            uploadableStream.pipe(uploadStream)
+            const uploaderStream = this.bucket.openUploadStream(metadata.filename);
+            uploadStream.pipe(uploaderStream)
                 .on("error", error => {
                     reject(error.message || error);
                 })
                 .on("finish", () => {
-                    const asset = new Asset(uploadStream.id as ObjectId, metadata.filename, contentType, metadata, this.bucket, this.collection);
-                    this.collection.updateOne({_id: uploadStream.id}, {$set: asset.toJSON()}).then(() => {
+                    const asset = new Asset(uploaderStream.id as ObjectId, metadata.filename, contentType, metadata, this.bucket, this.collection);
+                    this.collection.updateOne({_id: uploaderStream.id}, {$set: asset.toJSON()}).then(() => {
                         resolve(asset);
                     }, error => {
                         reject(error.message || error);

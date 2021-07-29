@@ -8,7 +8,7 @@ import {basename, dirname} from "path";
 import {GridFSBucket} from "mongodb";
 import {Document, DocumentQuery, FilterQuery, Model, model, Schema, Types} from "mongoose";
 import {getValue as getMongoValue, setValue as setMongoValue} from "mongoose/lib/utils";
-import {PassThrough, Readable} from "stream";
+import {PassThrough, Readable, ReadableOptions} from "stream";
 import {ObjectId} from "bson";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
 import {IClientSocket, IPaginationBase, IPaginationParams, IRequest, Type} from "./common-types";
@@ -265,9 +265,28 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
     })
 }
 
-export function streamPassThrough(stream: Readable): PassThrough {
-    const pt = new PassThrough();
-    return !stream? pt : stream.pipe(pt);
+class ReadableStreamClone extends Readable {
+
+    constructor(readableStream: Readable, opts?: ReadableOptions) {
+        super(opts);
+        readableStream?.on("data", chunk => {
+            this.push(chunk);
+        });
+        readableStream?.on("end", () => {
+            this.push(null);
+        });
+        readableStream?.on("error", err => {
+            this.emit("error", err);
+        });
+    }
+
+    _read(size: number) {
+
+    }
+}
+
+export function copyStream(stream: Readable, opts?: ReadableOptions): Readable {
+    return new ReadableStreamClone(stream, opts);
 }
 
 export function mkdirRecursive(path: string, mode: number = null): Promise<any> {

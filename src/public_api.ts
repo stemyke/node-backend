@@ -91,7 +91,7 @@ export {
     paginateAggregations,
     bufferToStream,
     streamToBuffer,
-    streamPassThrough,
+    copyStream,
     mkdirRecursive,
     deleteFile,
     readFile,

@@ -39,6 +39,7 @@ export class Cache {
             item.expiresAt = now + ttl;
         }
         await this.collection.updateOne({_id: key}, {$set: item}, {upsert: true});
+        return value;
     }
 
     async get(key: string): Promise<any> {
@@ -52,6 +53,14 @@ export class Cache {
             throw new Error(`Cache probably doesn't exists with key: ${key}`);
         }
         return await this.cacheProcessor.deserialize(item.data);
+    }
+
+    async getOrSet(key: string, valueCb: () => Promise<any>, ttl?: number, expirationTimestamp: number = null, tags: any = {}): Promise<any> {
+        try {
+            return await this.get(key);
+        } catch (e) {
+            return await this.set(key, await valueCb(), ttl, expirationTimestamp, tags);
+        }
     }
 
     async delete(key: string): Promise<any> {

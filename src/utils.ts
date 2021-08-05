@@ -555,8 +555,9 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
     const isClass = isConstructor(source);
     if (isFunction(source) && !isClass) return source;
     if (isClass) {
-        target = target || Object.create(source.prototype);
-        Object.getOwnPropertyNames(source.prototype).reduce((result, key) => {
+        const proto = source.constructor?.prototype || source.prototype;
+        target = target || Object.create(proto);
+        Object.getOwnPropertyNames(proto).reduce((result, key) => {
             if (!predicate(source[key], key, result, source)) return result;
             result[key] = copyRecursive(result[key], source[key], predicate);
             return result;

@@ -49,7 +49,7 @@ export function isBoolean(value: any): value is boolean {
 }
 
 export function isDate(value: any): value is Date {
-    return null !== value && !isNaN(value) && "undefined" !== typeof value.getDate;
+    return !!value && value[Symbol.toPrimitive] && !isNaN(value) && "undefined" !== typeof value.getDate;
 }
 
 export function isPrimitive(value: any): boolean {
@@ -66,7 +66,7 @@ export function isFunction(value: any): value is Function {
 }
 
 export function isConstructor(value: any): boolean {
-    return (value && typeof value === "function" && value.prototype && value.prototype.constructor) === value;
+    return (value && typeof value === "function" && value.prototype && value.prototype.constructor) === value && value.name !== "Object";
 }
 
 export function isType(value: any): value is Type<any> {

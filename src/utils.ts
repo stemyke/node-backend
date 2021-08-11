@@ -571,8 +571,8 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
     }
     const shouldCopy = isFunction(source.__shouldCopy) ? source.__shouldCopy : () => true;
     return Object.keys(source).reduce((result, key) => {
-        if (!shouldCopy(key, source[key]) || !predicate(source[key], key, result, source)) return result;
-        result[key] = copyRecursive(result[key], source[key], predicate);
+        if (!predicate(source[key], key, result, source)) return result;
+        result[key] = !shouldCopy(key, source[key]) ? source[key] : copyRecursive(result[key], source[key], predicate);
         return result;
     }, target);
 }

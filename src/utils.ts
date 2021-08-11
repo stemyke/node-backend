@@ -569,8 +569,9 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
     } else {
         target = Object.assign({}, target || {});
     }
+    const shouldCopy = isFunction(source.__shouldCopy) ? source.__shouldCopy : () => true;
     return Object.keys(source).reduce((result, key) => {
-        if (!predicate(source[key], key, result, source)) return result;
+        if (!shouldCopy(key, source[key]) || !predicate(source[key], key, result, source)) return result;
         result[key] = copyRecursive(result[key], source[key], predicate);
         return result;
     }, target);

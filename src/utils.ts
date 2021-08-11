@@ -564,6 +564,7 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
         return target;
     }
     if (isConstructor(source.constructor)) {
+        if (source.__shouldCopy === false) return source;
         const proto = source.constructor.prototype || source.prototype;
         target = target || Object.create(proto);
     } else {

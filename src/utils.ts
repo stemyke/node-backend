@@ -551,19 +551,7 @@ const defaultPredicate: FilterPredicate = () => true;
 
 function copyRecursive(target: any, source: any, predicate?: FilterPredicate): any {
     predicate = predicate || defaultPredicate;
-    if (isPrimitive(source) || isDate(source)) return source;
-    const isClass = isConstructor(source);
-    if (isFunction(source) && !isClass) return source;
-    if (isClass) {
-        const proto = source.constructor?.prototype || source.prototype;
-        target = target || Object.create(proto);
-        Object.getOwnPropertyNames(proto).reduce((result, key) => {
-            if (!predicate(source[key], key, result, source)) return result;
-            result[key] = copyRecursive(result[key], source[key], predicate);
-            return result;
-        }, Object.assign({}, target));
-        return target;
-    }
+    if (isPrimitive(source) || isDate(source) || isFunction(source)) return source;
     if (isArray(source)) {
         target = isArray(target) ? Array.from(target) : [];
         source.forEach((item, index) => {
@@ -575,11 +563,17 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
         });
         return target;
     }
+    if (isConstructor(source.constructor)) {
+        const proto = source.constructor.prototype || source.prototype;
+        target = target || Object.create(proto);
+    } else {
+        target = Object.assign({}, target || {});
+    }
     return Object.keys(source).reduce((result, key) => {
         if (!predicate(source[key], key, result, source)) return result;
         result[key] = copyRecursive(result[key], source[key], predicate);
         return result;
-    }, Object.assign({}, target));
+    }, target);
 }
 
 export function filter<T>(obj: T, predicate: FilterPredicate): Partial<T> {

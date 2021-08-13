@@ -38,7 +38,8 @@
             "cacheman-mongodb": "cacheman-mongodb",
             "bcrypt": "bcrypt",
             "moment": "moment",
-            "child_process": "child_process"
+            "child_process": "child_process",
+            "crypto": "crypto"
         }
     },
     "deleteDestPath": false,

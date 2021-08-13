@@ -4,11 +4,19 @@ import {MongoConnector} from "./mongo-connector";
 import {Configuration} from "./configuration";
 import {CacheProcessor} from "./cache-processor";
 
+export interface ICacheItem {
+    _id: string;
+    data: any;
+    tags?: any;
+    expirationTimestamp?: number;
+    expiresAt?: number;
+}
+
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
 export class Cache {
 
-    protected collection: Collection;
+    protected collection: Collection<ICacheItem>;
 
     constructor(readonly connector: MongoConnector, protected config: Configuration, protected cacheProcessor: CacheProcessor) {
 
@@ -21,14 +29,14 @@ export class Cache {
         }
         this.collection = this.connector.database.collection(this.config.resolve("cacheCollection"));
         await this.collection.createIndex(
-            {expireAt: 1},
+            {expiresAt: 1},
             {expireAfterSeconds: 0}
         );
     }
 
     async set(key: string, value: any, ttl?: number, expirationTimestamp: number = null, tags: any = {}): Promise<any> {
         await this.prepare();
-        const item: any = {
+        const item: ICacheItem = {
             _id: key,
             data: await this.cacheProcessor.serialize(value),
             tags: await this.cacheProcessor.serialize(tags),

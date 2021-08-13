@@ -1,4 +1,5 @@
 import {exec as execChildProcess} from "child_process";
+import {createHash} from "crypto";
 import {InjectionToken, DependencyContainer} from "tsyringe";
 import {from, Observable, Subject, Subscription} from "rxjs";
 import {canReportError} from "rxjs/internal/util/canReportError";
@@ -588,6 +589,16 @@ export function copy<T>(obj: T): T {
 
 export function assign<T>(target: T, source: any, predicate?: FilterPredicate): T {
     return copyRecursive(target, source, predicate);
+}
+
+export function md5(data: any): string {
+    if (isObject(data)) {
+        data = JSON.stringify(data);
+    }
+    if (!isString(data)) {
+        throw `Can't md5 other that raw object or string`;
+    }
+    return createHash("md5").update(data).digest("hex");
 }
 
 export function runCommand(scriptPath: string, expectedCode: number = 0): Promise<string> {

@@ -40,6 +40,7 @@ import {IdGenerator} from "./services/id-generator";
 import {JobManager} from "./services/job-manager";
 import {LazyAssets} from "./services/lazy-assets";
 import {MailSender} from "./services/mail-sender";
+import {MemoryCache} from "./services/memory-cache";
 import {MongoConnector} from "./services/mongo-connector";
 import {Progresses} from "./services/progresses";
 import {TemplateRenderer} from "./services/template-renderer";
@@ -119,6 +120,7 @@ export {
     filter,
     copy,
     assign,
+    md5,
     runCommand
 } from "./utils";
 
@@ -183,6 +185,7 @@ export {IdGenerator} from "./services/id-generator";
 export {JobManager} from "./services/job-manager";
 export {LazyAssets} from "./services/lazy-assets";
 export {MailSender} from "./services/mail-sender";
+export {MemoryCache} from "./services/memory-cache";
 export {MongoConnector} from "./services/mongo-connector";
 export {Progresses} from "./services/progresses";
 export {TemplateRenderer} from "./services/template-renderer";
@@ -282,6 +285,7 @@ export function createServices(): DependencyContainer {
         JobManager,
         LazyAssets,
         MailSender,
+        MemoryCache,
         MongoConnector,
         Progresses,
         TemplateRenderer,

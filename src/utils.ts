@@ -564,19 +564,46 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
         });
         return target;
     }
+    const shouldCopy = isFunction(source.__shouldCopy) ? source.__shouldCopy : () => true;
     if (isConstructor(source.constructor)) {
         if (source.__shouldCopy === false) return source;
-        const proto = source.constructor.prototype || source.prototype;
-        target = target || Object.create(proto);
+        if (!target) {
+            try {
+                target = new source.constructor();
+            } catch (e) {
+                const proto = source.constructor.prototype || source.prototype;
+                target = Object.create(proto);
+            }
+        }
     } else {
         target = Object.assign({}, target || {});
     }
-    const shouldCopy = isFunction(source.__shouldCopy) ? source.__shouldCopy : () => true;
-    return Object.keys(source).reduce((result, key) => {
+    // Copy map entries
+    if (target instanceof Map) {
+        if (source instanceof Map) {
+            for (let [key, value] of source.entries()) {
+                if (!predicate(value, key, target, source)) continue;
+                target.set(key, !shouldCopy(key, value) ? value : copyRecursive(target.get(key), value, predicate));
+            }
+        }
+        return target;
+    }
+
+    // Copy object members
+    let keys = Object.keys(source);
+    target = keys.reduce((result, key) => {
         if (!predicate(source[key], key, result, source)) return result;
         result[key] = !shouldCopy(key, source[key]) ? source[key] : copyRecursive(result[key], source[key], predicate);
         return result;
     }, target);
+
+    // Copy object properties
+    const descriptors = Object.getOwnPropertyDescriptors(source);
+    keys = Object.keys(descriptors).filter(k => keys.indexOf(k) < 0);
+    keys.forEach(key => {
+        Object.defineProperty(target, key, descriptors[key]);
+    });
+    return target;
 }
 
 export function filter<T>(obj: T, predicate: FilterPredicate): Partial<T> {

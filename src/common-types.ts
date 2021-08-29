@@ -5,37 +5,51 @@ import {SocketControllersOptions} from "socket-controllers";
 import {
     ClassProvider,
     DependencyContainer,
-    FactoryProvider,
     InjectionToken,
     TokenProvider,
-    ValueProvider
+    ValueProvider,
+    RegistrationOptions
 } from "tsyringe";
 import {SchemaObject} from "openapi3-ts";
 import Buffer from "buffer";
 import {Readable} from "stream";
 import {Moment} from "moment";
 
-// --- Injection tokens ---
-
-export const FIXTURE: InjectionToken = Symbol.for("fixture-token");
-
-export const JOB: InjectionToken = Symbol.for("job-token");
-
-export const EXPRESS: InjectionToken = Symbol.for("express-token");
-
-export const HTTP_SERVER: InjectionToken = Symbol.for("http-server-token");
-
-export const SOCKET_SERVER: InjectionToken = Symbol.for("socket-server-token");
-
-export const PARAMETER: InjectionToken = Symbol.for("parameter-token");
-
-export const DI_CONTAINER: InjectionToken = Symbol.for("di-container-token");
-
 // --- DI functions ---
+
 export const Type = Function;
 
 export interface Type<T = object> extends Function {
     new (...args: any[]): T;
+}
+
+export interface FactoryProvider<T> {
+    useFactory: (dc: IDependencyContainer) => T;
+}
+
+export interface ITree {
+    readonly path: string;
+    resolveService(): any;
+    resolveLeaves(): Map<string, ITree>;
+    resolveServices(): Map<string, any>;
+    resolvePath(path: string, throwError?: boolean): ITree;
+}
+
+export interface IDependencyContainer extends DependencyContainer {
+    readonly parent: IDependencyContainer;
+    readonly tree: ITree;
+    readonly registeredTokens: ReadonlyArray<InjectionToken>;
+    createChildContainer(): IDependencyContainer;
+    register<T>(token: InjectionToken<T>, provider: ValueProvider<T>): IDependencyContainer;
+    register<T>(token: InjectionToken<T>, provider: FactoryProvider<T>): IDependencyContainer;
+    register<T>(token: InjectionToken<T>, provider: TokenProvider<T>, options?: RegistrationOptions): IDependencyContainer;
+    register<T>(token: InjectionToken<T>, provider: ClassProvider<T>, options?: RegistrationOptions): IDependencyContainer;
+    register<T>(token: InjectionToken<T>, provider: Type<T>, options?: RegistrationOptions): IDependencyContainer;
+    registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): IDependencyContainer;
+    registerSingleton<T>(token: Type<T>): IDependencyContainer;
+    registerType<T>(from: InjectionToken<T>, to: InjectionToken<T>): IDependencyContainer;
+    registerInstance<T>(token: InjectionToken<T>, instance: T): IDependencyContainer;
+    get<T>(token: InjectionToken<T>): T;
 }
 
 export interface ClassBasedProvider<T> extends ClassProvider<T> {
@@ -58,14 +72,21 @@ export type InjectionProvider<T> = ClassBasedProvider<T> | ValueBasedProvider<T>
 
 export type Provider<T> = Type<T> | InjectionProvider<T>;
 
-export class DiWrapper {
-    constructor(private container: DependencyContainer) {
-    }
+// --- Injection tokens ---
 
-    get(token: InjectionToken): any {
-        return this.container.resolve(token);
-    }
-}
+export const FIXTURE: InjectionToken = Symbol.for("fixture-token");
+
+export const JOB: InjectionToken = Symbol.for("job-token");
+
+export const EXPRESS: InjectionToken = Symbol.for("express-token");
+
+export const HTTP_SERVER: InjectionToken = Symbol.for("http-server-token");
+
+export const SOCKET_SERVER: InjectionToken = Symbol.for("socket-server-token");
+
+export const PARAMETER: InjectionToken = Symbol.for("parameter-token");
+
+export const DI_CONTAINER: InjectionToken<IDependencyContainer> = Symbol.for("di-container-token");
 
 // --- Interfaces and utility classes ---
 

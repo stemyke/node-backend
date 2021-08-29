@@ -8,21 +8,21 @@ import {useContainer as useSocketContainer, useSocketServer} from "socket-contro
 import {getApiDocs} from "./rest-openapi";
 
 import {
-    DI_CONTAINER,
-    DiWrapper,
-    EXPRESS,
-    FIXTURE,
-    HTTP_SERVER,
     IBackendConfig,
+    IDependencyContainer,
     InjectionProvider,
     IPaginationParams,
     IRequest,
     IUser,
-    JOB,
-    PARAMETER,
     Parameter,
     Provider,
+    FIXTURE,
+    JOB,
+    EXPRESS,
+    HTTP_SERVER,
     SOCKET_SERVER,
+    PARAMETER,
+    DI_CONTAINER,
     Type
 } from "./common-types";
 
@@ -63,6 +63,7 @@ import {ProgressController} from "./socket-controllers/progress.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 import {diContainers, isFunction, isString, isType, valueToPromise} from "./utils";
+import {DiContainer} from "./utilities/di-container";
 
 export {
     FilterPredicate,
@@ -135,6 +136,8 @@ export {
     PARAMETER,
     DI_CONTAINER,
     Type,
+    FactoryProvider,
+    IDependencyContainer,
     ClassBasedProvider,
     ValueBasedProvider,
     FactoryBasedProvider,
@@ -218,7 +221,7 @@ async function resolveUser(container: DependencyContainer, req: IRequest): Promi
     return req.user;
 }
 
-export function createServices(): DependencyContainer {
+export function createServices(): IDependencyContainer {
     // List of parameters
     const params = [
         new Parameter("templatesDir", join(__dirname, "templates")),
@@ -295,7 +298,7 @@ export function createServices(): DependencyContainer {
     ] as Type<any>[];
 
     // Create container
-    const diContainer = container.createChildContainer();
+    const diContainer = new DiContainer(container.createChildContainer());
     paramProviders.forEach(provider => {
         diContainer.register(provider.provide, provider);
     });
@@ -306,7 +309,7 @@ export function createServices(): DependencyContainer {
     return diContainer;
 }
 
-export async function setupBackend(config: IBackendConfig, providers?: Provider<any>[], parent?: DependencyContainer): Promise<DependencyContainer> {
+export async function setupBackend(config: IBackendConfig, providers?: Provider<any>[], parent?: IDependencyContainer): Promise<IDependencyContainer> {
 
     providers = Array.isArray(providers) ? providers : [];
     parent = parent || createServices();
@@ -453,7 +456,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     // Final setup
     const configuration = diContainer.resolve(Configuration);
     const bp = diContainer.resolve(BackendProvider);
-    const diWrapper = new DiWrapper(diContainer)
 
     if (config.restOptions) {
         bp.express.use(json({
@@ -461,7 +463,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
                 ? configuration.resolve("jsonLimit")
                 : "250mb"
         }));
-        useRoutingContainer(diWrapper);
+        useRoutingContainer(diContainer);
         useExpressServer(bp.express, restOptions);
         // Setup rest ai docs
         bp.express.get("/api-docs", (req, res) => {
@@ -469,7 +471,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         });
     }
     if (config.socketOptions) {
-        useSocketContainer(diWrapper);
+        useSocketContainer(diContainer);
         useSocketServer(bp.io, socketOptions);
     }
 

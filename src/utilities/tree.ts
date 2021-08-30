@@ -43,6 +43,26 @@ export class Tree implements ITree {
         return map;
     }
 
+    resolveAncestor(path: string): ITree {
+        if (!isString(path) || path.length == 0) {
+            return this;
+        }
+        const pathParts = path.split(".");
+        let tree: Tree = this;
+        let previousTree: Tree = this;
+        for (let part of pathParts) {
+            tree = tree.map.get(part);
+            if (!tree) {
+                if (previousTree == this) {
+                    throw new Error(`Ancestor '${path}' not found in current tree: '${this.path}'`);
+                }
+                return previousTree;
+            }
+            previousTree = tree;
+        }
+        return previousTree;
+    }
+
     resolvePath(path: string, throwError: boolean = true): ITree {
         if (!isString(path) || path.length == 0) {
             return this;

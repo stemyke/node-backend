@@ -10,7 +10,6 @@ import {getApiDocs} from "./rest-openapi";
 import {
     IBackendConfig,
     IDependencyContainer,
-    InjectionProvider,
     IPaginationParams,
     IRequest,
     IUser,
@@ -142,7 +141,7 @@ export {
     ValueBasedProvider,
     FactoryBasedProvider,
     TokenBasedProvider,
-    InjectionProvider,
+    SyringeProvider,
     Provider,
     IFixture,
     SchemaConverter,

@@ -32,6 +32,7 @@ export interface ITree {
     resolveService(): any;
     resolveLeaves(): Map<string, ITree>;
     resolveServices(): Map<string, any>;
+    resolveAncestor(path: string): ITree;
     resolvePath(path: string, throwError?: boolean): ITree;
 }
 
@@ -68,9 +69,9 @@ export interface TokenBasedProvider<T> extends TokenProvider<T> {
     provide: InjectionToken;
 }
 
-export type InjectionProvider<T> = ClassBasedProvider<T> | ValueBasedProvider<T> | FactoryBasedProvider<T> | TokenBasedProvider<T>;
+export type SyringeProvider<T> = Type<T> | ClassProvider<T> | ValueProvider<T> | FactoryProvider<T> | TokenProvider<T>;
 
-export type Provider<T> = Type<T> | InjectionProvider<T>;
+export type Provider<T> = Type<T> | ClassBasedProvider<T> | ValueBasedProvider<T> | FactoryBasedProvider<T> | TokenBasedProvider<T>;
 
 // --- Injection tokens ---
 

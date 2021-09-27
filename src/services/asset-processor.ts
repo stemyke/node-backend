@@ -1,5 +1,6 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
 import fontKit_, {Font} from "fontkit";
+import {fromBuffer} from "file-type";
 import sharp_ from "sharp";
 import {FontFormat, IAssetMeta} from "../common-types";
 
@@ -23,6 +24,18 @@ const fontProps = [
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
 export class AssetProcessor {
+
+    static async getMimeType(buffer: Buffer, mimeType?: string): Promise<string> {
+        try {
+            mimeType = (await fromBuffer(buffer)).mime;
+        } catch (e) {
+            if (!mimeType) {
+                throw `Can't determine mime type`;
+            }
+            console.log(`Can't determine mime type`, e);
+        }
+        return mimeType;
+    }
 
     static extractFontFormat(font: Font): FontFormat {
         const name: string = font.constructor.name;

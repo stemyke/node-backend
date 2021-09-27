@@ -64,14 +64,7 @@ export class Assets {
     }
 
     async writeBuffer(buffer: Buffer, metadata: IAssetMeta = null, contentType: string = null): Promise<IAsset> {
-        try {
-            contentType = (await fromBuffer(buffer)).mime;
-        } catch (e) {
-            if (!contentType) {
-                throw `Can't determine content type`;
-            }
-            console.log(`Can't determine content type`, e);
-        }
+        contentType = await AssetProcessor.getMimeType(buffer, contentType);
         metadata = metadata || {};
         buffer = await this.assetProcessor.process(buffer, metadata, contentType);
         return this.write(bufferToStream(buffer), contentType, metadata);

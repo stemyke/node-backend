@@ -1,5 +1,6 @@
-import {Request} from "express";
-import {Socket} from "socket.io";
+import {Server} from "http";
+import {Request, Express} from "express";
+import {Socket, Server as SocketServer} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
 import {SocketControllersOptions} from "socket-controllers";
 import {
@@ -75,17 +76,17 @@ export type Provider<T> = Type<T> | ClassBasedProvider<T> | ValueBasedProvider<T
 
 // --- Injection tokens ---
 
-export const FIXTURE: InjectionToken = Symbol.for("fixture-token");
+export const FIXTURE: InjectionToken<IFixture> = Symbol.for("fixture-token");
 
-export const JOB: InjectionToken = Symbol.for("job-token");
+export const JOB: InjectionToken<IJob> = Symbol.for("job-token");
 
-export const EXPRESS: InjectionToken = Symbol.for("express-token");
+export const EXPRESS: InjectionToken<Express> = Symbol.for("express-token");
 
-export const HTTP_SERVER: InjectionToken = Symbol.for("http-server-token");
+export const HTTP_SERVER: InjectionToken<Server> = Symbol.for("http-server-token");
 
-export const SOCKET_SERVER: InjectionToken = Symbol.for("socket-server-token");
+export const SOCKET_SERVER: InjectionToken<SocketServer> = Symbol.for("socket-server-token");
 
-export const PARAMETER: InjectionToken = Symbol.for("parameter-token");
+export const PARAMETER: InjectionToken<Parameter> = Symbol.for("parameter-token");
 
 export const DI_CONTAINER: InjectionToken<IDependencyContainer> = Symbol.for("di-container-token");
 
@@ -264,6 +265,7 @@ export interface IPaginationParams {
 export type FontFormat = "opentype" | "truetype" | "woff" | "woff2" | "datafork";
 
 export interface IBackendConfig {
+    rootFolder?: string;
     routePrefix?: string;
     params?: Parameter[];
     fixtures?: Type<IFixture>[];

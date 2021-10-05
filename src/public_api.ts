@@ -32,6 +32,7 @@ import {BackendProvider} from "./services/backend-provider";
 import {Cache} from "./services/cache";
 import {CacheProcessor} from "./services/cache-processor";
 import {Configuration} from "./services/configuration";
+import {EndpointProvider} from "./services/endpoint-provider";
 import {Fixtures} from "./services/fixtures";
 import {Gallery} from "./services/gallery";
 import {GalleryCache} from "./services/gallery-cache";
@@ -63,6 +64,7 @@ import {ProgressController} from "./socket-controllers/progress.controller";
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 import {diContainers, isFunction, isString, isType, valueToPromise} from "./utils";
 import {DiContainer} from "./utilities/di-container";
+import {setupStatic} from "./static";
 
 export {
     FilterPredicate,
@@ -180,6 +182,7 @@ export {BackendProvider} from "./services/backend-provider";
 export {Cache} from "./services/cache";
 export {CacheProcessor} from "./services/cache-processor";
 export {Configuration} from "./services/configuration";
+export {EndpointProvider} from "./services/endpoint-provider";
 export {Fixtures} from "./services/fixtures";
 export {Gallery} from "./services/gallery";
 export {GalleryCache} from "./services/gallery-cache";
@@ -280,6 +283,7 @@ export function createServices(): IDependencyContainer {
         Cache,
         CacheProcessor,
         Configuration,
+        EndpointProvider,
         Fixtures,
         Gallery,
         GalleryCache,
@@ -475,12 +479,14 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     }
 
     // Connect to mongo if necessary
-    if (configuration.hasParam("mongoUri")) {
-        if (configuration.resolve("mongoUri")) {
-            const connector = diContainer.resolve(MongoConnector);
-            await connector.connect();
-        }
+    if (configuration.hasParam("mongoUri") && configuration.resolve("mongoUri")) {
+        console.log("Connecting to MongoDB...");
+        const connector = diContainer.resolve(MongoConnector);
+        await connector.connect();
+        console.log("Successfully connected to MongoDB.");
     }
+
+    await setupStatic(config.rootFolder, diContainer);
 
     return diContainer;
 }

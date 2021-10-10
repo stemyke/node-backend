@@ -1,5 +1,5 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
-import {fromBuffer, fromStream} from "file-type";
+import {fromStream} from "file-type";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {Collection, GridFSBucket} from "mongodb";
@@ -20,7 +20,7 @@ export class Assets {
 
     constructor(readonly connector: MongoConnector, readonly assetProcessor: AssetProcessor) {
         this.bucket = connector.bucket;
-        this.collection = connector.database.collection("assets.files");
+        this.collection = connector.database?.collection("assets.files");
     }
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {

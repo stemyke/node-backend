@@ -74,6 +74,21 @@ export function isType(value: any): value is Type<any> {
     return isConstructor(value);
 }
 
+export function isInterface(obj: any, interFaceObject: {[key: string]: string}): boolean {
+    if (!obj || typeof obj !== "object" || isArray(obj) || !isObject(interFaceObject)) return false;
+    const keys = Object.keys(interFaceObject);
+    for (const key of keys) {
+        let type = interFaceObject[key] || "";
+        if (type.startsWith("*")) {
+            type = type.substr(1);
+            if (obj.hasOwnProperty(key) && getType(obj[key]) !== type) return false;
+        } else if (!obj.hasOwnProperty(key) || getType(obj[key]) !== type) {
+            return false;
+        }
+    }
+    return true;
+}
+
 export function ucFirst(value: string): string {
     if (!value) return "";
     return value[0].toUpperCase() + value.substr(1);

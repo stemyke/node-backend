@@ -145,12 +145,21 @@ export interface IProgress {
     toJSON(): any;
 }
 
+export interface IAssetCropInfo {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
 export interface IAssetMeta {
     filename?: string;
     classified?: boolean;
     downloadCount?: number;
     firstDownload?: Date;
     lastDownload?: Date;
+    cropBefore?: IAssetCropInfo;
+    cropAfter?: IAssetCropInfo;
     [prop: string]: any;
 }
 
@@ -161,6 +170,9 @@ export interface IAssetImageParams {
     scaleX?: number;
     scaleY?: number;
     lazy?: boolean;
+    crop?: boolean;
+    cropBefore?: string | IAssetCropInfo;
+    cropAfter?: string | IAssetCropInfo;
 }
 
 export interface IAsset {

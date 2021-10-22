@@ -171,7 +171,7 @@ export interface IAssetImageParams {
     scaleX?: number;
     scaleY?: number;
     lazy?: boolean;
-    crop?: boolean;
+    crop?: string | boolean;
     cropBefore?: string | IAssetCropInfo;
     cropAfter?: string | IAssetCropInfo;
 }

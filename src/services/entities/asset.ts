@@ -4,7 +4,7 @@ import {Collection, GridFSBucket} from "mongodb";
 import {ObjectId} from "bson";
 
 import {IAsset, IAssetCropInfo, IAssetImageParams, IAssetMeta} from "../../common-types";
-import {bufferToStream, deleteFromBucket, isInterface, isString, streamToBuffer} from "../../utils";
+import {bufferToStream, deleteFromBucket, isBoolean, isInterface, isString, streamToBuffer} from "../../utils";
 
 const sharp = sharp_;
 const cropInterface = {
@@ -45,7 +45,7 @@ export class Asset implements IAsset {
         params.canvasScaleY = isNaN(params.canvasScaleY) ? 1 : params.canvasScaleY;
         params.scaleX = isNaN(params.scaleX) ? 1 : params.scaleX;
         params.scaleY = isNaN(params.scaleY) ? 1 : params.scaleY;
-        params.crop = Boolean(params.crop);
+        params.crop = isBoolean(params.crop) ? params.crop : params.crop == "true";
 
         // Try to modify image
         try {
@@ -62,10 +62,14 @@ export class Asset implements IAsset {
                 buffer = await sharp(buffer)
                     .extract(cropBefore)
                     .toBuffer();
+                width = cropBefore.width;
+                height = cropBefore.height;
             } else if (crop) {
                 buffer = await sharp(buffer)
                     .extract(crop)
                     .toBuffer();
+                width = crop.width;
+                height = crop.height;
             }
             // Resize canvas
             if (params.canvasScaleX !== 1 || params.canvasScaleY !== 1) {

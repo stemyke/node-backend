@@ -36,21 +36,25 @@ export class Asset implements IAsset {
 
     protected static async toImage(stream: Readable, meta?: IAssetMeta, params?: IAssetImageParams): Promise<Readable> {
         params = params || {};
-        if (Object.keys(params).length == 0) return stream;
-        let buffer = await streamToBuffer(stream);
+
+        // Get default crop info
+        const crop = Asset.toCropRegion(meta.crop);
+
+        // Return back the stream if there is no params and no default crop exists
+        if (Object.keys(params).length == 0 && !crop) return stream;
 
         // Parse params
         params.rotation = isNaN(params.rotation) ? 0 : Math.round(params.rotation / 90) * 90;
-        params.canvasScaleX = isNaN(params.canvasScaleX) ? 1 : params.canvasScaleX;
-        params.canvasScaleY = isNaN(params.canvasScaleY) ? 1 : params.canvasScaleY;
-        params.scaleX = isNaN(params.scaleX) ? 1 : params.scaleX;
-        params.scaleY = isNaN(params.scaleY) ? 1 : params.scaleY;
+        params.canvasScaleX = isNaN(params.canvasScaleX) ? 1 : Number(params.canvasScaleX);
+        params.canvasScaleY = isNaN(params.canvasScaleY) ? 1 : Number(params.canvasScaleY);
+        params.scaleX = isNaN(params.scaleX) ? 1 : Number(params.scaleX);
+        params.scaleY = isNaN(params.scaleY) ? 1 : Number(params.scaleY);
         params.crop = isBoolean(params.crop) ? params.crop : params.crop == "true";
 
         // Try to modify image
+        let buffer = await streamToBuffer(stream);
         try {
             // Get crop info
-            const crop = Asset.toCropRegion(meta.crop);
             const cropBefore = Asset.toCropRegion(params.cropBefore || (params.crop ? meta.cropBefore : null));
             const cropAfter = Asset.toCropRegion(params.cropAfter || (params.crop ? meta.cropAfter : null));
             // Get metadata

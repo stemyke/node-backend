@@ -50,6 +50,7 @@ export class Asset implements IAsset {
         // Try to modify image
         try {
             // Get crop info
+            const crop = Asset.toCropRegion(meta.crop);
             const cropBefore = Asset.toCropRegion(params.cropBefore || (params.crop ? meta.cropBefore : null));
             const cropAfter = Asset.toCropRegion(params.cropAfter || (params.crop ? meta.cropAfter : null));
             // Get metadata
@@ -60,7 +61,11 @@ export class Asset implements IAsset {
             if (cropBefore) {
                 buffer = await sharp(buffer)
                     .extract(cropBefore)
-                    .toBuffer()
+                    .toBuffer();
+            } else if (crop) {
+                buffer = await sharp(buffer)
+                    .extract(crop)
+                    .toBuffer();
             }
             // Resize canvas
             if (params.canvasScaleX !== 1 || params.canvasScaleY !== 1) {
@@ -82,7 +87,7 @@ export class Asset implements IAsset {
             if (cropAfter) {
                 buffer = await sharp(buffer)
                     .extract(cropAfter)
-                    .toBuffer()
+                    .toBuffer();
             }
             // Rotate
             if (params.rotation !== 0) {

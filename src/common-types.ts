@@ -158,6 +158,7 @@ export interface IAssetMeta {
     downloadCount?: number;
     firstDownload?: Date;
     lastDownload?: Date;
+    crop?: IAssetCropInfo;
     cropBefore?: IAssetCropInfo;
     cropAfter?: IAssetCropInfo;
     [prop: string]: any;

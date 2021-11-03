@@ -2,6 +2,7 @@ import {Readable} from "stream";
 import {injectable} from "tsyringe";
 import {
     Authorized,
+    Body,
     Controller,
     Get,
     HttpError,
@@ -31,6 +32,18 @@ export class AssetsController {
         try {
             const contentType = file.mimetype === "application/octet-stream" ? null : file.mimetype;
             const asset = await this.assets.writeBuffer(file.buffer, {filename: file.filename}, contentType);
+            return asset.toJSON();
+        } catch (e) {
+            const msg = e?.message || e || "Unknown error";
+            throw new HttpError(400, `Asset can't be uploaded.\n${msg}`);
+        }
+    }
+
+    @Authorized()
+    @Post("url")
+    async uploadUrl(@Body() body: any) {
+        try {
+            const asset = await this.assets.writeUrl(body.url, body);
             return asset.toJSON();
         } catch (e) {
             const msg = e?.message || e || "Unknown error";

@@ -4,6 +4,7 @@ import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {Collection, GridFSBucket} from "mongodb";
 import {FilterQuery} from "mongoose";
+import axios from "axios";
 
 import {bufferToStream, copyStream} from "../utils";
 import {IAsset, IAssetMeta} from "../common-types";
@@ -68,6 +69,11 @@ export class Assets {
         metadata = metadata || {};
         buffer = await this.assetProcessor.process(buffer, metadata, contentType);
         return this.write(bufferToStream(buffer), contentType, metadata);
+    }
+
+    async writeUrl(url: string, metadata: IAssetMeta = null): Promise<IAsset> {
+        const buffer = (await axios({ url, responseType: "arraybuffer" })).data as Buffer;
+        return this.writeBuffer(buffer, metadata);
     }
 
     async read(id: string): Promise<IAsset> {

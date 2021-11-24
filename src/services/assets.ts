@@ -54,8 +54,12 @@ export class Assets {
                     reject(error.message || error);
                 })
                 .on("finish", () => {
-                    const asset = new Asset(uploaderStream.id as ObjectId, metadata.filename, contentType, metadata, this.bucket, this.collection);
-                    this.collection.updateOne({_id: uploaderStream.id}, {$set: asset.toJSON()}).then(() => {
+                    const asset = new Asset(uploaderStream.id as ObjectId, {
+                        filename: metadata.filename,
+                        contentType,
+                        metadata
+                    }, this.collection, this.bucket);
+                    asset.save().then(() => {
                         resolve(asset);
                     }, error => {
                         reject(error.message || error);
@@ -82,7 +86,7 @@ export class Assets {
 
     async find(where: FilterQuery<IAsset>): Promise<IAsset> {
         const data = await this.collection.findOne(where);
-        return !data ? null : new Asset(data._id, data.filename, data.contentType, data.metadata, this.bucket, this.collection);
+        return !data ? null : new Asset(data._id, data, this.collection, this.bucket);
     }
 
     async unlink(id: string): Promise<any> {

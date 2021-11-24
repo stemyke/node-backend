@@ -131,17 +131,22 @@ export interface JobScheduleRange {
 export type JobScheduleTime = string | number | JobScheduleRange | Array<string | number>;
 
 export interface IProgress {
-    id?: string;
-    message?: any;
-    error?: any;
-    percent?: number;
+    id: string;
     current: number;
+    max: number;
+    message: string;
+    error: string;
+    canceled: boolean;
+    percent: number;
     remaining: number;
     createSubProgress(progressValue: number, max?: number, message?: string): Promise<IProgress>;
     setMax(max: number): Promise<any>;
+    setMessage(message: string): Promise<any>;
     setError(error: string): Promise<any>;
     advance(value?: number): Promise<any>;
+    cancel(): Promise<any>;
     save(): Promise<any>;
+    load(): Promise<this>;
     toJSON(): any;
 }
 
@@ -177,16 +182,18 @@ export interface IAssetImageParams {
 }
 
 export interface IAsset {
-    id?: string;
-    filename?: string;
-    contentType?: string;
-    metadata?: IAssetMeta;
+    id: string;
+    filename: string;
+    contentType: string;
+    metadata: IAssetMeta;
     stream: Readable,
     unlink(): Promise<string>;
     getBuffer(): Promise<Buffer>;
     download(metadata?: IAssetMeta): Promise<Readable>;
     downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable>;
     getImage(params?: IAssetImageParams): Promise<Readable>;
+    save(): Promise<any>;
+    load(): Promise<this>;
     toJSON(): any;
 }
 
@@ -201,6 +208,8 @@ export interface ILazyAsset {
     startWorking(): void;
     loadAsset(): Promise<IAsset>;
     writeAsset(asset: IAsset): Promise<IAsset>;
+    save(): Promise<any>;
+    load(): Promise<this>;
     toJSON(): any;
 }
 

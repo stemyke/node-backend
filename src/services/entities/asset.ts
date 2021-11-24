@@ -5,6 +5,7 @@ import {ObjectId} from "bson";
 
 import {IAsset, IAssetCropInfo, IAssetImageParams, IAssetMeta} from "../../common-types";
 import {bufferToStream, deleteFromBucket, isBoolean, isInterface, isString, streamToBuffer} from "../../utils";
+import {BaseEntity} from "./base-entity";
 
 const sharp = sharp_;
 const cropInterface = {
@@ -14,7 +15,7 @@ const cropInterface = {
     h: "number"
 };
 
-export class Asset implements IAsset {
+export class Asset extends BaseEntity<IAsset> implements IAsset {
 
     protected static toCropRegion(cropInfo: string | IAssetCropInfo): Region {
         let crop = cropInfo as IAssetCropInfo;
@@ -108,24 +109,31 @@ export class Asset implements IAsset {
         }
     }
 
-    get id(): string {
-        return this.fileId.toHexString();
+    get filename(): string {
+        return this.data.filename;
+    }
+
+    get contentType(): string {
+        return this.data.contentType;
+    }
+
+    get metadata(): IAssetMeta {
+        return this.data.metadata;
     }
 
     get stream(): Readable {
-        return this.bucket.openDownloadStream(this.fileId);
+        return this.bucket.openDownloadStream(this.mId);
     }
 
-    constructor(readonly fileId: ObjectId,
-                readonly filename: string,
-                readonly contentType: string,
-                readonly metadata: IAssetMeta,
-                protected bucket: GridFSBucket,
-                protected collection: Collection) {
+    constructor(id: ObjectId,
+                data: Partial<IAsset>,
+                collection: Collection,
+                protected bucket: GridFSBucket) {
+        super(id, data, collection);
     }
 
     async unlink(): Promise<string> {
-        return deleteFromBucket(this.bucket, this.fileId);
+        return deleteFromBucket(this.bucket, this.mId);
     }
 
     getBuffer(): Promise<Buffer> {
@@ -133,13 +141,13 @@ export class Asset implements IAsset {
     }
 
     async download(metadata?: IAssetMeta): Promise<Readable> {
-        metadata = Object.assign(this.metadata as IAssetMeta, metadata || {});
+        metadata = Object.assign(this.metadata, metadata || {});
         metadata.downloadCount = isNaN(metadata.downloadCount) || !metadata.firstDownload
             ? 1
             : metadata.downloadCount + 1;
         metadata.firstDownload = metadata.firstDownload || new Date();
         metadata.lastDownload = new Date();
-        await this.collection.updateOne({_id: this.fileId}, {$set: {metadata}});
+        await this.collection.updateOne({_id: this.mId}, {$set: {metadata}});
         return this.stream;
     }
 
@@ -149,14 +157,5 @@ export class Asset implements IAsset {
 
     async downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable> {
         return Asset.toImage(await this.download(metadata), this.metadata, params);
-    }
-
-    toJSON(): any {
-        return {
-            id: this.id,
-            filename: this.filename,
-            contentType: this.contentType,
-            metadata: this.metadata
-        };
     }
 }

@@ -22,14 +22,17 @@ export class LazyAssets {
 
     async create(jobType: Type<IJob>, jobParams: JobParams = {}, jobQue: string = "main"): Promise<ILazyAsset> {
         const jobName = this.jobMan.tryResolve(jobType, {...jobParams, lazyId: ""});
-        const res = await this.collection.insertOne({
+        const data = {
             jobName,
             jobParams,
             jobQue
-        });
+        };
+        const existingAsset = await this.find(data);
+        if (existingAsset) return existingAsset;
+        const res = await this.collection.insertOne(data);
         return new LazyAsset(
-            res.insertedId, jobName, jobParams, jobQue, null, null,
-            this.assets, this.progresses, this.jobMan, this.collection
+            res.insertedId, data, this.collection,
+            this.assets, this.progresses, this.jobMan
         );
     }
 
@@ -42,8 +45,8 @@ export class LazyAssets {
         return !data
             ? null
             : new LazyAsset(
-                data._id, data.jobName, data.jobParams, data.jobQue, data.progressId, data.assetId,
-                this.assets, this.progresses, this.jobMan, this.collection
+                data._id, data, this.collection,
+                this.assets, this.progresses, this.jobMan
             );
     }
 

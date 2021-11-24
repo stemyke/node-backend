@@ -50,8 +50,7 @@ export class Progresses {
     async find(where: FilterQuery<IProgress>): Promise<IProgress> {
         const data = await this.collection.findOne(where);
         return !data ? null : new Progress(
-            data._id, data.current, data.max, data.message, data.error,
-            this.client, this.collection
+            data._id, data, this.collection, this.client
         );
     }
 
@@ -59,13 +58,16 @@ export class Progresses {
         if (isNaN(max) || max <= 0) {
             throw "Max progress value must be bigger than zero";
         }
-        const res = await this.collection.insertOne({
+        const data = {
             current: 0,
-            max
-        });
+            max: max,
+            message: "",
+            error: "",
+            canceled: false
+        };
+        const res = await this.collection.insertOne(data);
         return new Progress(
-            res.insertedId, 0, max, "", "",
-            this.client, this.collection
+            res.insertedId, data, this.collection, this.client
         );
     }
 

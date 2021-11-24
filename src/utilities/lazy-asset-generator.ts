@@ -21,9 +21,12 @@ export abstract class LazyAssetGenerator implements IJob {
 
     async process(): Promise<any> {
         const lazyAsset = await this.lazyAssets.read(this.lazyId);
-        const progress = await this.progresses.get(lazyAsset.progressId);
+        let progress = await this.progresses.get(lazyAsset.progressId);
+        if (!progress || progress.canceled) return null;
         try {
             const asset = await this.generate(progress);
+            progress = await progress.load();
+            if (!progress || progress.canceled) return null;
             await lazyAsset.writeAsset(asset);
         } catch (e) {
             await progress.setError(e.message || e);

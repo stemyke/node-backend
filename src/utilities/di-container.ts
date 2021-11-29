@@ -27,18 +27,18 @@ export class DiContainer implements IDependencyContainer {
     }
 
     get tree(): ITree {
-        return this.myTree;
+        return this.root;
     }
 
     protected tokens: Array<InjectionToken>;
     protected tokenSet: Set<InjectionToken>;
-    protected myTree: Tree;
+    protected root: Tree;
 
     constructor(protected container: DependencyContainer, readonly parent: IDependencyContainer = null) {
         container["wrapperContainer"] = this;
         this.tokens = [];
         this.tokenSet = new Set<InjectionToken>();
-        this.myTree = new Tree(this, "");
+        this.root = new Tree(this, false, "");
     }
 
     beforeResolution<T>(token: InjectionToken<T>, callback: PreResolutionInterceptorCallback<T>, options?: { frequency: Frequency }): void {
@@ -119,7 +119,7 @@ export class DiContainer implements IDependencyContainer {
         this.tokenSet.add(token);
         this.tokens.push(token);
         if (isString(token)) {
-            this.myTree.addPath(token);
+            this.root.addPath(token);
         }
         return this;
     }

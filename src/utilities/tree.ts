@@ -9,12 +9,12 @@ export class Tree implements ITree {
         return this.container.parent.tree;
     }
 
-    constructor(protected container: IDependencyContainer, readonly path: string) {
+    constructor(protected container: IDependencyContainer, protected exists: boolean, readonly path: string) {
         this.map = new Map<string, Tree>();
     }
 
     resolveService(): any {
-        return this.container.resolve(this.path);
+        return !this.exists ? null : this.container.resolve(this.path);
     }
 
     resolveLeaves(): Map<string, ITree> {
@@ -56,7 +56,7 @@ export class Tree implements ITree {
             parentTree = this.parentTree.resolvePath(this.path);
             parentTree = parentTree.resolveAncestor(path);
         } catch (e) {
-            parentTree = new Tree(this.container, "");
+            parentTree = new Tree(this.container, false, "");
         }
         const pathParts = path.split(".");
         let tree: Tree = this;
@@ -80,7 +80,7 @@ export class Tree implements ITree {
 
     resolvePath(path: string, throwError: boolean = true): ITree {
         const absolutePath = !this.path ? path : `${this.path}.${path}`;
-        let tree: ITree = new Tree(this.container, absolutePath);
+        let tree: ITree = new Tree(this.container, false, absolutePath);
         try {
             tree = this.resolveAncestor(path);
         } catch (e) {
@@ -103,13 +103,16 @@ export class Tree implements ITree {
             return this;
         }
         const pathParts = path.split(".");
+        const maxIx = pathParts.length - 1;
         let tree: Tree = this;
         path = this.path;
-        for (let part of pathParts) {
+        for (let ix = 0; ix <= maxIx; ix++) {
+            const part = pathParts[ix];
             if (!tree.map.has(part)) {
-                tree.map.set(part, new Tree(this.container, !path ? part : `${path}.${part}`))
+                tree.map.set(part, new Tree(this.container, false, !path ? part : `${path}.${part}`))
             }
             tree = tree.map.get(part);
+            tree.exists = tree.exists || ix == maxIx;
             path = tree.path;
         }
         return this;

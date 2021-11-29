@@ -89,6 +89,17 @@ export class Assets {
         return !data ? null : new Asset(data._id, data, this.collection, this.bucket);
     }
 
+    async findMany(where: FilterQuery<IAsset>): Promise<ReadonlyArray<IAsset>> {
+        const cursor = this.collection.find(where);
+        const items = await cursor.toArray() || [];
+        const result: IAsset[] = [];
+        for (let item of items) {
+            if (!item) continue;
+            result.push(new Asset(item._id, item, this.collection, this.bucket));
+        }
+        return result;
+    }
+
     async unlink(id: string): Promise<any> {
         const asset = await this.read(id);
         if (!asset) return null;

@@ -34,9 +34,11 @@ export class Configuration {
         }).replace(/\./gi, "_").replace(/^_/, "").toUpperCase();
         const envValue = process.env[envName];
         if (typeof envValue !== "undefined") {
-            return isFunction(param.resolver)
+            const value = isFunction(param.resolver)
                 ? param.resolver(envValue)
                 : convertValue(envValue, getType(param.defaultValue));
+            console.log(`Processing param value`, name, envName, envValue, value);
+            return value;
         }
         return param.defaultValue;
     }

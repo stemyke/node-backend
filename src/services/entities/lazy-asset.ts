@@ -82,8 +82,8 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
     }
 
     protected async startWorkingOnAsset(): Promise<any> {
-        const {id} = await this.progresses.create();
-        this.data.progressId = id;
+        this.data.progressId = (await this.progresses.create()).id;
+        this.data.assetId = null;
         await this.save();
         await this.jobMan.enqueueWithName(this.data.jobName, {...this.data.jobParams, lazyId: this.id});
     }

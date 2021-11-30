@@ -179,6 +179,7 @@ export interface IAssetImageParams {
     crop?: string | boolean;
     cropBefore?: string | IAssetCropInfo;
     cropAfter?: string | IAssetCropInfo;
+    [key: string]: any;
 }
 
 export interface IAsset {

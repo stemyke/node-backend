@@ -44,7 +44,7 @@ export class Progresses {
     }
 
     async get(id: string): Promise<IProgress> {
-        return this.find({_id: new ObjectId(id)});
+        return !id ? null : this.find({_id: new ObjectId(id)});
     }
 
     async find(where: FilterQuery<IProgress>): Promise<IProgress> {

@@ -50,13 +50,13 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
     startWorking(): void {
         this.load().then(() => {
             if (this.deleted) return;
-            const progressPromise = !this.progressId ? Promise.resolve(null) : this.progresses.get(this.progressId).then(p => p.cancel());
-            progressPromise.then(() => {
-                this.startWorkingOnAsset().then(() => {
-                    console.log(`Started working on lazy asset: ${this.id}`);
-                }).catch(reason => {
-                    console.log(`Can't start working on lazy asset: ${this.id}\nReason: ${reason}`);
-                });
+            this.progresses.get(this.progressId).then(p => {
+                p?.cancel();
+            });
+            this.startWorkingOnAsset().then(() => {
+                console.log(`Started working on lazy asset: ${this.id}`);
+            }).catch(reason => {
+                console.log(`Can't start working on lazy asset: ${this.id}\nReason: ${reason}`);
             });
         });
     }

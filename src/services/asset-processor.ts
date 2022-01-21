@@ -26,13 +26,11 @@ const fontProps = [
 export class AssetProcessor {
 
     private static checkTextFileType(type: IFileType): boolean {
-        console.log("SHOULD CONVERT", type.mime, type.mime.indexOf("text") >= 0 || type.mime.indexOf("xml") >= 0);
         return type.mime.indexOf("text") >= 0 || type.mime.indexOf("xml") >= 0;
     }
 
     private static fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
         const text = buffer.toString("utf8");
-        console.log("IS SVG", text);
         if (text.indexOf("<svg") >= 0) {
             return {ext: "svg", mime: "image/svg+xml"};
         }
@@ -45,18 +43,6 @@ export class AssetProcessor {
             return AssetProcessor.fixTextFileType(type, buffer);
         }
         return type;
-    }
-
-    static async getMimeType(buffer: Buffer, mimeType?: string): Promise<string> {
-        try {
-            mimeType = (await AssetProcessor.fileTypeFromBuffer(buffer)).mime;
-        } catch (e) {
-            if (!mimeType) {
-                throw `Can't determine mime type`;
-            }
-            console.log(`Can't determine mime type`, e);
-        }
-        return mimeType;
     }
 
     static extractFontFormat(font: Font): FontFormat {

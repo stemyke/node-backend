@@ -1,13 +1,12 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
-import {fromStream} from "file-type";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {Collection, GridFSBucket} from "mongodb";
 import {FilterQuery} from "mongoose";
 import axios from "axios";
 
-import {bufferToStream, copyStream} from "../utils";
-import {IAsset, IAssetMeta} from "../common-types";
+import {bufferToStream, copyStream, streamToBuffer} from "../utils";
+import {IAsset, IAssetMeta, IFileType} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
@@ -25,54 +24,34 @@ export class Assets {
     }
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
-        let extension: string = null;
-        const fileTypeStream = copyStream(stream);
         const uploadStream = copyStream(stream);
+        const buffer = await streamToBuffer(stream);
+        let fileType = {ext: "", mime: contentType} as IFileType;
         try {
-            const fileType = await fromStream(fileTypeStream);
-            contentType = fileType.mime;
-            extension = fileType.ext;
+            fileType = await AssetProcessor.fileTypeFromBuffer(buffer);
         } catch (e) {
-            if (!contentType) {
-                throw `Can't determine content type`;
+            if (!fileType.mime) {
+                throw `Can't determine mime type`;
             }
-            console.log(`Can't determine content type`, e);
+            console.log(`Can't determine mime type`, e);
         }
-        contentType = contentType.trim();
-        extension = (extension || "").trim();
-        metadata = Object.assign({
-            extension,
-            downloadCount: 0,
-            firstDownload: null,
-            lastDownload: null
-        }, metadata || {});
-        metadata.filename = metadata.filename || new ObjectId().toHexString();
-        return new Promise<IAsset>(((resolve, reject) => {
-            const uploaderStream = this.bucket.openUploadStream(metadata.filename);
-            uploadStream.pipe(uploaderStream)
-                .on("error", error => {
-                    reject(error.message || error);
-                })
-                .on("finish", () => {
-                    const asset = new Asset(uploaderStream.id as ObjectId, {
-                        filename: metadata.filename,
-                        contentType,
-                        metadata
-                    }, this.collection, this.bucket);
-                    asset.save().then(() => {
-                        resolve(asset);
-                    }, error => {
-                        reject(error.message || error);
-                    });
-                });
-        }));
+        metadata = metadata || {};
+        return this.upload(uploadStream, fileType, metadata);
     }
 
     async writeBuffer(buffer: Buffer, metadata: IAssetMeta = null, contentType: string = null): Promise<IAsset> {
-        contentType = await AssetProcessor.getMimeType(buffer, contentType);
+        let fileType = {ext: "", mime: contentType} as IFileType;
+        try {
+            fileType = await AssetProcessor.fileTypeFromBuffer(buffer);
+        } catch (e) {
+            if (!fileType.mime) {
+                throw `Can't determine mime type`;
+            }
+            console.log(`Can't determine mime type`, e);
+        }
         metadata = metadata || {};
-        buffer = await this.assetProcessor.process(buffer, metadata, contentType);
-        return this.write(bufferToStream(buffer), contentType, metadata);
+        buffer = await this.assetProcessor.process(buffer, metadata, fileType);
+        return this.upload(bufferToStream(buffer), fileType, metadata);
     }
 
     async writeUrl(url: string, metadata: IAssetMeta = null): Promise<IAsset> {
@@ -104,5 +83,36 @@ export class Assets {
         const asset = await this.read(id);
         if (!asset) return null;
         return asset.unlink();
+    }
+
+    protected async upload(stream: Readable, fileType: IFileType, metadata: IAssetMeta): Promise<IAsset> {
+        const contentType = fileType.mime.trim();
+        const extension = (fileType.ext || "").trim();
+        metadata = Object.assign({
+            extension,
+            downloadCount: 0,
+            firstDownload: null,
+            lastDownload: null
+        }, metadata || {});
+        metadata.filename = metadata.filename || new ObjectId().toHexString();
+        return new Promise<IAsset>(((resolve, reject) => {
+            const uploaderStream = this.bucket.openUploadStream(metadata.filename);
+            stream.pipe(uploaderStream)
+                .on("error", error => {
+                    reject(error.message || error);
+                })
+                .on("finish", () => {
+                    const asset = new Asset(uploaderStream.id as ObjectId, {
+                        filename: metadata.filename,
+                        contentType,
+                        metadata
+                    }, this.collection, this.bucket);
+                    asset.save().then(() => {
+                        resolve(asset);
+                    }, error => {
+                        reject(error.message || error);
+                    });
+                });
+        }));
     }
 }

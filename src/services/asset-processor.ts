@@ -2,7 +2,7 @@ import {injectable, Lifecycle, scoped} from "tsyringe";
 import fontKit_, {Font} from "fontkit";
 import {fromBuffer} from "file-type";
 import sharp_ from "sharp";
-import {FontFormat, IAssetMeta} from "../common-types";
+import {FontFormat, IAssetMeta, IFileType} from "../common-types";
 
 const sharp = sharp_;
 const fontKit = fontKit_;
@@ -25,9 +25,31 @@ const fontProps = [
 @scoped(Lifecycle.ContainerScoped)
 export class AssetProcessor {
 
+    private static checkTextFileType(type: IFileType): boolean {
+        console.log("SHOULD CONVERT", type.mime, type.mime.indexOf("text") >= 0 || type.mime.indexOf("xml") >= 0);
+        return type.mime.indexOf("text") >= 0 || type.mime.indexOf("xml") >= 0;
+    }
+
+    private static fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
+        const text = buffer.toString("utf8");
+        console.log("IS SVG", text);
+        if (text.indexOf("<svg") >= 0) {
+            return {ext: "svg", mime: "image/svg+xml"};
+        }
+        return type;
+    }
+
+    static async fileTypeFromBuffer(buffer: Buffer): Promise<IFileType> {
+        const type = (await fromBuffer(buffer) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
+        if (AssetProcessor.checkTextFileType(type)) {
+            return AssetProcessor.fixTextFileType(type, buffer);
+        }
+        return type;
+    }
+
     static async getMimeType(buffer: Buffer, mimeType?: string): Promise<string> {
         try {
-            mimeType = (await fromBuffer(buffer)).mime;
+            mimeType = (await AssetProcessor.fileTypeFromBuffer(buffer)).mime;
         } catch (e) {
             if (!mimeType) {
                 throw `Can't determine mime type`;
@@ -75,11 +97,11 @@ export class AssetProcessor {
         });
     }
 
-    async process(buffer: Buffer, metadata: IAssetMeta, contentType: string): Promise<Buffer> {
-        if (AssetProcessor.isImage(contentType)) {
+    async process(buffer: Buffer, metadata: IAssetMeta, fileType: IFileType): Promise<Buffer> {
+        if (AssetProcessor.isImage(fileType.mime)) {
             buffer = await AssetProcessor.copyImageMeta(buffer, metadata);
         }
-        if (AssetProcessor.isFont(contentType)) {
+        if (AssetProcessor.isFont(fileType.mime)) {
             AssetProcessor.copyFontMeta(buffer, metadata);
         }
         return buffer;

@@ -174,6 +174,7 @@ export {
     IPagination,
     IPaginationParams,
     FontFormat,
+    IFileType,
     IBackendConfig
 } from "./common-types";
 

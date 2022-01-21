@@ -287,6 +287,11 @@ export interface IPaginationParams {
 
 export type FontFormat = "opentype" | "truetype" | "woff" | "woff2" | "datafork";
 
+export interface IFileType {
+    ext: string;
+    mime: string;
+}
+
 export interface IBackendConfig {
     rootFolder?: string;
     routePrefix?: string;

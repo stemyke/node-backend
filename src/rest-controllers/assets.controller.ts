@@ -82,6 +82,9 @@ export class AssetsController {
         if (ext) {
             res.header("content-disposition", `inline; filename=${asset.filename}.${ext}`);
         }
+        if (asset.contentType) {
+            res.header("content-type", asset.contentType);
+        }
         return asset.download();
     }
 }

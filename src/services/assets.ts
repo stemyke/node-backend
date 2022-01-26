@@ -87,14 +87,13 @@ export class Assets {
 
     protected async upload(stream: Readable, fileType: IFileType, metadata: IAssetMeta): Promise<IAsset> {
         const contentType = fileType.mime.trim();
-        const extension = (fileType.ext || "").trim();
         metadata = Object.assign({
-            extension,
             downloadCount: 0,
             firstDownload: null,
             lastDownload: null
         }, metadata || {});
         metadata.filename = metadata.filename || new ObjectId().toHexString();
+        metadata.extension = (fileType.ext || "").trim();
         return new Promise<IAsset>(((resolve, reject) => {
             const uploaderStream = this.bucket.openUploadStream(metadata.filename);
             stream.pipe(uploaderStream)

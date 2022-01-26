@@ -159,6 +159,7 @@ export interface IAssetCropInfo {
 
 export interface IAssetMeta {
     filename?: string;
+    extension?: string;
     classified?: boolean;
     downloadCount?: number;
     firstDownload?: Date;

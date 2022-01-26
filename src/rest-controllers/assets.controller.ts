@@ -1,4 +1,5 @@
 import {Readable} from "stream";
+import {Response} from "express";
 import {injectable} from "tsyringe";
 import {
     Authorized,
@@ -16,7 +17,6 @@ import {
 import {IAsset, IAssetImageParams} from "../common-types";
 import {Assets} from "../services/assets";
 import {AssetResolver} from "../services/asset-resolver";
-import {Response} from "express";
 
 @injectable()
 @Controller("/assets")
@@ -53,7 +53,7 @@ export class AssetsController {
 
     @Get("/image/:id/:rotation")
     async getImageRotation(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Res() res: Response, @Param("rotation") rotation: number = 0): Promise<Readable> {
-        const asset = await this.getAsset("Asset", id, params.lazy, res);
+        const asset = await this.getAsset("Image", id, params.lazy, res);
         params.rotation = params.rotation || rotation;
         return asset.downloadImage(params);
     }

@@ -37,7 +37,7 @@ export class Progresses {
             }
             isFinished = progress.percent == 100;
             if (!isFinished) {
-                await promiseTimeout(150);
+                await promiseTimeout(50);
             }
         }
         return progress;

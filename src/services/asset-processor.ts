@@ -67,7 +67,7 @@ export class AssetProcessor {
 
     static async copyImageMeta(buffer: Buffer, metadata: IAssetMeta, fileType: IFileType): Promise<Buffer> {
         if (fileType.mime === "image/svg+xml") {
-            const match = /<svg(.+)>/gi.exec(buffer.toString("utf8"));
+            const match = /<svg([^<>]+)>/gi.exec(buffer.toString("utf8"));
             if (match && match.length > 1) {
                 const attrs = match[1].match(/([a-z]+)="([^"]+)"/gi);
                 attrs.forEach(attr => {

@@ -12,7 +12,7 @@ const fontTypes = [
     "font/woff", "font/woff2", "font/otf", "font/ttf", "font/datafork"
 ];
 
-const imageTypes = ["image/jpeg", "image/jpg", "image/png"];
+const imageTypes = ["image/jpeg", "image/jpg", "image/png", "image/svg+xml"];
 
 const fontProps = [
     "postscriptName", "fullName", "familyName", "subfamilyName",
@@ -65,7 +65,25 @@ export class AssetProcessor {
         return imageTypes.indexOf(contentType) >= 0;
     }
 
-    static async copyImageMeta(buffer: Buffer, metadata: IAssetMeta): Promise<Buffer> {
+    static async copyImageMeta(buffer: Buffer, metadata: IAssetMeta, fileType: IFileType): Promise<Buffer> {
+        if (fileType.mime === "image/svg+xml") {
+            const match = /<svg(.+)>/gi.exec(buffer.toString("utf8"));
+            if (match && match.length > 1) {
+                const attrs = match[1].match(/([a-z]+)="([^"]+)"/gi);
+                attrs.forEach(attr => {
+                    if (attr.length < 5) return;
+                    const [name, value] = attr.split("=");
+                    const val = value.replace(/"/gi, "") as any;
+                    metadata[name] = isNaN(val) ? val : Number(val);
+                });
+                if (metadata.viewBox && (isNaN(metadata.width) || isNaN(metadata.height))) {
+                    const parts = (metadata.viewBox as string).split(" ");
+                    metadata.width = Number(parts[0]) + Number(parts[2]);
+                    metadata.height = Number(parts[1]) + Number(parts[3]);
+                }
+            }
+            return buffer;
+        }
         const output = await sharp(buffer).rotate().toBuffer({resolveWithObject: true});
         Object.assign(metadata, output.info);
         return output.data;
@@ -85,7 +103,7 @@ export class AssetProcessor {
 
     async process(buffer: Buffer, metadata: IAssetMeta, fileType: IFileType): Promise<Buffer> {
         if (AssetProcessor.isImage(fileType.mime)) {
-            buffer = await AssetProcessor.copyImageMeta(buffer, metadata);
+            buffer = await AssetProcessor.copyImageMeta(buffer, metadata, fileType);
         }
         if (AssetProcessor.isFont(fileType.mime)) {
             AssetProcessor.copyFontMeta(buffer, metadata);

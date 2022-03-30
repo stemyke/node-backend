@@ -81,6 +81,9 @@ export class AssetProcessor {
                     metadata.width = Number(parts[0]) + Number(parts[2]);
                     metadata.height = Number(parts[1]) + Number(parts[3]);
                 }
+                if (!isNaN(metadata.width) && !isNaN(metadata.height)) {
+                    metadata.svgSize = {x: metadata.width, y: metadata.height};
+                }
             }
             return buffer;
         }

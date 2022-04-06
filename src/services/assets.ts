@@ -10,6 +10,7 @@ import {IAsset, IAssetMeta, IFileType} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
+import {TempAsset} from "./entities/temp-asset";
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
@@ -57,6 +58,25 @@ export class Assets {
     async writeUrl(url: string, metadata: IAssetMeta = null): Promise<IAsset> {
         const buffer = (await axios({ url, responseType: "arraybuffer" })).data as Buffer;
         return this.writeBuffer(buffer, metadata);
+    }
+
+    async download(url: string, contentType: string = null): Promise<IAsset> {
+        let buffer = (await axios({ url, responseType: "arraybuffer" })).data as Buffer;
+        let fileType = {ext: "", mime: contentType} as IFileType;
+        try {
+            fileType = await AssetProcessor.fileTypeFromBuffer(buffer);
+        } catch (e) {
+            if (!fileType.mime) {
+                throw `Can't determine mime type`;
+            }
+            console.log(`Can't determine mime type`, e);
+        }
+        const metadata: IAssetMeta = {
+            filename: url,
+            extension: (fileType.ext || "").trim()
+        };
+        buffer = await this.assetProcessor.process(buffer, metadata, fileType);
+        return new TempAsset(buffer, url, fileType.mime, metadata);
     }
 
     async read(id: string): Promise<IAsset> {

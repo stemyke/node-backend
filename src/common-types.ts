@@ -184,11 +184,11 @@ export interface IAssetImageParams {
 }
 
 export interface IAsset {
-    id: string;
-    filename: string;
-    contentType: string;
-    metadata: IAssetMeta;
-    stream: Readable,
+    readonly id: string;
+    readonly filename: string;
+    readonly contentType: string;
+    readonly metadata: IAssetMeta;
+    readonly stream: Readable;
     unlink(): Promise<string>;
     getBuffer(): Promise<Buffer>;
     download(metadata?: IAssetMeta): Promise<Readable>;

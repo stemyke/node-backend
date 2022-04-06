@@ -17,7 +17,7 @@ const cropInterface = {
 
 export class Asset extends BaseEntity<IAsset> implements IAsset {
 
-    protected static toCropRegion(cropInfo: string | IAssetCropInfo): Region {
+    static toCropRegion(cropInfo: string | IAssetCropInfo): Region {
         let crop = cropInfo as IAssetCropInfo;
         if (isString(cropInfo)) {
             try {
@@ -35,7 +35,7 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
         };
     }
 
-    protected static async toImage(stream: Readable, meta?: IAssetMeta, params?: IAssetImageParams): Promise<Readable> {
+    static async toImage(stream: Readable, meta?: IAssetMeta, params?: IAssetImageParams): Promise<Readable> {
         params = params || {};
 
         // Get default crop info

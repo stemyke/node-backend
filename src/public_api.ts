@@ -124,7 +124,10 @@ export {
     copy,
     assign,
     md5,
-    runCommand
+    runCommand,
+    ConsoleColor,
+    IJsonColors,
+    jsonHighlight
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";
@@ -246,19 +249,8 @@ export function createServices(): IDependencyContainer {
         new Parameter("mongoPassword", null),
         new Parameter("nodeEnv", "development"),
         new Parameter("appPort", 80),
-        new Parameter("redisHost", "127.0.0.1"),
-        new Parameter("redisPort", 6379),
-        new Parameter("redisPassword", "123456"),
-        new Parameter("redisNamespace", "resque"),
-        new Parameter("redisCluster", "mymaster"),
-        new Parameter("redisSentinels", null, value => {
-            if (!value) return null;
-            return value.split(", ").map(item => {
-                const values = item.split(":");
-                return {host: values[0], port: Number(values[1])};
-            });
-        }),
-        new Parameter("workQueues", ["main"]),
+        new Parameter("zmqPort", 3000),
+        new Parameter("zmqRemoteHost", "tcp://127.0.0.1:3000"),
         new Parameter("isWorker", false),
         new Parameter("mainEndpoint", ""),
         new Parameter("idChars", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"),

@@ -41,8 +41,10 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
         // Get default crop info
         const crop = Asset.toCropRegion(meta.crop);
 
-        // Return back the stream if there is no params and no default crop exists
-        if (Object.keys(params).length == 0 && !crop) return stream;
+        // Return the stream if there is no params and no default crop exists
+        if (meta?.extension === "svg" || (Object.keys(params).length == 0 && !crop)) {
+            return stream;
+        }
 
         // Parse params
         params.rotation = isNaN(params.rotation) ? 0 : Math.round(params.rotation / 90) * 90;
@@ -59,50 +61,42 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
             const cropBefore = Asset.toCropRegion(params.cropBefore || (params.crop ? meta.cropBefore : null));
             const cropAfter = Asset.toCropRegion(params.cropAfter || (params.crop ? meta.cropAfter : null));
             // Get metadata
-            const imgMeta = await sharp(buffer).metadata();
-            let width = imgMeta.width;
-            let height = imgMeta.height;
+            let img = sharp(buffer);
+            let {width, height} = await img.metadata();
             // Crop before resize
             if (cropBefore) {
-                buffer = await sharp(buffer)
-                    .extract(cropBefore)
-                    .toBuffer();
                 width = cropBefore.width;
                 height = cropBefore.height;
+                img = img.extract(cropBefore);
             } else if (crop) {
-                buffer = await sharp(buffer)
-                    .extract(crop)
-                    .toBuffer();
                 width = crop.width;
                 height = crop.height;
+                img = img.extract(crop);
             }
             // Resize canvas
-            if (params.canvasScaleX !== 1 || params.canvasScaleY !== 1) {
+            const canvasScaleX = meta?.canvasScaleX || 1;
+            const canvasScaleY = meta?.canvasScaleY || 1;
+            if (params.canvasScaleX !== canvasScaleX || params.canvasScaleY !== canvasScaleY) {
                 width = Math.round(width * params.canvasScaleX);
                 height = Math.round(height * params.canvasScaleY);
-                buffer = await sharp(buffer)
-                    .resize({width, height, background: "#00000000", fit: "contain"})
-                    .toBuffer();
+                img = img.resize({width, height, background: "#00000000", fit: "contain"});
             }
             // Resize image
             if (params.scaleX !== 1 || params.scaleY !== 1) {
                 width = Math.round(width * params.scaleX);
                 height = Math.round(height * params.scaleY);
-                buffer = await sharp(buffer)
-                    .resize({width, height, background: "#00000000", fit: "fill"})
-                    .toBuffer();
+                img = img.resize({width, height, background: "#00000000", fit: "fill"});
             }
             // Crop after resize
             if (cropAfter) {
-                buffer = await sharp(buffer)
-                    .extract(cropAfter)
-                    .toBuffer();
+                img = img.extract(cropAfter);
             }
             // Rotate
             if (params.rotation !== 0) {
-                buffer = await sharp(buffer).rotate(params.rotation).toBuffer();
+                buffer = await img.toBuffer();
+                img = sharp(buffer).rotate(params.rotation);
             }
-            return bufferToStream(buffer);
+            return bufferToStream(await img.toBuffer());
         } catch (e) {
             console.log("Asset image conversion error", e);
             return bufferToStream(buffer);

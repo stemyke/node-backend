@@ -54,7 +54,9 @@ export class AssetsController {
     @Get("/image/:id/:rotation")
     async getImageRotation(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Res() res: Response, @Param("rotation") rotation: number = 0): Promise<Readable> {
         const asset = await this.getAsset("Image", id, params.lazy, res);
-        params.rotation = params.rotation || rotation;
+        if (rotation !== 0) {
+            params.rotation = params.rotation || rotation;
+        }
         return asset.downloadImage(params);
     }
 

@@ -167,6 +167,8 @@ export interface IAssetMeta {
     crop?: IAssetCropInfo;
     cropBefore?: IAssetCropInfo;
     cropAfter?: IAssetCropInfo;
+    canvasScaleX?: number;
+    canvasScaleY?: number;
     [prop: string]: any;
 }
 

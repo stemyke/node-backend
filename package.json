@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "2.9.8",
+    "version": "3.0.0",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -36,8 +36,7 @@
         "multer": "^1.4.2",
         "dotenv": "^8.2.0",
         "file-type": "^15.0.1",
-        "ioredis": "^4.19.2",
-        "node-resque": "^9.1.5",
+        "zeromq": "^5.2.8",
         "node-cron": "^2.0.3",
         "fontkit": "^1.8.1",
         "moment": "^2.29.1"
@@ -69,8 +68,7 @@
         "multer": "1.4.2",
         "dotenv": "8.2.0",
         "file-type": "15.0.1",
-        "ioredis": "4.19.2",
-        "node-resque": "9.1.5",
+        "zeromq": "5.2.8",
         "node-cron": "2.0.3",
         "fontkit": "1.8.1",
         "moment": "2.29.1",
@@ -87,8 +85,8 @@
         "@types/mongoose": "5.7.36",
         "@types/mongodb": "3.6.12",
         "@types/node-cron": "2.0.3",
-        "@types/ioredis": "4.17.8",
         "@types/fontkit": "1.8.0",
+        "@types/zeromq": "5.2.1",
         "ng-packagr": "10.0.3",
         "cpy": "8.1.0",
         "cli-progress": "3.3.1",

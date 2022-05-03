@@ -1,29 +1,27 @@
 import {DependencyContainer, inject, injectable, injectAll, Lifecycle, scoped} from "tsyringe";
-import {Queue, Scheduler, Worker} from "node-resque";
 import {schedule, validate} from "node-cron";
-import ioredis from "ioredis";
+import {socket, Socket} from "zeromq";
+import {ObjectId} from "bson";
 import {DI_CONTAINER, IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime, Type} from "../common-types";
-import {getConstructorName, isArray, isObject} from "../utils";
+import {getConstructorName, isArray, isObject, jsonHighlight, promiseTimeout} from "../utils";
 import {Configuration} from "./configuration";
-
-const IORedis = ioredis;
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
 export class JobManager {
 
-    protected jobs: any;
-    protected queue: Queue;
-    protected worker: Worker;
-    protected scheduler: Scheduler;
+    protected jobs: {[name: string]: (jobParams: JobParams) => Promise<any>};
+    protected scheduler: Promise<Socket>;
+    protected worker: Socket;
     protected jobTypes: Type<IJob>[];
 
     constructor(readonly config: Configuration, @inject(DI_CONTAINER) readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
-            res[getConstructorName(jobType)] = {
-                perform: this.toPerformFunction(jobType)
-            };
+            res[getConstructorName(jobType)] = (jobParams: JobParams) => {
+                const job = this.resolveJobInstance(jobType, jobParams);
+                return job.process();
+            }
             return res;
         }, {});
     }
@@ -39,27 +37,22 @@ export class JobManager {
         return instance.process();
     }
 
-    async enqueueWithName(name: string, params: JobParams = {}, que: string = "main"): Promise<any> {
+    async enqueueWithName(name: string, params: JobParams = {}): Promise<any> {
         const jobName = await this.tryResolveFromName(name, params);
-        await this.queue.enqueue(que, jobName, [params]);
+        return this.sendToWorkers(jobName, params);
     }
 
-    async enqueue(jobType: Type<IJob>, params: JobParams = {}, que: string = "main"): Promise<any> {
+    async enqueue(jobType: Type<IJob>, params: JobParams = {}): Promise<any> {
         const jobName = await this.tryResolveAndConnect(jobType, params);
-        await this.queue.enqueue(que, jobName, [params]);
+        return this.sendToWorkers(jobName, params);
     }
 
-    async enqueueAt(timestamp: number, jobType: Type<IJob>, params: JobParams = {}, que: string = "main"): Promise<any> {
-        const jobName = await this.tryResolveAndConnect(jobType, params);
-        await this.queue.enqueueAt(timestamp, que, jobName, [params]);
+    protected async sendToWorkers(jobName: string, params: JobParams): Promise<any> {
+        const publisher = await this.scheduler;
+        await publisher.send([jobName, JSON.stringify(params), new ObjectId().toHexString()]);
     }
 
-    async enqueueIn(time: number, jobType: Type<IJob>, params: JobParams = {}, que: string = "main"): Promise<any> {
-        const jobName = await this.tryResolveAndConnect(jobType, params);
-        await this.queue.enqueueIn(time, que, jobName, [params]);
-    }
-
-    schedule(minute: JobScheduleTime, hour: JobScheduleTime, dayOfMonth: JobScheduleTime, month: JobScheduleTime, dayOfWeek: JobScheduleTime, jobType: Type<IJob>, params: JobParams = {}, que: string = "main"): IJobTask {
+    schedule(minute: JobScheduleTime, hour: JobScheduleTime, dayOfMonth: JobScheduleTime, month: JobScheduleTime, dayOfWeek: JobScheduleTime, jobType: Type<IJob>, params: JobParams = {}): IJobTask {
         const expression = [minute, hour, dayOfMonth, month, dayOfWeek].map(t => {
             if (isObject(t)) {
                 const range = t as JobScheduleRange;
@@ -76,18 +69,38 @@ export class JobManager {
             return null;
         }
         return schedule(expression, () => {
-            this.enqueue(jobType, params, que).catch(e => {
+            this.enqueue(jobType, params).catch(e => {
                 console.log(`Can't enqueue job: '${jobName}' because: ${e}`);
             });
         });
     }
 
-    async startProcessing(): Promise<any> {
-        this.initialize();
-        await this.worker.connect();
-        await this.worker.start();
-        await this.scheduler.connect();
-        await this.scheduler.start();
+    startProcessing(): void {
+        const host = this.config.resolve("zmqRemoteHost");
+        this.worker = socket("pull");
+        this.worker.connect(host);
+        this.worker.on("message", async (name: Buffer, args: Buffer, uniqueId: Buffer) => {
+            try {
+                const jobName = name.toString("utf8");
+                const jobParams = JSON.parse(args.toString("utf8")) as JobParams;
+                const timerId = uniqueId?.toString("utf8");
+                const jobNameLog = `\x1b[36m"${jobName}"\x1b[0m`;
+                const jobArgsLog = `\n${jsonHighlight(jobParams)}\n`;
+
+                console.time(timerId);
+                console.timeLog(timerId, `Started working on background job: ${jobNameLog} with args: ${jobArgsLog}`);
+                try {
+                    await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(15000, true)]);
+                    console.timeLog(timerId, `Finished working on background job: ${jobNameLog} with args: ${jobArgsLog}`);
+                } catch (e) {
+                    console.timeLog(timerId, `Background job failed: ${jobNameLog} with args: ${jobArgsLog}${e.message}\n\n`);
+                }
+                console.timeEnd(timerId);
+            } catch (e) {
+                console.log(`Failed to start job: ${e.message}`);
+            }
+        });
+        console.log(`Waiting for jobs at: ${host}`);
     }
 
     tryResolve(jobType: Type<IJob>, params: JobParams): string {
@@ -103,53 +116,6 @@ export class JobManager {
         return jobName;
     }
 
-    protected initialize(): void {
-        if (this.queue) return;
-        const config = this.config;
-        const options = {password: config.resolve("redisPassword")};
-        const sentinels: Array<{host: string, port: number}> = config.resolve("redisSentinels");
-        const redis = !sentinels
-            ? null
-            : new IORedis({
-                sentinels,
-                name: config.resolve("redisCluster"),
-            });
-        const connection = {
-            pkg: "ioredis",
-            host: config.resolve("redisHost"),
-            password: options.password,
-            port: config.resolve("redisPort"),
-            namespace: config.resolve("redisNamespace"),
-            redis,
-            options
-        };
-        const queues = config.resolve("workQueues");
-        this.queue = new Queue({connection}, this.jobs);
-        this.worker = new Worker({connection, queues}, this.jobs);
-        this.worker.on("job", (queue, job) => {
-            console.log(`working job ${queue} ${JSON.stringify(job)}`);
-        });
-        this.worker.on("reEnqueue", (queue, job, plugin) => {
-            console.log(`reEnqueue job (${plugin}) ${queue} ${JSON.stringify(job)}`);
-        });
-        this.worker.on("success", (queue, job, result, duration) => {
-            console.log(
-                `job success ${queue} ${JSON.stringify(job)} >> ${result} (${duration}ms)`
-            );
-        });
-        this.worker.on("failure", (queue, job, failure, duration) => {
-            console.log(
-                `job failure ${queue} ${JSON.stringify(
-                    job
-                )} >> ${failure} (${duration}ms)`
-            );
-        });
-        this.worker.on("error", (error, queue, job) => {
-            console.log(`error ${queue} ${JSON.stringify(job)}  >> ${error}`);
-        });
-        this.scheduler = new Scheduler({connection}, this.jobs);
-    }
-
     protected tryResolveFromName(jobName: string, params: JobParams): Promise<string> {
         const jobType = this.jobTypes.find(type => {
             return getConstructorName(type) == jobName;
@@ -161,10 +127,14 @@ export class JobManager {
     }
 
     protected async tryResolveAndConnect(jobType: Type<IJob>, params: JobParams): Promise<string> {
-        this.initialize();
-        const jobName = this.tryResolve(jobType, params);
-        await this.queue.connect();
-        return jobName;
+        this.scheduler = this.scheduler || new Promise<any>(async resolve => {
+            const port = this.config.resolve("zmqPort");
+            const publisher = socket("push");
+            await publisher.bind(`tcp://0.0.0.0:${port}`)
+            console.log(`Publisher bound to port: ${port}`);
+            resolve(publisher);
+        });
+        return this.tryResolve(jobType, params);
     }
 
     protected resolveJobInstance(jobType: Type<IJob>, params: JobParams): IJob {
@@ -173,14 +143,6 @@ export class JobManager {
             container.register(name, {useValue: params[name]});
         });
         container.register(jobType, jobType);
-
         return container.resolve(jobType) as IJob;
-    }
-
-    protected toPerformFunction(jobType: Type<IJob>): Function {
-        return (jobParams: JobParams) => {
-            const job = this.resolveJobInstance(jobType, jobParams);
-            return job.process();
-        }
     }
 }

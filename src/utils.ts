@@ -74,7 +74,7 @@ export function isType(value: any): value is Type<any> {
     return isConstructor(value);
 }
 
-export function isInterface(obj: any, interFaceObject: {[key: string]: string}): boolean {
+export function isInterface(obj: any, interFaceObject: { [key: string]: string }): boolean {
     if (!obj || typeof obj !== "object" || isArray(obj) || !isObject(interFaceObject)) return false;
     const keys = Object.keys(interFaceObject);
     for (const key of keys) {
@@ -209,7 +209,7 @@ export function hydratePopulated<T extends Document>(modelType: Model<T>, json: 
     let object = modelType.hydrate(json);
 
     for (const [path, obj] of Object.entries(modelType.schema.obj)) {
-        let { ref, type } = obj as any;
+        let {ref, type} = obj as any;
         if (Array.isArray(type) && type.length > 0) {
             ref = type[0].ref;
         }
@@ -367,10 +367,14 @@ export function valueToPromise(value: any): Promise<any> {
     return value instanceof Promise ? value : Promise.resolve(value);
 }
 
-export function promiseTimeout(timeout: number = 1000): Promise<any> {
-    return new Promise<any>((resolve) => {
+export function promiseTimeout(timeout: number = 1000, error: boolean = false): Promise<string> {
+    return new Promise<any>((resolve, reject) => {
         setTimeout(() => {
-            resolve();
+            if (error) {
+                reject(`Timeout exceeded: ${timeout}ms`);
+                return;
+            }
+            resolve(`Timeout: ${timeout}ms`);
         }, timeout);
     });
 }
@@ -658,11 +662,82 @@ export function runCommand(scriptPath: string, expectedCode: number = 0): Promis
             }
             resolve(line);
         });
-        cp.stdout.on("data", function(data) {
+        cp.stdout.on("data", function (data) {
             console.log(data.toString());
         });
-        cp.stderr.on("data", function(data) {
+        cp.stderr.on("data", function (data) {
             console.error(data.toString());
         });
     });
+}
+
+export enum ConsoleColor {
+    Reset = "\x1b[0m",
+    Bright = "\x1b[1m",
+    Dim = "\x1b[2m",
+    Underscore = "\x1b[4m",
+    Blink = "\x1b[5m",
+    Reverse = "\x1b[7m",
+    Hidden = "\x1b[8m",
+
+    FgBlack = "\x1b[30m",
+    FgRed = "\x1b[31m",
+    FgGreen = "\x1b[32m",
+    FgYellow = "\x1b[33m",
+    FgBlue = "\x1b[34m",
+    FgMagenta = "\x1b[35m",
+    FgCyan = "\x1b[36m",
+    FgWhite = "\x1b[37m",
+
+    BgBlack = "\x1b[40m",
+    BgRed = "\x1b[41m",
+    BgGreen = "\x1b[42m",
+    BgYellow = "\x1b[43m",
+    BgBlue = "\x1b[44m",
+    BgMagenta = "\x1b[45m",
+    BgCyan = "\x1b[46m",
+    BgWhite = "\x1b[47m"
+}
+
+export interface IJsonColors {
+    keyColor?: ConsoleColor;
+    numberColor?: ConsoleColor;
+    stringColor?: ConsoleColor;
+    trueColor?: ConsoleColor;
+    falseColor?: ConsoleColor;
+    nullColor?: ConsoleColor;
+}
+
+const defaultColors: IJsonColors = {
+    keyColor: ConsoleColor.Dim,
+    numberColor: ConsoleColor.FgBlue,
+    stringColor: ConsoleColor.FgCyan,
+    trueColor: ConsoleColor.FgGreen,
+    falseColor: ConsoleColor.FgRed,
+    nullColor: ConsoleColor.BgMagenta
+}
+
+export function jsonHighlight(input: string | object, colorOptions?: IJsonColors): string {
+    const colors = Object.assign({}, defaultColors, colorOptions)
+    const json = (isString(input) ? input : JSON.stringify(input, null, 2)).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>')
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+]?\d+)?)/g, (match) => {
+        let color = colors.numberColor
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                color = colors.keyColor
+            } else {
+                color = colors.stringColor;
+                match = '"' + match.substr(1, match.length - 2) + '"';
+            }
+        } else {
+            color = /true/.test(match)
+                ? colors.trueColor
+                : /false/.test(match)
+                    ? colors.falseColor
+                    : /null/.test(match)
+                        ? colors.nullColor
+                        : color
+        }
+        return `${color}${match}${ConsoleColor.Reset}`
+    })
 }

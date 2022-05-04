@@ -53,7 +53,7 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
             this.progresses.get(this.progressId).then(p => {
                 p?.cancel();
             });
-            this.startWorkingOnAsset().then(() => {
+            this.startWorkingOnAsset(false).then(() => {
                 console.log(`Started working on lazy asset: ${this.id}`);
             }).catch(reason => {
                 console.log(`Can't start working on lazy asset: ${this.id}\nReason: ${reason}`);
@@ -71,7 +71,7 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
             await this.progresses.waitToFinish(this.progressId);
             return this.loadAsset();
         }
-        await this.startWorkingOnAsset();
+        await this.startWorkingOnAsset(true);
         return this.loadAsset();
     }
 
@@ -81,10 +81,10 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
         return asset;
     }
 
-    protected async startWorkingOnAsset(): Promise<any> {
+    protected async startWorkingOnAsset(fromLoad: boolean): Promise<any> {
         this.data.progressId = (await this.progresses.create()).id;
         this.data.assetId = null;
         await this.save();
-        await this.jobMan.enqueueWithName(this.data.jobName, {...this.data.jobParams, lazyId: this.id});
+        await this.jobMan.enqueueWithName(this.data.jobName, {...this.data.jobParams, lazyId: this.id, fromLoad});
     }
 }

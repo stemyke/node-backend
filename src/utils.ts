@@ -688,6 +688,7 @@ export enum ConsoleColor {
     FgMagenta = "\x1b[35m",
     FgCyan = "\x1b[36m",
     FgWhite = "\x1b[37m",
+    FgDefault = "\x1b[38m",
 
     BgBlack = "\x1b[40m",
     BgRed = "\x1b[41m",
@@ -696,7 +697,8 @@ export enum ConsoleColor {
     BgBlue = "\x1b[44m",
     BgMagenta = "\x1b[45m",
     BgCyan = "\x1b[46m",
-    BgWhite = "\x1b[47m"
+    BgWhite = "\x1b[47m",
+    BgDefault = "\x1b[48m"
 }
 
 export interface IJsonColors {
@@ -709,9 +711,9 @@ export interface IJsonColors {
 }
 
 const defaultColors: IJsonColors = {
-    keyColor: ConsoleColor.Dim,
+    keyColor: ConsoleColor.FgWhite,
     numberColor: ConsoleColor.FgBlue,
-    stringColor: ConsoleColor.FgCyan,
+    stringColor: ConsoleColor.FgYellow,
     trueColor: ConsoleColor.FgGreen,
     falseColor: ConsoleColor.FgRed,
     nullColor: ConsoleColor.BgMagenta

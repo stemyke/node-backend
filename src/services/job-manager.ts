@@ -85,15 +85,15 @@ export class JobManager {
                 const jobParams = JSON.parse(args.toString("utf8")) as JobParams;
                 const timerId = uniqueId?.toString("utf8");
                 const jobNameLog = `\x1b[36m"${jobName}"\x1b[0m`;
-                const jobArgsLog = `\n${jsonHighlight(jobParams)}\n`;
+                const jobArgsLog = `\n${jsonHighlight(jobParams)}`;
 
                 console.time(timerId);
-                console.timeLog(timerId, `Started working on background job: ${jobNameLog} with args: ${jobArgsLog}`);
+                console.timeLog(timerId, `Started working on background job: ${jobNameLog} with args: ${jobArgsLog}\n\n`);
                 try {
                     await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(15000, true)]);
-                    console.timeLog(timerId, `Finished working on background job: ${jobNameLog} with args: ${jobArgsLog}`);
+                    console.timeLog(timerId, `Finished working on background job: ${jobNameLog}\n\n`);
                 } catch (e) {
-                    console.timeLog(timerId, `Background job failed: ${jobNameLog} with args: ${jobArgsLog}${e.message}\n\n`);
+                    console.timeLog(timerId, `Background job failed: ${jobNameLog}\n${e.message}\n\n`);
                 }
                 console.timeEnd(timerId);
             } catch (e) {

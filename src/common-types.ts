@@ -110,8 +110,21 @@ export class Parameter {
     }
 }
 
+export type SocketParams = {[name: string]: string | number | boolean | SocketParams};
+
+export type JobParams = SocketParams;
+
+export interface ISocketMessage {
+    message: string;
+    params: SocketParams;
+}
+
+export interface IMessageBridge {
+    sendMessage(message: string, params?: SocketParams): void;
+}
+
 export interface IJob {
-    process(): Promise<any>;
+    process(messaging?: IMessageBridge): Promise<any>;
 }
 
 export interface IJobTask {
@@ -120,8 +133,6 @@ export interface IJobTask {
     destroy: () => void;
     getStatus: () => string;
 }
-
-export type JobParams = {[name: string]: string | number | boolean};
 
 export interface JobScheduleRange {
     min: number;
@@ -139,6 +150,7 @@ export interface IProgress {
     canceled: boolean;
     percent: number;
     remaining: number;
+    setMessageBridge(messageBridge: IMessageBridge): this;
     createSubProgress(progressValue: number, max?: number, message?: string): Promise<IProgress>;
     setMax(max: number): Promise<any>;
     setMessage(message: string): Promise<any>;

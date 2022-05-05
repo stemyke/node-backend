@@ -719,6 +719,12 @@ const defaultColors: IJsonColors = {
     nullColor: ConsoleColor.BgMagenta
 }
 
+export const MAX_TIMEOUT = 120000;
+
+export function colorize(input: any, color: ConsoleColor): string {
+    return `${color}${input}${ConsoleColor.Reset}`;
+}
+
 export function jsonHighlight(input: string | object, colorOptions?: IJsonColors): string {
     const colors = Object.assign({}, defaultColors, colorOptions)
     const json = (isString(input) ? input : JSON.stringify(input, null, 2)).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>')

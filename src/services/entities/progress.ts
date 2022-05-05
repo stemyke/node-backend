@@ -1,9 +1,11 @@
 import {ObjectId} from "bson";
 import {Collection} from "mongodb";
-import {IProgress} from "../../common-types";
+import {IMessageBridge, IProgress} from "../../common-types";
 import {BaseEntity} from "./base-entity";
 
 export class Progress extends BaseEntity<IProgress> implements IProgress {
+
+    protected messageBridge: IMessageBridge;
 
     get current(): number {
         return this.data.current;
@@ -35,9 +37,13 @@ export class Progress extends BaseEntity<IProgress> implements IProgress {
 
     constructor(id: ObjectId,
                 data: Partial<IProgress>,
-                collection: Collection,
-                protected client: SocketIOClient.Socket) {
+                collection: Collection) {
         super(id, data, collection);
+    }
+
+    setMessageBridge(messageBridge: IMessageBridge): this {
+        this.messageBridge = messageBridge || this.messageBridge;
+        return this;
     }
 
     async createSubProgress(progressValue: number, max?: number, message?: string): Promise<IProgress> {
@@ -77,13 +83,18 @@ export class Progress extends BaseEntity<IProgress> implements IProgress {
         if (this.deleted || this.canceled) return null;
         this.data.current = Math.min(this.max, this.current + value);
         await this.save();
-        if (!this.client) return;
-        this.client.emit("background-progress", this.id);
     }
 
     async cancel(): Promise<any> {
         this.data.canceled = true;
         await this.save();
+    }
+
+    save(): Promise<any> {
+        if (this.messageBridge) {
+            this.messageBridge.sendMessage(`progress-changed`, this.toJSON());
+        }
+        return super.save();
     }
 }
 
@@ -131,6 +142,12 @@ export class SubProgress implements IProgress {
             throw "Progress value must be bigger than zero";
         }
         this.mCurrent = 0;
+    }
+
+    setMessageBridge(messageBridge: IMessageBridge): this {
+        if (!this.parent) return this;
+        this.parent.setMessageBridge(messageBridge);
+        return this;
     }
 
     async createSubProgress(progressValue: number, max?: number, message?: string): Promise<IProgress> {

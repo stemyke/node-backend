@@ -8,20 +8,20 @@ import {useContainer as useSocketContainer, useSocketServer} from "socket-contro
 import {getApiDocs} from "./rest-openapi";
 
 import {
+    DI_CONTAINER,
+    EXPRESS,
+    FIXTURE,
+    HTTP_SERVER,
     IBackendConfig,
     IDependencyContainer,
     IPaginationParams,
     IRequest,
     IUser,
-    Parameter,
-    Provider,
-    FIXTURE,
     JOB,
-    EXPRESS,
-    HTTP_SERVER,
-    SOCKET_SERVER,
+    Parameter,
     PARAMETER,
-    DI_CONTAINER,
+    Provider,
+    SOCKET_SERVER,
     Type
 } from "./common-types";
 
@@ -127,6 +127,7 @@ export {
     runCommand,
     ConsoleColor,
     IJsonColors,
+    colorize,
     jsonHighlight
 } from "./utils";
 
@@ -153,6 +154,9 @@ export {
     SchemaConverter,
     ParamResolver,
     Parameter,
+    SocketParams,
+    ISocketMessage,
+    IMessageBridge,
     IJob,
     IJobTask,
     JobParams,
@@ -250,7 +254,8 @@ export function createServices(): IDependencyContainer {
         new Parameter("nodeEnv", "development"),
         new Parameter("appPort", 80),
         new Parameter("zmqPort", 3000),
-        new Parameter("zmqRemoteHost", "tcp://127.0.0.1:3000"),
+        new Parameter("zmqBackPort", 3100),
+        new Parameter("zmqRemoteHost", "tcp://127.0.0.1"),
         new Parameter("isWorker", false),
         new Parameter("mainEndpoint", ""),
         new Parameter("idChars", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"),

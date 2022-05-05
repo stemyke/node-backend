@@ -4,7 +4,6 @@ import {ObjectId} from "bson";
 import {IAsset, ILazyAsset} from "../../common-types";
 import {deleteFromBucket} from "../../utils";
 import {Assets} from "../assets";
-import {JobManager} from "../job-manager";
 import {Progresses} from "../progresses";
 import {BaseEntity} from "./base-entity";
 
@@ -34,8 +33,7 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
                 data: Partial<ILazyAsset>,
                 collection: Collection,
                 protected assets: Assets,
-                protected progresses: Progresses,
-                protected jobMan: JobManager) {
+                protected progresses: Progresses) {
         super(id, data, collection);
     }
 
@@ -85,6 +83,6 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
         this.data.progressId = (await this.progresses.create()).id;
         this.data.assetId = null;
         await this.save();
-        await this.jobMan.enqueueWithName(this.data.jobName, {...this.data.jobParams, lazyId: this.id, fromLoad});
+        await this.progresses.jobMan.enqueueWithName(this.data.jobName, {...this.data.jobParams, lazyId: this.id, fromLoad});
     }
 }

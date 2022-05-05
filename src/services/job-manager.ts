@@ -1,29 +1,71 @@
 import {DependencyContainer, inject, injectable, injectAll, Lifecycle, scoped} from "tsyringe";
 import {schedule, validate} from "node-cron";
 import {socket, Socket} from "zeromq";
+import {Subject, Subscription} from "rxjs";
+import {filter, map} from "rxjs/operators";
 import {ObjectId} from "bson";
-import {DI_CONTAINER, IJob, IJobTask, JOB, JobParams, JobScheduleRange, JobScheduleTime, Type} from "../common-types";
-import {getConstructorName, isArray, isObject, jsonHighlight, promiseTimeout} from "../utils";
+import {
+    DI_CONTAINER,
+    IJob,
+    IJobTask,
+    IMessageBridge,
+    ISocketMessage,
+    JOB,
+    JobParams,
+    JobScheduleRange,
+    JobScheduleTime,
+    SocketParams,
+    Type
+} from "../common-types";
+import {
+    colorize,
+    ConsoleColor,
+    getConstructorName,
+    isArray,
+    isObject,
+    jsonHighlight,
+    MAX_TIMEOUT,
+    promiseTimeout
+} from "../utils";
 import {Configuration} from "./configuration";
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
 export class JobManager {
 
-    protected jobs: {[name: string]: (jobParams: JobParams) => Promise<any>};
-    protected scheduler: Promise<Socket>;
-    protected worker: Socket;
     protected jobTypes: Type<IJob>[];
+    protected jobs: {[name: string]: (jobParams: JobParams) => Promise<any>};
+    protected messages: Subject<ISocketMessage>;
+    protected messageBridge: IMessageBridge;
+    protected processing: boolean;
+
+    protected apiPush: Socket;
+    protected apiPull: Socket;
+    protected workerPush: Socket;
+    protected workerPull: Socket;
 
     constructor(readonly config: Configuration, @inject(DI_CONTAINER) readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
             res[getConstructorName(jobType)] = (jobParams: JobParams) => {
                 const job = this.resolveJobInstance(jobType, jobParams);
-                return job.process();
+                return job.process(this.messageBridge);
             }
             return res;
         }, {});
+        this.messages = new Subject<ISocketMessage>();
+        this.messageBridge = {
+            sendMessage: (message: string, params?: SocketParams) => {
+                this.workerPush.send([message, JSON.stringify(params)]);
+            }
+        };
+        this.processing = false;
+    }
+
+    on(message: string, cb: (params: SocketParams) => any): Subscription {
+        return this.messages
+            .pipe(filter(t => t.message === message))
+            .pipe(map(t => t.params)).subscribe(cb);
     }
 
     async process(jobType: Type<IJob>, params: JobParams = {}): Promise<any> {
@@ -38,18 +80,11 @@ export class JobManager {
     }
 
     async enqueueWithName(name: string, params: JobParams = {}): Promise<any> {
-        const jobName = await this.tryResolveFromName(name, params);
-        return this.sendToWorkers(jobName, params);
+        return this.sendToWorkers(this.tryResolveFromName(name, params), params);
     }
 
     async enqueue(jobType: Type<IJob>, params: JobParams = {}): Promise<any> {
-        const jobName = await this.tryResolveAndConnect(jobType, params);
-        return this.sendToWorkers(jobName, params);
-    }
-
-    protected async sendToWorkers(jobName: string, params: JobParams): Promise<any> {
-        const publisher = await this.scheduler;
-        await publisher.send([jobName, JSON.stringify(params), new ObjectId().toHexString()]);
+        return this.sendToWorkers(this.tryResolveAndInit(jobType, params), params);
     }
 
     schedule(minute: JobScheduleTime, hour: JobScheduleTime, dayOfMonth: JobScheduleTime, month: JobScheduleTime, dayOfWeek: JobScheduleTime, jobType: Type<IJob>, params: JobParams = {}): IJobTask {
@@ -75,11 +110,27 @@ export class JobManager {
         });
     }
 
-    startProcessing(): void {
+    async startProcessing(): Promise<any> {
+        if (this.processing) return null;
+        this.processing = true;
+
+        if (!this.config.resolve("isWorker")) {
+            console.log(colorize(`Processing can not be started because this is NOT a worker process!`, ConsoleColor.FgRed));
+            return null;
+        }
+
         const host = this.config.resolve("zmqRemoteHost");
-        this.worker = socket("pull");
-        this.worker.connect(host);
-        this.worker.on("message", async (name: Buffer, args: Buffer, uniqueId: Buffer) => {
+        const pushHost = `${host}:${this.config.resolve("zmqBackPort")}`;
+        this.workerPush = socket("push");
+        await this.workerPush.connect(pushHost);
+        console.log(`Worker producer connected to: ${pushHost}`);
+
+        const pullHost = `${host}:${this.config.resolve("zmqPort")}`;
+        this.workerPull = socket("pull");
+        await this.workerPull.connect(pullHost);
+        console.log(`Worker consumer connected to: ${pullHost}`);
+
+        this.workerPull.on("message", async (name: Buffer, args: Buffer, uniqueId: Buffer) => {
             try {
                 const jobName = name.toString("utf8");
                 const jobParams = JSON.parse(args.toString("utf8")) as JobParams;
@@ -89,8 +140,10 @@ export class JobManager {
 
                 console.time(timerId);
                 console.timeLog(timerId, `Started working on background job: ${jobNameLog} with args: ${jobArgsLog}\n\n`);
+
+                this.messageBridge.sendMessage(`job-started`, {name: jobName});
                 try {
-                    await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(15000, true)]);
+                    await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(MAX_TIMEOUT, true)]);
                     console.timeLog(timerId, `Finished working on background job: ${jobNameLog}\n\n`);
                 } catch (e) {
                     console.timeLog(timerId, `Background job failed: ${jobNameLog}\n${e.message}\n\n`);
@@ -100,7 +153,6 @@ export class JobManager {
                 console.log(`Failed to start job: ${e.message}`);
             }
         });
-        console.log(`Waiting for jobs at: ${host}`);
     }
 
     tryResolve(jobType: Type<IJob>, params: JobParams): string {
@@ -116,24 +168,35 @@ export class JobManager {
         return jobName;
     }
 
-    protected tryResolveFromName(jobName: string, params: JobParams): Promise<string> {
+    protected tryResolveFromName(jobName: string, params: JobParams): string {
         const jobType = this.jobTypes.find(type => {
             return getConstructorName(type) == jobName;
         });
         if (!jobType) {
             throw `Can't find job type with name: ${jobName} so it can't be enqueued!`;
         }
-        return this.tryResolveAndConnect(jobType, params);
+        return this.tryResolveAndInit(jobType, params);
     }
 
-    protected async tryResolveAndConnect(jobType: Type<IJob>, params: JobParams): Promise<string> {
-        this.scheduler = this.scheduler || new Promise<any>(async resolve => {
+    protected tryResolveAndInit(jobType: Type<IJob>, params: JobParams): string {
+        if (!this.apiPush) {
             const port = this.config.resolve("zmqPort");
-            const publisher = socket("push");
-            await publisher.bind(`tcp://0.0.0.0:${port}`)
-            console.log(`Publisher bound to port: ${port}`);
-            resolve(publisher);
-        });
+            this.apiPush = socket("push");
+            this.apiPush.bind(`tcp://0.0.0.0:${port}`);
+            console.log(`API producer bound to port: ${port}`);
+        }
+        if (!this.apiPull) {
+            const backPort = this.config.resolve("zmqBackPort");
+            this.apiPull = socket("pull");
+            this.apiPull.bind(`tcp://0.0.0.0:${backPort}`);
+            this.apiPull.on("message", (name: Buffer, args?: Buffer) => {
+                const message = name.toString("utf8");
+                const params = JSON.parse(args?.toString("utf8") || "{}") as JobParams;
+                console.log(`Received a message from worker: "${colorize(message, ConsoleColor.FgCyan)}" with args: ${jsonHighlight(params)}\n\n`);
+                this.messages.next({message, params});
+            });
+            console.log(`API consumer bound to port: ${backPort}`);
+        }
         return this.tryResolve(jobType, params);
     }
 
@@ -144,5 +207,10 @@ export class JobManager {
         });
         container.register(jobType, jobType);
         return container.resolve(jobType) as IJob;
+    }
+
+    protected async sendToWorkers(jobName: string, params: JobParams): Promise<any> {
+        const publisher = await this.apiPush;
+        await publisher.send([jobName, JSON.stringify(params), new ObjectId().toHexString()]);
     }
 }

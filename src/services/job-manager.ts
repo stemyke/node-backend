@@ -135,18 +135,16 @@ export class JobManager {
                 const jobName = name.toString("utf8");
                 const jobParams = JSON.parse(args.toString("utf8")) as JobParams;
                 const timerId = uniqueId?.toString("utf8");
-                const jobNameLog = `\x1b[36m"${jobName}"\x1b[0m`;
-                const jobArgsLog = `\n${jsonHighlight(jobParams)}`;
 
                 console.time(timerId);
-                console.timeLog(timerId, `Started working on background job: ${jobNameLog} with args: ${jobArgsLog}\n\n`);
+                console.timeLog(timerId, `Started working on background job: ${colorize(jobName, ConsoleColor.FgCyan)} with args: \n${jsonHighlight(jobParams)}\n\n`);
 
                 this.messageBridge.sendMessage(`job-started`, {name: jobName});
                 try {
                     await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(MAX_TIMEOUT, true)]);
-                    console.timeLog(timerId, `Finished working on background job: ${jobNameLog}\n\n`);
+                    console.timeLog(timerId, `Finished working on background job: ${colorize(jobName, ConsoleColor.FgCyan)}\n\n`);
                 } catch (e) {
-                    console.timeLog(timerId, `Background job failed: ${jobNameLog}\n${e.message}\n\n`);
+                    console.timeLog(timerId, `Background job failed: ${colorize(jobName, ConsoleColor.FgRed)}\n${e}\n\n`);
                 }
                 console.timeEnd(timerId);
             } catch (e) {

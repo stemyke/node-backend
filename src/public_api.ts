@@ -85,6 +85,7 @@ export {
     lcFirst,
     firstItem,
     lastItem,
+    regroup,
     getValue,
     groupBy,
     convertValue,
@@ -251,7 +252,7 @@ export function createServices(): IDependencyContainer {
         new Parameter("mongoDb", "node-backend"),
         new Parameter("mongoUser", null),
         new Parameter("mongoPassword", null),
-        new Parameter("nodeEnv", "development"),
+        new Parameter("nodeEnv", "production"),
         new Parameter("appPort", 80),
         new Parameter("zmqPort", 3000),
         new Parameter("zmqBackPort", 3100),
@@ -263,6 +264,7 @@ export function createServices(): IDependencyContainer {
         new Parameter("idPrefix", "ID-"),
         new Parameter("idParts", [4, 4]),
         new Parameter("jsonLimit", "250mb"),
+        new Parameter("jobTimeout", 5 * 60 * 1000),
         new Parameter("cacheCollection", "cache"),
     ];
 

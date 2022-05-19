@@ -107,6 +107,22 @@ export function lastItem<T>(value: T[]): T {
     return value[value.length - 1];
 }
 
+export function regroup<T>(value: T[], comparator: (a: T, b: T) => boolean): Array<T[]> {
+    const result: Array<T[]> = [];
+    if (!isArray(value) || value.length == 0) return result;
+    value = Array.from(value);
+    result.push([value.shift()]);
+    value.forEach(item => {
+        const group = result.find(g => g.some(a => comparator(a, item)));
+        if (group) {
+            group.push(item);
+            return;
+        }
+        result.push([item]);
+    });
+    return result;
+}
+
 export function getValue(obj: any, key: string, defaultValue?: any, treeFallback: boolean = false): any {
     key = key || "";
     const keys = key.split(".");
@@ -718,8 +734,6 @@ const defaultColors: IJsonColors = {
     falseColor: ConsoleColor.FgRed,
     nullColor: ConsoleColor.BgMagenta
 }
-
-export const MAX_TIMEOUT = 120000;
 
 export function colorize(input: any, color: ConsoleColor): string {
     return `${color}${input}${ConsoleColor.Reset}`;

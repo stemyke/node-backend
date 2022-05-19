@@ -17,16 +17,7 @@ import {
     SocketParams,
     Type
 } from "../common-types";
-import {
-    colorize,
-    ConsoleColor,
-    getConstructorName,
-    isArray,
-    isObject,
-    jsonHighlight,
-    MAX_TIMEOUT,
-    promiseTimeout
-} from "../utils";
+import {colorize, ConsoleColor, getConstructorName, isArray, isObject, jsonHighlight, promiseTimeout} from "../utils";
 import {Configuration} from "./configuration";
 
 @injectable()
@@ -44,6 +35,8 @@ export class JobManager {
     protected workerPush: Socket;
     protected workerPull: Socket;
 
+    readonly maxTimeout: number;
+
     constructor(readonly config: Configuration, @inject(DI_CONTAINER) readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
@@ -60,6 +53,7 @@ export class JobManager {
             }
         };
         this.processing = false;
+        this.maxTimeout = this.config.resolve("jobTimeout");
     }
 
     on(message: string, cb: (params: SocketParams) => any): Subscription {
@@ -141,7 +135,7 @@ export class JobManager {
 
                 this.messageBridge.sendMessage(`job-started`, {name: jobName});
                 try {
-                    await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(MAX_TIMEOUT, true)]);
+                    await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(this.maxTimeout, true)]);
                     console.timeLog(timerId, `Finished working on background job: ${colorize(jobName, ConsoleColor.FgCyan)}\n\n`);
                 } catch (e) {
                     console.timeLog(timerId, `Background job failed: ${colorize(jobName, ConsoleColor.FgRed)}\n${e}\n\n`);

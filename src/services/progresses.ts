@@ -3,7 +3,7 @@ import {ObjectId} from "bson";
 import {Collection} from "mongodb";
 import {FilterQuery} from "mongoose";
 import {IProgress} from "../common-types";
-import {MAX_TIMEOUT, promiseTimeout} from "../utils";
+import {promiseTimeout} from "../utils";
 import {MongoConnector} from "./mongo-connector";
 import {JobManager} from "./job-manager";
 import {Progress} from "./entities/progress";
@@ -85,7 +85,7 @@ export class Progresses {
                 isFinished = progress.percent >= 100;
             }
             if (!isFinished) {
-                if (waitTime >= MAX_TIMEOUT) {
+                if (waitTime >= this.jobMan.maxTimeout) {
                     throw new Error(`Progress with id: ${id} probably never will be finished!`);
                 }
                 await promiseTimeout(delay);

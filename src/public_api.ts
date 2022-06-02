@@ -347,12 +347,13 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     // Setup rest API
     const restOptions = config.restOptions || {};
     restOptions.defaultErrorHandler = false;
-    restOptions.cors = {
+    restOptions.cors = Object.assign({
         credentials: true,
+        exposedHeaders: ["content-disposition"],
         origin: (origin, callback) => {
             callback(null, true);
         }
-    };
+    }, restOptions.cors || {});
     restOptions.routePrefix = config.routePrefix || "/api";
     restOptions.routePrefix = restOptions.routePrefix == "/" ? "" : restOptions.routePrefix;
     restOptions.middlewares = [ErrorHandlerMiddleware, ContainerMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]

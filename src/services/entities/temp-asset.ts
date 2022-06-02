@@ -1,6 +1,5 @@
 import {Readable} from "stream";
 import {ObjectId} from "bson";
-import Buffer from "buffer";
 import {IAsset, IAssetImageParams, IAssetMeta} from "../../common-types";
 import {bufferToStream} from "../../utils";
 import {Asset} from "./asset";

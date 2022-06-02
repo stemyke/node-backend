@@ -12,7 +12,6 @@ import {
     RegistrationOptions
 } from "tsyringe";
 import {SchemaObject} from "openapi3-ts";
-import Buffer from "buffer";
 import {Readable} from "stream";
 import {Moment} from "moment";
 

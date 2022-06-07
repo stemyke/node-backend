@@ -25,9 +25,8 @@ import {Configuration} from "./configuration";
 export class JobManager {
 
     protected jobTypes: Type<IJob>[];
-    protected jobs: {[name: string]: (jobParams: JobParams) => Promise<any>};
+    protected jobs: { [name: string]: (jobParams: JobParams, uniqueId: string) => Promise<any> };
     protected messages: Subject<ISocketMessage>;
-    protected messageBridge: IMessageBridge;
     protected processing: boolean;
 
     protected apiPush: Socket;
@@ -40,18 +39,21 @@ export class JobManager {
     constructor(readonly config: Configuration, @inject(DI_CONTAINER) readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
-            res[getConstructorName(jobType)] = (jobParams: JobParams) => {
+            const jobName = getConstructorName(jobType);
+            res[jobName] = (jobParams: JobParams, uniqueId: string) => {
                 const job = this.resolveJobInstance(jobType, jobParams);
-                return job.process(this.messageBridge);
+                const messageBridge: IMessageBridge = {
+                    sendMessage: (message: string, params?: SocketParams) => {
+                        params.uniqueId = uniqueId;
+                        this.workerPush.send([message, JSON.stringify(params)]);
+                    }
+                };
+                messageBridge.sendMessage(`job-started`, {name: jobName});
+                return job.process(messageBridge);
             }
             return res;
         }, {});
         this.messages = new Subject<ISocketMessage>();
-        this.messageBridge = {
-            sendMessage: (message: string, params?: SocketParams) => {
-                this.workerPush.send([message, JSON.stringify(params)]);
-            }
-        };
         this.processing = false;
         this.maxTimeout = this.config.resolve("jobTimeout");
     }
@@ -73,11 +75,11 @@ export class JobManager {
         return instance.process();
     }
 
-    async enqueueWithName(name: string, params: JobParams = {}): Promise<any> {
+    async enqueueWithName(name: string, params: JobParams = {}): Promise<string> {
         return this.sendToWorkers(this.tryResolveFromName(name, params), params);
     }
 
-    async enqueue(jobType: Type<IJob>, params: JobParams = {}): Promise<any> {
+    async enqueue(jobType: Type<IJob>, params: JobParams = {}): Promise<string> {
         return this.sendToWorkers(this.tryResolveAndInit(jobType, params), params);
     }
 
@@ -124,23 +126,22 @@ export class JobManager {
         await this.workerPull.connect(pullHost);
         console.log(`Worker consumer connected to: ${pullHost}`);
 
-        this.workerPull.on("message", async (name: Buffer, args: Buffer, uniqueId: Buffer) => {
+        this.workerPull.on("message", async (name: Buffer, args: Buffer, uniqId: Buffer) => {
             try {
                 const jobName = name.toString("utf8");
                 const jobParams = JSON.parse(args.toString("utf8")) as JobParams;
-                const timerId = uniqueId?.toString("utf8");
+                const uniqueId = uniqId?.toString("utf8");
 
-                console.time(timerId);
-                console.timeLog(timerId, `Started working on background job: ${colorize(jobName, ConsoleColor.FgCyan)} with args: \n${jsonHighlight(jobParams)}\n\n`);
+                console.time(uniqueId);
+                console.timeLog(uniqueId, `Started working on background job: ${colorize(jobName, ConsoleColor.FgCyan)} with args: \n${jsonHighlight(jobParams)}\n\n`);
 
-                this.messageBridge.sendMessage(`job-started`, {name: jobName});
                 try {
-                    await Promise.race([this.jobs[jobName](jobParams), promiseTimeout(this.maxTimeout, true)]);
-                    console.timeLog(timerId, `Finished working on background job: ${colorize(jobName, ConsoleColor.FgCyan)}\n\n`);
+                    await Promise.race([this.jobs[jobName](jobParams, uniqueId), promiseTimeout(this.maxTimeout, true)]);
+                    console.timeLog(uniqueId, `Finished working on background job: ${colorize(jobName, ConsoleColor.FgCyan)}\n\n`);
                 } catch (e) {
-                    console.timeLog(timerId, `Background job failed: ${colorize(jobName, ConsoleColor.FgRed)}\n${e}\n\n`);
+                    console.timeLog(uniqueId, `Background job failed: ${colorize(jobName, ConsoleColor.FgRed)}\n${e}\n\n`);
                 }
-                console.timeEnd(timerId);
+                console.timeEnd(uniqueId);
             } catch (e) {
                 console.log(`Failed to start job: ${e.message}`);
             }
@@ -201,8 +202,10 @@ export class JobManager {
         return container.resolve(jobType) as IJob;
     }
 
-    protected async sendToWorkers(jobName: string, params: JobParams): Promise<any> {
+    protected async sendToWorkers(jobName: string, params: JobParams): Promise<string> {
         const publisher = await this.apiPush;
-        await publisher.send([jobName, JSON.stringify(params), new ObjectId().toHexString()]);
+        const uniqueId = new ObjectId().toHexString();
+        await publisher.send([jobName, JSON.stringify(params), uniqueId]);
+        return uniqueId;
     }
 }

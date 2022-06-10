@@ -415,6 +415,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
 
     allProviders.forEach(provider => {
         if (isType(provider)) {
+            if (container.isRegistered(provider)) return;
             diContainer.register(provider, provider);
             return;
         }

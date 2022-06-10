@@ -41,7 +41,7 @@ export class JobManager {
         this.jobs = this.jobTypes.reduce((res, jobType) => {
             const jobName = getConstructorName(jobType);
             res[jobName] = (jobParams: JobParams, uniqueId: string) => {
-                const job = this.resolveJobInstance(jobType, jobParams);
+                const job = this.resolveJobInstance(jobType, jobParams, uniqueId);
                 const messageBridge: IMessageBridge = {
                     sendMessage: (message: string, params?: SocketParams) => {
                         params.uniqueId = uniqueId;
@@ -193,11 +193,12 @@ export class JobManager {
         return this.tryResolve(jobType, params);
     }
 
-    protected resolveJobInstance(jobType: Type<IJob>, params: JobParams): IJob {
+    protected resolveJobInstance(jobType: Type<IJob>, params: JobParams, uniqueId: string = null): IJob {
         const container = this.container.createChildContainer();
         Object.keys(params).map((name) => {
             container.register(name, {useValue: params[name]});
         });
+        container.register("uniqueId", {useValue: uniqueId});
         container.register(jobType, jobType);
         return container.resolve(jobType) as IJob;
     }

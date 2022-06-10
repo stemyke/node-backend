@@ -17,7 +17,16 @@ import {
     SocketParams,
     Type
 } from "../common-types";
-import {colorize, ConsoleColor, getConstructorName, isArray, isObject, jsonHighlight, promiseTimeout} from "../utils";
+import {
+    colorize,
+    ConsoleColor,
+    getConstructorName,
+    getType,
+    isArray,
+    isObject,
+    jsonHighlight,
+    promiseTimeout
+} from "../utils";
 import {Configuration} from "./configuration";
 
 @injectable()
@@ -185,7 +194,11 @@ export class JobManager {
             this.apiPull.on("message", (name: Buffer, args?: Buffer) => {
                 const message = name.toString("utf8");
                 const params = JSON.parse(args?.toString("utf8") || "{}") as JobParams;
-                console.log(`Received a message from worker: "${colorize(message, ConsoleColor.FgCyan)}" with args: ${jsonHighlight(params)}\n\n`);
+                const paramTypes = Object.keys(params).reduce((res, key) => {
+                    res[key] = getType(params[key]);
+                    return res;
+                }, {});
+                console.log(`Received a message from worker: "${colorize(message, ConsoleColor.FgCyan)}" with args: ${jsonHighlight(paramTypes)}\n\n`);
                 this.messages.next({message, params});
             });
             console.log(`API consumer bound to port: ${backPort}`);
@@ -193,7 +206,7 @@ export class JobManager {
         return this.tryResolve(jobType, params);
     }
 
-    protected resolveJobInstance(jobType: Type<IJob>, params: JobParams, uniqueId: string = null): IJob {
+    protected resolveJobInstance(jobType: Type<IJob>, params: JobParams, uniqueId: string = ""): IJob {
         const container = this.container.createChildContainer();
         Object.keys(params).map((name) => {
             container.register(name, {useValue: params[name]});

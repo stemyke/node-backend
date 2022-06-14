@@ -86,12 +86,14 @@ export {
     firstItem,
     lastItem,
     regroup,
+    uniqueItems,
     getValue,
     groupBy,
     convertValue,
     injectServices,
     paginate,
-    lookupPipelines,
+    lookupStages,
+    letsLookupStage,
     hydratePopulated,
     paginateAggregations,
     bufferToStream,
@@ -129,7 +131,8 @@ export {
     ConsoleColor,
     IJsonColors,
     colorize,
-    jsonHighlight
+    jsonHighlight,
+    replaceSpecialChars
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";
@@ -155,6 +158,7 @@ export {
     SchemaConverter,
     ParamResolver,
     Parameter,
+    SocketParam,
     SocketParams,
     ISocketMessage,
     IMessageBridge,

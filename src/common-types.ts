@@ -109,7 +109,11 @@ export class Parameter {
     }
 }
 
-export type SocketParams = {[name: string]: string | number | boolean | SocketParams};
+export type SocketParam = string | number | boolean | SocketParams;
+
+export type SocketParams = {
+    [name: string]: SocketParam | Array<SocketParam>;
+};
 
 export type JobParams = SocketParams;
 

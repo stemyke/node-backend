@@ -123,6 +123,10 @@ export function regroup<T>(value: T[], comparator: (a: T, b: T) => boolean): Arr
     return result;
 }
 
+export function uniqueItems<T>(value: T[]): T[] {
+    return value.filter((v, ix) => value.indexOf(v) === ix);
+}
+
 export function getValue(obj: any, key: string, defaultValue?: any, treeFallback: boolean = false): any {
     key = key || "";
     const keys = key.split(".");
@@ -200,9 +204,9 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     });
 }
 
-export function lookupPipelines(from: string, localField: string, as: string = null, foreignField: string = "_id", shouldUnwind: boolean = true): any[] {
+export function lookupStages(from: string, localField: string, as: string = null, foreignField: string = "_id", shouldUnwind: boolean = true): any[] {
     as = as || localField.replace("Id", "");
-    const pipelines = [
+    const pipelines: any[] = [
         {
             $lookup: {
                 from,
@@ -210,15 +214,30 @@ export function lookupPipelines(from: string, localField: string, as: string = n
                 foreignField,
                 as
             }
-        },
-        {
+        }
+    ];
+    if (shouldUnwind) {
+        pipelines.push({
             $unwind: {
                 path: `$${as}`,
                 preserveNullAndEmptyArrays: true
             }
+        })
+    }
+    return pipelines;
+}
+
+export function letsLookupStage(from: string, pipeline: any[], as: string = null, letFields: any = null) {
+    as = as || from;
+    letFields = letFields || {id: "$_id"};
+    return {
+        $lookup: {
+            from,
+            let: letFields,
+            pipeline,
+            as
         }
-    ];
-    return shouldUnwind ? pipelines : pipelines.slice(0, 0);
+    };
 }
 
 export function hydratePopulated<T extends Document>(modelType: Model<T>, json: any): T {
@@ -762,4 +781,8 @@ export function jsonHighlight(input: string | object, colorOptions?: IJsonColors
         }
         return `${color}${match}${ConsoleColor.Reset}`
     })
+}
+
+export function replaceSpecialChars(str: string, to: string = "-"): string {
+    return `${str}`.replace(/[&\/\\#, +()$~%.@'":*?<>{}]/g, to);
 }

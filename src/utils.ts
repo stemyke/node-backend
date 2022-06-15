@@ -111,7 +111,7 @@ export function lcFirst(value: string): string {
 }
 
 export function isObjectId(id: string): boolean {
-    return typeof id === "string" && id.length == 12 && !isNaN(Number("0x" + id));
+    return typeof id === "string" && id.length == 24 && !isNaN(Number("0x" + id));
 }
 
 export function firstItem<T>(value: T[]): T {

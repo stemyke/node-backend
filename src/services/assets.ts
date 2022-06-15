@@ -99,6 +99,11 @@ export class Assets {
         return result;
     }
 
+    async deleteMany(where: FilterQuery<IAsset>): Promise<ReadonlyArray<string>> {
+        const assets = await this.findMany(where);
+        return Promise.all(assets.map(a => a.unlink()));
+    }
+
     async unlink(id: string): Promise<any> {
         const asset = await this.read(id);
         if (!asset) return null;

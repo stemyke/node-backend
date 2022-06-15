@@ -1,8 +1,7 @@
 import {Readable} from "stream";
 import {ObjectId} from "bson";
 import {IAsset, IAssetImageParams, IAssetMeta} from "../../common-types";
-import {bufferToStream} from "../../utils";
-import {Asset} from "./asset";
+import {bufferToStream, toImage} from "../../utils";
 
 export class TempAsset implements IAsset {
 
@@ -30,7 +29,7 @@ export class TempAsset implements IAsset {
 
     downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable> {
         Object.assign(this.metadata, metadata || {});
-        return Asset.toImage(this.stream, this.metadata, params);
+        return toImage(this.stream, params, this.metadata);
     }
 
     getImage(params?: IAssetImageParams): Promise<Readable> {

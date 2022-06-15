@@ -71,13 +71,13 @@ export class AssetsController {
         return this.getImageRotation(id, params, res);
     }
 
-    @Get("/by-name/:id")
+    @Get("/by-name/:name")
     async getFileByName(@Param("name") name: string, @Res() res: Response): Promise<Readable> {
         const asset = await this.getAssetByName("Asset", name, res);
         return asset.download();
     }
 
-    @Get("/by-name/image/:id")
+    @Get("/by-name/image/:name")
     async getImageByName(@Param("name") name: string, @QueryParams() params: IAssetImageParams, @Res() res: Response): Promise<Readable> {
         const asset = await this.getAssetByName("Image", name, res);
         return asset.downloadImage(params);

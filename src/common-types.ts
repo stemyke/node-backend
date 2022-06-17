@@ -89,6 +89,52 @@ export const PARAMETER: InjectionToken<Parameter> = Symbol.for("parameter-token"
 
 export const DI_CONTAINER: InjectionToken<IDependencyContainer> = Symbol.for("di-container-token");
 
+// --- Mongo interfaces and types
+
+export interface IMatchField {
+    field: string;
+    filter: any;
+    when: boolean;
+}
+
+export interface IMongoExpression {
+    $expr?: IMongoExpression;
+    $and?: IMongoExpression[];
+    $or?: IMongoExpression[];
+    $eq?: string | number | string[];
+    $group?: IMongoExpression[];
+    $push?: IMongoExpression[];
+    [key: string]: IMongoExpression | any;
+}
+
+export interface IUnwindOptions {
+    path: string;
+    includeArrayIndex?: string;
+    preserveNullAndEmptyArrays?: boolean;
+}
+
+export interface IUnwindStage {
+    $unwind: string | IUnwindOptions;
+}
+
+export interface IGroupStage {
+    $group: IMongoExpression;
+}
+
+export interface IMatchStage {
+    $match: IMongoExpression;
+}
+
+export interface IProjectStage {
+    $project: IMongoExpression;
+}
+
+export interface ILookupStage {
+    $lookup: IMongoExpression;
+}
+
+export type AggregationPipelineStage = IUnwindStage | IGroupStage | IMatchStage | IProjectStage | ILookupStage;
+
 // --- Interfaces and utility classes ---
 
 export interface IFixture {

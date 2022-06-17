@@ -14,12 +14,13 @@ import {ObjectId} from "bson";
 import sharp_, {Region} from "sharp";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
 import {
+    AggregationPipelineStage,
     IAssetCropInfo, IAssetImageParams,
     IAssetMeta,
-    IClientSocket,
+    IClientSocket, ILookupStage, IMatchField, IMatchStage, IMongoExpression,
     IPaginationBase,
-    IPaginationParams,
-    IRequest,
+    IPaginationParams, IProjectStage,
+    IRequest, IUnwindOptions, IUnwindStage,
     Type
 } from "./common-types";
 
@@ -219,9 +220,9 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     });
 }
 
-export function lookupStages(from: string, localField: string, as: string = null, foreignField: string = "_id", shouldUnwind: boolean = true): any[] {
+export function lookupStages(from: string, localField: string, as: string = null, foreignField: string = "_id", shouldUnwind: boolean = true): [ILookupStage, IUnwindStage] {
     as = as || localField.replace("Id", "");
-    const pipelines: any[] = [
+    const stages: [ILookupStage, IUnwindStage] = [
         {
             $lookup: {
                 from,
@@ -229,20 +230,21 @@ export function lookupStages(from: string, localField: string, as: string = null
                 foreignField,
                 as
             }
-        }
-    ];
-    if (shouldUnwind) {
-        pipelines.push({
+        },
+        {
             $unwind: {
                 path: `$${as}`,
                 preserveNullAndEmptyArrays: true
             }
-        })
+        }
+    ];
+    if (!shouldUnwind) {
+        stages.splice(1, 1);
     }
-    return pipelines;
+    return stages;
 }
 
-export function letsLookupStage(from: string, pipeline: any[], as: string = null, letFields: any = null) {
+export function letsLookupStage(from: string, pipeline: AggregationPipelineStage[], as: string = null, letFields: any = null): ILookupStage {
     as = as || from;
     letFields = letFields || {id: "$_id"};
     return {
@@ -253,6 +255,32 @@ export function letsLookupStage(from: string, pipeline: any[], as: string = null
             as
         }
     };
+}
+
+export function matchStage(match: Object): IMatchStage {
+    return {$match: match};
+}
+
+export function matchField(field: string, filter: any, when: boolean): IMatchField {
+    return {field, filter, when};
+}
+
+export function matchFieldStages(...fields: IMatchField[]): ReadonlyArray<IMatchStage> {
+    const match = {};
+    fields.forEach(field => {
+        if (field.when) {
+            match[field.field] = field.filter;
+        }
+    });
+    return Object.keys(match).length > 0 ? [matchStage(match)] : [];
+}
+
+export function projectStage(fields: IMongoExpression): IProjectStage {
+    return {$project: fields};
+}
+
+export function unwindStage(fieldOrOpts: string | IUnwindOptions): IUnwindStage {
+    return {$unwind: fieldOrOpts};
 }
 
 export function hydratePopulated<T extends Document>(modelType: Model<T>, json: any): T {
@@ -280,7 +308,7 @@ export function hydratePopulated<T extends Document>(modelType: Model<T>, json: 
 
 }
 
-export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: any[], params: IPaginationParams, metaProjection: any = {}): Promise<IPaginationBase<T>> {
+export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: AggregationPipelineStage[], params: IPaginationParams, metaProjection: any = {}): Promise<IPaginationBase<T>> {
     const sortField = !isString(params.sort) || !params.sort ? null : (params.sort.startsWith("-") ? params.sort.substr(1) : params.sort);
     const sortAggregation = !sortField ? [] : [{
         $sort: {[sortField]: sortField == params.sort ? 1 : -1}

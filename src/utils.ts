@@ -1,26 +1,29 @@
 import {exec as execChildProcess} from "child_process";
 import {createHash} from "crypto";
-import {InjectionToken, DependencyContainer} from "tsyringe";
+import {DependencyContainer, InjectionToken} from "tsyringe";
 import {from, Observable, Subject, Subscription} from "rxjs";
 import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
 import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
 import {basename, dirname} from "path";
 import {GridFSBucket} from "mongodb";
-import {Document, DocumentQuery, FilterQuery, Model, model, Schema, Types} from "mongoose";
+import {Document, Expression, FilterQuery, Model, model, PipelineStage, Query, Schema, Types} from "mongoose";
 import {getValue as getMongoValue, setValue as setMongoValue} from "mongoose/lib/utils";
 import {PassThrough, Readable, ReadableOptions} from "stream";
 import {ObjectId} from "bson";
 import sharp_, {Region} from "sharp";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
 import {
-    AggregationPipelineStage,
-    IAssetCropInfo, IAssetImageParams,
+    IAssetCropInfo,
+    IAssetImageParams,
     IAssetMeta,
-    IClientSocket, ILookupStage, IMatchField, IMatchStage, IMongoExpression,
+    IClientSocket,
+    IMatchField,
     IPaginationBase,
-    IPaginationParams, IProjectStage,
-    IRequest, IUnwindOptions, IUnwindStage,
+    IPaginationParams,
+    IProjectOptions,
+    IRequest,
+    IUnwindOptions,
     Type
 } from "./common-types";
 
@@ -204,7 +207,7 @@ export function injectServices(schema: Schema<any>, services: { [prop: string]: 
 
 export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, params: IPaginationParams): Promise<IPaginationBase<T>> {
     return model.countDocuments(where).then(count => {
-        let query = model.find(where);
+        let query: Query<any, any> = model.find(where);
         if (isString(params.sort)) {
             query = query.sort(params.sort);
         }
@@ -220,9 +223,9 @@ export function paginate<T extends Document>(model: Model<T>, where: FilterQuery
     });
 }
 
-export function lookupStages(from: string, localField: string, as: string = null, foreignField: string = "_id", shouldUnwind: boolean = true): [ILookupStage, IUnwindStage] {
+export function lookupStages(from: string, localField: string, as: string = null, foreignField: string = "_id", shouldUnwind: boolean = true): [PipelineStage.Lookup, PipelineStage.Unwind] {
     as = as || localField.replace("Id", "");
-    const stages: [ILookupStage, IUnwindStage] = [
+    const stages: [PipelineStage.Lookup, PipelineStage.Unwind] = [
         {
             $lookup: {
                 from,
@@ -244,7 +247,7 @@ export function lookupStages(from: string, localField: string, as: string = null
     return stages;
 }
 
-export function letsLookupStage(from: string, pipeline: AggregationPipelineStage[], as: string = null, letFields: any = null): ILookupStage {
+export function letsLookupStage(from: string, pipeline: Exclude<PipelineStage, PipelineStage.Merge | PipelineStage.Out | PipelineStage.Search>[], as: string = null, letFields: any = null): PipelineStage.Lookup {
     as = as || from;
     letFields = letFields || {id: "$_id"};
     return {
@@ -257,7 +260,7 @@ export function letsLookupStage(from: string, pipeline: AggregationPipelineStage
     };
 }
 
-export function matchStage(match: Object): IMatchStage {
+export function matchStage(match: Expression | Record<string, Expression>): PipelineStage.Match {
     return {$match: match};
 }
 
@@ -265,7 +268,7 @@ export function matchField(field: string, filter: any, when: boolean): IMatchFie
     return {field, filter, when};
 }
 
-export function matchFieldStages(...fields: IMatchField[]): ReadonlyArray<IMatchStage> {
+export function matchFieldStages(...fields: IMatchField[]): ReadonlyArray<PipelineStage.Match> {
     const match = {};
     fields.forEach(field => {
         if (field.when) {
@@ -275,11 +278,11 @@ export function matchFieldStages(...fields: IMatchField[]): ReadonlyArray<IMatch
     return Object.keys(match).length > 0 ? [matchStage(match)] : [];
 }
 
-export function projectStage(fields: IMongoExpression): IProjectStage {
+export function projectStage(fields: IProjectOptions): PipelineStage.Project {
     return {$project: fields};
 }
 
-export function unwindStage(fieldOrOpts: string | IUnwindOptions): IUnwindStage {
+export function unwindStage(fieldOrOpts: string | IUnwindOptions): PipelineStage.Unwind {
     return {$unwind: fieldOrOpts};
 }
 
@@ -295,7 +298,7 @@ export function hydratePopulated<T extends Document>(modelType: Model<T>, json: 
         const value = getMongoValue(path, json);
         const hydrateVal = val => {
             if (val == null || val instanceof Types.ObjectId) return val;
-            return hydratePopulated(model(ref), val);
+            return hydratePopulated(model(ref) as any, val);
         };
         if (Array.isArray(value)) {
             setMongoValue(path, value.map(hydrateVal), object);
@@ -308,9 +311,9 @@ export function hydratePopulated<T extends Document>(modelType: Model<T>, json: 
 
 }
 
-export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: AggregationPipelineStage[], params: IPaginationParams, metaProjection: any = {}): Promise<IPaginationBase<T>> {
+export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: PipelineStage[], params: IPaginationParams, metaProjection: any = {}): Promise<IPaginationBase<T>> {
     const sortField = !isString(params.sort) || !params.sort ? null : (params.sort.startsWith("-") ? params.sort.substr(1) : params.sort);
-    const sortAggregation = !sortField ? [] : [{
+    const sortAggregation: PipelineStage.Sort[]  = !sortField ? [] : [{
         $sort: {[sortField]: sortField == params.sort ? 1 : -1}
     }];
     const result = await model.aggregate([
@@ -481,8 +484,8 @@ export function copyStream(stream: Readable, opts?: ReadableOptions): Readable {
     return new ReadableStreamClone(stream, opts);
 }
 
-export function mkdirRecursive(path: string, mode: number = null): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
+export function mkdirRecursive(path: string, mode: number = null): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
         mkdir(path, {mode: mode || 0o777, recursive: true}, err => {
             if (err) {
                 reject(err);
@@ -493,8 +496,8 @@ export function mkdirRecursive(path: string, mode: number = null): Promise<any> 
     });
 }
 
-export function deleteFile(path: string): Promise<any> {
-    return new Promise<Buffer>((resolve, reject) => {
+export function deleteFile(path: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
         unlink(path, err => {
             if (err) {
                 reject(err);
@@ -616,7 +619,7 @@ export function proxyFunctions(schema: Schema, helper: Type<any>, paramName: str
     });
 }
 
-export function ResolveEntity<T extends Document>(model: Model<T>, extraCheck?: (query: DocumentQuery<T, any>, action: Action) => T | Promise<T>): ParameterDecorator {
+export function ResolveEntity<T extends Document>(model: Model<T>, extraCheck?: (query: Query<T, any>, action: Action) => T | Promise<T>): ParameterDecorator {
     const modelName = model.modelName;
     const paramName = modelName.toLowerCase();
     return createParamDecorator({

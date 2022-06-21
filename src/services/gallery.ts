@@ -77,7 +77,7 @@ export class Gallery {
                                         });
                                     },
                                     writeResult: (isThumb: boolean, buffer: Buffer) => {
-                                        return new Promise<any>(async (res, rej) => {
+                                        return new Promise<void>(async (res, rej) => {
                                             const resultPath = getResultPath(isThumb);
                                             await mkdirRecursive(dirname(resultPath));
                                             writeFile(resultPath, buffer, err => {

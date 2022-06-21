@@ -31,12 +31,10 @@ export class MongoConnector {
 
     async connect(): Promise<Db> {
         if (this.db) return this.db;
-        this.conn = (await connect(this.configuration.resolve("mongoUri"), {
+        this.conn = (await connect(this.configuration.resolve("mongoUri") as string, {
             dbName: this.configuration.resolve("mongoDb"),
             user: this.configuration.resolve("mongoUser"),
-            pass: this.configuration.resolve("mongoPassword"),
-            useNewUrlParser: true,
-            useUnifiedTopology: true
+            pass: this.configuration.resolve("mongoPassword")
         })).connection;
         this.db = this.conn.db;
         this.fsBucket = new GridFSBucket(this.db, {bucketName: "assets"});

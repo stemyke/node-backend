@@ -14,6 +14,7 @@ import {
 import {SchemaObject} from "openapi3-ts";
 import {Readable} from "stream";
 import {Moment} from "moment";
+import {AnyExpression, Expression} from "mongoose";
 
 // --- DI functions ---
 
@@ -97,14 +98,8 @@ export interface IMatchField {
     when: boolean;
 }
 
-export interface IMongoExpression {
-    $expr?: IMongoExpression;
-    $and?: IMongoExpression[];
-    $or?: IMongoExpression[];
-    $eq?: string | number | string[];
-    $group?: IMongoExpression[];
-    $push?: IMongoExpression[];
-    [key: string]: IMongoExpression | any;
+export interface IProjectOptions {
+    [field: string]: AnyExpression | Expression | IProjectOptions;
 }
 
 export interface IUnwindOptions {
@@ -112,28 +107,6 @@ export interface IUnwindOptions {
     includeArrayIndex?: string;
     preserveNullAndEmptyArrays?: boolean;
 }
-
-export interface IUnwindStage {
-    $unwind: string | IUnwindOptions;
-}
-
-export interface IGroupStage {
-    $group: IMongoExpression;
-}
-
-export interface IMatchStage {
-    $match: IMongoExpression;
-}
-
-export interface IProjectStage {
-    $project: IMongoExpression;
-}
-
-export interface ILookupStage {
-    $lookup: IMongoExpression;
-}
-
-export type AggregationPipelineStage = IUnwindStage | IGroupStage | IMatchStage | IProjectStage | ILookupStage;
 
 // --- Interfaces and utility classes ---
 
@@ -317,7 +290,7 @@ export interface IGallerySize {
 
 export interface IGalleryImageHandler {
     getOriginal(): Promise<Buffer>;
-    writeResult(isThumb: boolean, buffer: Buffer): Promise<any>;
+    writeResult(isThumb: boolean, buffer: Buffer): Promise<void>;
     hasResult(isThumb: boolean): Promise<boolean>;
     serveResult(isThumb: boolean): Promise<Buffer>;
 }

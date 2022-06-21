@@ -35,8 +35,8 @@ export class TemplateRenderer {
         return this.initPromise;
     }
 
-    async parseTemplates(dir: string, dirPath: string[]): Promise<any> {
-        return new Promise<any>(resolve => {
+    async parseTemplates(dir: string, dirPath: string[]): Promise<void> {
+        return new Promise<void>(resolve => {
             readdir(dir, async (err, files) => {
                 for (let file of files) {
                     const path = join(dir, file);

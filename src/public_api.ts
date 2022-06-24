@@ -223,6 +223,8 @@ export {TranslationProvider} from "./services/translation-provider";
 export {Translator} from "./services/translator";
 export {UserManager} from "./services/user-manager";
 
+export {AssetImageParams} from "./requests/asset-image-params";
+
 export {AuthController} from "./rest-controllers/auth.controller";
 export {GalleryController} from "./rest-controllers/gallery.controller";
 

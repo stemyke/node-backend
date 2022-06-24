@@ -214,8 +214,8 @@ export interface IAssetImageParams {
     scaleY?: number;
     lazy?: boolean;
     crop?: string | boolean;
-    cropBefore?: string | IAssetCropInfo;
-    cropAfter?: string | IAssetCropInfo;
+    cropBefore?: string | boolean | IAssetCropInfo;
+    cropAfter?: string | boolean | IAssetCropInfo;
     [key: string]: any;
 }
 

@@ -352,7 +352,7 @@ const cropInterface = {
     h: "number"
 };
 
-function toCropRegion(cropInfo: string | IAssetCropInfo): Region {
+function toCropRegion(cropInfo: string | boolean | IAssetCropInfo): Region {
     let crop = cropInfo as IAssetCropInfo;
     if (isString(cropInfo)) {
         try {

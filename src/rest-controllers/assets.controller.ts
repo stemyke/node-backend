@@ -14,9 +14,10 @@ import {
     Res,
     UploadedFile
 } from "routing-controllers";
-import {IAsset, IAssetImageParams} from "../common-types";
+import {IAsset} from "../common-types";
 import {Assets} from "../services/assets";
 import {AssetResolver} from "../services/asset-resolver";
+import {AssetImageParams} from "../requests/asset-image-params";
 
 @injectable()
 @Controller("/assets")
@@ -58,7 +59,7 @@ export class AssetsController {
     }
 
     @Get("/image/:id/:rotation")
-    async getImageRotation(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Res() res: Response, @Param("rotation") rotation: number = 0): Promise<Readable> {
+    async getImageRotation(@Param("id") id: string, @QueryParams() params: AssetImageParams, @Res() res: Response, @Param("rotation") rotation: number = 0): Promise<Readable> {
         const asset = await this.getAsset("Image", id, params.lazy, res);
         if (rotation !== 0) {
             params.rotation = params.rotation || rotation;
@@ -67,7 +68,7 @@ export class AssetsController {
     }
 
     @Get("/image/:id")
-    async getImage(@Param("id") id: string, @QueryParams() params: IAssetImageParams, @Res() res: Response): Promise<Readable> {
+    async getImage(@Param("id") id: string, @QueryParams() params: AssetImageParams, @Res() res: Response): Promise<Readable> {
         return this.getImageRotation(id, params, res);
     }
 
@@ -78,7 +79,7 @@ export class AssetsController {
     }
 
     @Get("/by-name/image/:name")
-    async getImageByName(@Param("name") name: string, @QueryParams() params: IAssetImageParams, @Res() res: Response): Promise<Readable> {
+    async getImageByName(@Param("name") name: string, @QueryParams() params: AssetImageParams, @Res() res: Response): Promise<Readable> {
         const asset = await this.getAssetByName("Image", name, res);
         return asset.downloadImage(params);
     }

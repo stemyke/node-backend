@@ -6,11 +6,10 @@ import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
 import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
 import {basename, dirname} from "path";
-import {GridFSBucket} from "mongodb";
+import {GridFSBucket, ObjectId} from "mongodb";
 import {Document, Expression, FilterQuery, Model, model, PipelineStage, Query, Schema, Types} from "mongoose";
 import {getValue as getMongoValue, setValue as setMongoValue} from "mongoose/lib/utils";
 import {PassThrough, Readable, ReadableOptions} from "stream";
-import {ObjectId} from "bson";
 import sharp_, {Region} from "sharp";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
 import {
@@ -594,7 +593,7 @@ export function getFunctionParams(func: Function): string[] {
     return params;
 }
 
-export function proxyFunction(name: string): Function {
+export function proxyFunction(name: string): () => any {
     return function () {
         const args = Array.from(arguments);
         args.unshift(this);
@@ -634,19 +633,20 @@ export function ResolveEntity<T extends Document>(model: Model<T>, extraCheck?: 
             const query = !token
                 ? model.findById(id)
                 : model.findOne({token} as any);
-            const doc = await query;
+            let doc: Document = null;
+            if (isFunction(extraCheck)) {
+                try {
+                    doc = await valueToPromise(extraCheck(query, action));
+                } catch (e) {
+                    throw new BadRequestError(`${modelName} check error: ${e.message || e}`);
+                }
+            } else {
+                doc = await query;
+            }
             if (!doc) {
                 throw new HttpError(404, !token
                     ? `${modelName} could not be found with id: ${id}`
                     : `${modelName} could not be found with token: ${token}`);
-            }
-            if (isFunction(extraCheck)) {
-                try {
-                    action.request[paramName] = await valueToPromise(extraCheck(query, action)) || doc;
-                    return action.request[paramName];
-                } catch (e) {
-                    throw new BadRequestError(`${modelName} check error: ${e.message || e}`);
-                }
             }
             action.request[paramName] = doc;
             return doc;
@@ -668,7 +668,9 @@ export function idToString(value: any): any {
     if (Array.isArray(value)) {
         return value.map(idToString);
     }
-    return value instanceof ObjectId ? value.toHexString() : null;
+    return value instanceof ObjectId || value instanceof Types.ObjectId
+        ? value.toHexString()
+        : (isString(value) ? value : value || null);
 }
 
 export function createTransformer(transform?: (doc: Document, ret: any, options?: any) => any) {

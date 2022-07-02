@@ -17,7 +17,7 @@ import {TempAsset} from "./entities/temp-asset";
 export class Assets {
 
     readonly bucket: GridFSBucket;
-    readonly collection: Collection;
+    readonly collection: Collection<Partial<IAsset>>;
 
     constructor(readonly connector: MongoConnector, readonly assetProcessor: AssetProcessor) {
         this.bucket = connector.bucket;

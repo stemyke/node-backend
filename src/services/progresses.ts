@@ -12,7 +12,7 @@ import {Progress} from "./entities/progress";
 @singleton()
 export class Progresses {
 
-    protected collection: Collection;
+    protected collection: Collection<Partial<IProgress>>;
     protected progresses: {[id: string]: IProgress};
 
     constructor(readonly connector: MongoConnector, readonly jobMan: JobManager) {

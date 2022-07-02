@@ -1,7 +1,17 @@
 import {Response} from "express";
 import {sign} from "jsonwebtoken";
 import {injectable} from "tsyringe";
-import {Authorized, Body, Controller, CurrentUser, Get, HttpError, Post, Res} from "routing-controllers";
+import {
+    Authorized,
+    Body,
+    Controller,
+    CurrentUser,
+    Get,
+    HttpError,
+    Post,
+    Res,
+    UnauthorizedError
+} from "routing-controllers";
 import {compare} from "bcrypt";
 
 import {Configuration} from "../services/configuration";
@@ -16,17 +26,19 @@ export class AuthController {
 
     @Post("/login")
     async login(@Body() credentials: any, @Res() res: Response) {
+        let user: IUser = null;
         try {
-            const user = await this.userManager.getByCredentials(credentials);
-            const valid = await compare(credentials.password, user.password);
-            if (valid !== true) throw "message.login.error";
-            return {
-                token: sign({ id: user._id || user.id }, this.config.resolve("jwtSecret")),
-                user: await this.userManager.serialize(user)
-            };
+            user = await this.userManager.getByCredentials(credentials);
         } catch (reason) {
             throw new HttpError(401, reason);
         }
+        const valid = !user ? false : await compare(credentials.password, user.password);
+        if (valid !== true)
+            throw new UnauthorizedError(`message.login.error`);
+        return {
+            token: sign({ id: user._id || user.id }, this.config.resolve("jwtSecret")),
+            user: await this.userManager.serialize(user)
+        };
     }
 
     @Authorized()

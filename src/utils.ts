@@ -1,3 +1,4 @@
+import {DocumentType, ReturnModelType} from "@typegoose/typegoose";
 import {exec as execChildProcess} from "child_process";
 import {createHash} from "crypto";
 import {DependencyContainer, InjectionToken} from "tsyringe";
@@ -18,6 +19,7 @@ import {
     IAssetMeta,
     IClientSocket,
     IMatchField,
+    InferGeneric,
     IPaginationBase,
     IPaginationParams,
     IProjectOptions,
@@ -204,7 +206,7 @@ export function injectServices(schema: Schema<any>, services: { [prop: string]: 
     });
 }
 
-export function paginate<T extends Document>(model: Model<T>, where: FilterQuery<T>, params: IPaginationParams): Promise<IPaginationBase<T>> {
+export function paginate<T extends Type<any>, U = InferGeneric<T>>(model: ReturnModelType<T>, where: FilterQuery<DocumentType<U>>, params: IPaginationParams): Promise<IPaginationBase<DocumentType<U>>> {
     return model.countDocuments(where).then(count => {
         let query: Query<any, any> = model.find(where);
         if (isString(params.sort)) {
@@ -259,7 +261,7 @@ export function letsLookupStage(from: string, pipeline: Exclude<PipelineStage, P
     };
 }
 
-export function matchStage(match: Expression | Record<string, Expression>): PipelineStage.Match {
+export function matchStage(match: FilterQuery<any>): PipelineStage.Match {
     return {$match: match};
 }
 
@@ -310,9 +312,9 @@ export function hydratePopulated<T extends Document>(modelType: Model<T>, json: 
 
 }
 
-export async function paginateAggregations<T extends Document>(model: Model<T>, aggregations: PipelineStage[], params: IPaginationParams, metaProjection: any = {}): Promise<IPaginationBase<T>> {
+export async function paginateAggregations<T extends Type<any>, U = InferGeneric<T>>(model: ReturnModelType<T>, aggregations: PipelineStage[], params: IPaginationParams, metaProjection: any = {}): Promise<IPaginationBase<DocumentType<U>>> {
     const sortField = !isString(params.sort) || !params.sort ? null : (params.sort.startsWith("-") ? params.sort.substr(1) : params.sort);
-    const sortAggregation: PipelineStage.Sort[]  = !sortField ? [] : [{
+    const sortAggregation: PipelineStage.Sort[] = !sortField ? [] : [{
         $sort: {[sortField]: sortField == params.sort ? 1 : -1}
     }];
     const result = await model.aggregate([
@@ -336,11 +338,11 @@ export async function paginateAggregations<T extends Document>(model: Model<T>, 
             }
         }
     ]);
-    const pagination = result[0] as IPaginationBase<T>;
+    const pagination = result[0] as IPaginationBase<DocumentType<U>>;
     if (!pagination) {
         return {items: [], count: 0, meta: {total: 0}};
     }
-    pagination.items = pagination.items.map(i => hydratePopulated(model, i));
+    pagination.items = pagination.items.map(i => hydratePopulated(model, i) as any);
     return pagination;
 }
 
@@ -593,32 +595,7 @@ export function getFunctionParams(func: Function): string[] {
     return params;
 }
 
-export function proxyFunction(name: string): () => any {
-    return function () {
-        const args = Array.from(arguments);
-        args.unshift(this);
-        return (this.helper[name] as Function).apply(this.helper, args);
-    }
-}
-
-export function proxyFunctions(schema: Schema, helper: Type<any>, paramName: string = null): void {
-    paramName = paramName || lcFirst(getConstructorName(helper)).replace(/helper$/gi, "");
-    const descriptors = Object.getOwnPropertyDescriptors(helper.prototype);
-    Object.keys(descriptors).forEach(name => {
-        const func = descriptors[name].value;
-        if (isFunction(func) && name !== "constructor") {
-            const paramNames = getFunctionParams(func);
-            if (paramNames[0] == paramName) {
-                schema.methods[name] = proxyFunction(name);
-            }
-        }
-    });
-    injectServices(schema, {
-        "helper": helper
-    });
-}
-
-export function ResolveEntity<T extends Document>(model: Model<T>, extraCheck?: (query: Query<T, any>, action: Action) => T | Promise<T>): ParameterDecorator {
+export function ResolveEntity<T extends Type<any>, U = InferGeneric<T>>(model: ReturnModelType<T>, extraCheck?: (query: Query<DocumentType<U>, any>, action: Action) => Promise<DocumentType<U>>): ParameterDecorator {
     const modelName = model.modelName;
     const paramName = modelName.toLowerCase();
     return createParamDecorator({

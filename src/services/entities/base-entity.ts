@@ -11,7 +11,7 @@ export class BaseEntity<T> {
 
     constructor(readonly mId: ObjectId,
                 protected data: Partial<T>,
-                protected collection: Collection) {
+                protected collection: Collection<any>) {
     }
 
     save(): Promise<any> {

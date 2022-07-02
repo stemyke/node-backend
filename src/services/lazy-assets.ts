@@ -13,7 +13,7 @@ import {Progresses} from "./progresses";
 @scoped(Lifecycle.ContainerScoped)
 export class LazyAssets {
 
-    protected collection: Collection;
+    protected collection: Collection<Partial<ILazyAsset>>;
 
     constructor(readonly connector: MongoConnector,
                 readonly assets: Assets,

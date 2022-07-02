@@ -74,6 +74,14 @@ export type SyringeProvider<T> = Type<T> | ClassProvider<T> | ValueProvider<T> |
 
 export type Provider<T> = Type<T> | ClassBasedProvider<T> | ValueBasedProvider<T> | FactoryBasedProvider<T> | TokenBasedProvider<T>;
 
+// --- Useful generic types ---
+
+export type InferGeneric<T> = T extends Type<infer B> ? B : never;
+
+export type PickMatching<T, V> = { [K in keyof T as T[K] extends V ? K : never]: T[K] }
+
+export type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R ? (...args: P) => R : never;
+
 // --- Injection tokens ---
 
 export const FIXTURE: InjectionToken<IFixture> = Symbol.for("fixture-token");
@@ -254,8 +262,8 @@ export interface ILazyAsset {
 export interface IUser {
     _id?: string;
     id?: string;
-    email: string;
-    password: string;
+    email?: string;
+    password?: string;
     roles: string[];
 }
 

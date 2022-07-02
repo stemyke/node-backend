@@ -115,8 +115,6 @@ export {
     promiseTimeout,
     getConstructorName,
     getFunctionParams,
-    proxyFunction,
-    proxyFunctions,
     ResolveEntity,
     getFileName,
     getExtension,
@@ -161,6 +159,9 @@ export {
     TokenBasedProvider,
     SyringeProvider,
     Provider,
+    InferGeneric,
+    PickMatching,
+    OmitFirstArg,
     IMatchField,
     IProjectOptions,
     IUnwindOptions,
@@ -231,6 +232,7 @@ export {GalleryController} from "./rest-controllers/gallery.controller";
 export {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
 export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
+export {BaseDoc, DocumentArray, PrimitiveArray} from "./utilities/base-doc";
 export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
 
 async function resolveUser(container: DependencyContainer, req: IRequest): Promise<IUser> {

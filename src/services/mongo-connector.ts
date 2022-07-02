@@ -2,6 +2,7 @@ import {injectable, singleton} from "tsyringe";
 import {Db, GridFSBucket} from "mongodb";
 import {connect, Connection} from "mongoose";
 import {Configuration} from "./configuration";
+import {getType} from "../utils";
 
 @injectable()
 @singleton()
@@ -36,7 +37,8 @@ export class MongoConnector {
             user: this.configuration.resolve("mongoUser"),
             pass: this.configuration.resolve("mongoPassword")
         })).connection;
-        this.db = this.conn.db;
+        this.db = this.conn.db as any;
+        console.log("DB INSTANCE", getType(this.db));
         this.fsBucket = new GridFSBucket(this.db, {bucketName: "assets"});
     }
 }

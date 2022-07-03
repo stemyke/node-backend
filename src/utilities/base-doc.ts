@@ -47,8 +47,10 @@ export abstract class BaseDoc<IDType extends RefType = Types.ObjectId> {
     }
 }
 
+// @ts-ignore
 export type PrimitiveArray<T> = Types.Array<T>;
 
+// @ts-ignore
 export const PrimitiveArray = Types.Array;
 
 export type DocumentArray<T extends BaseDoc> = Types.DocumentArray<DocumentType<T>>;

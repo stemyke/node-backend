@@ -63,7 +63,6 @@ import {ProgressController} from "./socket-controllers/progress.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 import {diContainers, isFunction, isString, isType, valueToPromise} from "./utils";
-import {DiContainer} from "./utilities/di-container";
 import {setupStatic} from "./static";
 
 export {
@@ -91,17 +90,6 @@ export {
     getValue,
     groupBy,
     convertValue,
-    injectServices,
-    paginate,
-    lookupStages,
-    letsLookupStage,
-    matchStage,
-    matchField,
-    matchFieldStages,
-    projectStage,
-    unwindStage,
-    hydratePopulated,
-    paginateAggregations,
     toImage,
     bufferToStream,
     streamToBuffer,
@@ -115,7 +103,6 @@ export {
     promiseTimeout,
     getConstructorName,
     getFunctionParams,
-    ResolveEntity,
     getFileName,
     getExtension,
     idToString,
@@ -159,6 +146,7 @@ export {
     TokenBasedProvider,
     SyringeProvider,
     Provider,
+    Constructor,
     InferGeneric,
     PickMatching,
     OmitFirstArg,
@@ -233,7 +221,23 @@ export {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middlewar
 export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 export {BaseDoc, DocumentArray, PrimitiveArray} from "./utilities/base-doc";
+import {DiContainer} from "./utilities/di-container";
 export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
+export {
+    ResolveEntity,
+    paginateAggregations,
+    hydratePopulated,
+    unwindStage,
+    projectStage,
+    matchFieldStages,
+    matchField,
+    matchStage,
+    letsLookupStage,
+    lookupStages,
+    paginate,
+    injectServices,
+    service
+} from "./utilities/mongoose";
 
 async function resolveUser(container: DependencyContainer, req: IRequest): Promise<IUser> {
     if (req.user) return req.user;

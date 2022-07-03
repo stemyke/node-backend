@@ -76,6 +76,8 @@ export type Provider<T> = Type<T> | ClassBasedProvider<T> | ValueBasedProvider<T
 
 // --- Useful generic types ---
 
+export type Constructor<T = object> = new (...args: any[]) => T
+
 export type InferGeneric<T> = T extends Type<infer B> ? B : never;
 
 export type PickMatching<T, V> = { [K in keyof T as T[K] extends V ? K : never]: T[K] }

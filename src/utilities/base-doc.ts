@@ -1,5 +1,6 @@
-import {Types, RefType} from "mongoose";
-import {DocumentType} from "@typegoose/typegoose";
+import {RefType, Types} from "mongoose";
+import {DocumentType, getModelForClass, ReturnModelType} from "@typegoose/typegoose";
+import {Constructor} from "../common-types";
 
 export abstract class BaseDoc<IDType extends RefType = Types.ObjectId> {
 
@@ -37,12 +38,19 @@ export abstract class BaseDoc<IDType extends RefType = Types.ObjectId> {
         return this as any;
     }
 
+    /**
+     * Gets a pre-compiled model from typegoose cache by its class type
+     * @param type
+     */
+    model<T extends Constructor<any>>(type: T): ReturnModelType<T> {
+        return getModelForClass(type);
+    }
 }
-
-export type DocumentArray<T extends BaseDoc> = Types.DocumentArray<DocumentType<T>>;
-
-export const DocumentArray = Types.DocumentArray;
 
 export type PrimitiveArray<T> = Types.Array<T>;
 
 export const PrimitiveArray = Types.Array;
+
+export type DocumentArray<T extends BaseDoc> = Types.DocumentArray<DocumentType<T>>;
+
+export const DocumentArray = Types.DocumentArray;

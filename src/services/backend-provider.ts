@@ -22,6 +22,7 @@ export class BackendProvider {
 
     constructor() {
         this.express = express();
+        this.express.set("trust proxy", true);
         this.server = createServer(this.express);
     }
 }

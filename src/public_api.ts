@@ -105,6 +105,7 @@ export {
     getFunctionParams,
     getFileName,
     getExtension,
+    createIdString,
     idToString,
     createTransformer,
     broadcast,

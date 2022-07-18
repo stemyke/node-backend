@@ -436,6 +436,10 @@ export function getExtension(path: string): string {
     return name.split(".").pop();
 }
 
+export function createIdString(): any {
+    return new ObjectId().toHexString();
+}
+
 export function idToString(value: any): any {
     if (Array.isArray(value)) {
         return value.map(idToString);

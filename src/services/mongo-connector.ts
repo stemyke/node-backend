@@ -38,7 +38,6 @@ export class MongoConnector {
             pass: this.configuration.resolve("mongoPassword")
         })).connection;
         this.db = this.conn.db as any;
-        console.log("DB INSTANCE", getType(this.db));
         this.fsBucket = new GridFSBucket(this.db, {bucketName: "assets"});
     }
 }

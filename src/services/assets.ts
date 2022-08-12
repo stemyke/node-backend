@@ -57,7 +57,7 @@ export class Assets {
 
     async writeUrl(url: string, metadata: IAssetMeta = null): Promise<IAsset> {
         metadata = metadata || {};
-        metadata.filename = url;
+        metadata.filename = metadata.filename || url;
         metadata.uploadTime = new Date().getTime();
         const oneWeek = 1000 * 3600 * 24 * 7;
         const asset = await this.find({filename: url, "metadata.uploadTime": {$gt: metadata.uploadTime - oneWeek}});

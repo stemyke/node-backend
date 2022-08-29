@@ -240,8 +240,9 @@ export {
     service
 } from "./utilities/mongoose";
 
-async function resolveUser(container: DependencyContainer, req: IRequest): Promise<IUser> {
+export async function resolveUser(req: IRequest): Promise<IUser> {
     if (req.user) return req.user;
+    const container = req.container;
     const auth = req.header("Authorization") || "";
     let payload = null;
     try {
@@ -453,7 +454,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
 
     // Authentication
     restOptions.authorizationChecker = async (action: Action, roles: any[]) => {
-        const user = await resolveUser(diContainer, action.request);
+        const user = await resolveUser(action.request);
         if (!user) {
             throw new HttpError(401, "Authentication failed. (User can't be found.)");
         }
@@ -481,7 +482,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     };
     restOptions.currentUserChecker = async (action: Action) => {
         try {
-            return await resolveUser(diContainer, action.request);
+            return await resolveUser(action.request);
         } catch (e) {
             return null;
         }

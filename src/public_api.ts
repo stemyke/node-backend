@@ -480,7 +480,11 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         return true;
     };
     restOptions.currentUserChecker = async (action: Action) => {
-        return resolveUser(diContainer, action.request);
+        try {
+            return await resolveUser(diContainer, action.request);
+        } catch (e) {
+            return null;
+        }
     };
 
     // Final setup

@@ -223,6 +223,7 @@ export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 export {BaseDoc, DocumentArray, PrimitiveArray} from "./utilities/base-doc";
 import {DiContainer} from "./utilities/di-container";
+import {EmptyJob} from "./utilities/empty-job";
 export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
 export {
     ResolveEntity,
@@ -361,7 +362,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     });
 
     // Create jobs
-    const jobProviders = (config.jobs || []).map(jobType => {
+    const jobProviders = [EmptyJob].concat(config.jobs || []).map(jobType => {
         return {
             provide: JOB,
             useValue: jobType

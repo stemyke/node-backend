@@ -9,7 +9,7 @@ export abstract class BaseDoc<IDType extends RefType = Types.ObjectId> {
     /**
      * This getter/setter doesn't exist if "schemaOptions.id" being set to "false"
      */
-    id?: string;
+    id: string;
 
     /**
      * This getter doesn't exist if "schemaOptions.timestamps" being set to "false"
@@ -47,10 +47,8 @@ export abstract class BaseDoc<IDType extends RefType = Types.ObjectId> {
     }
 }
 
-// @ts-ignore
 export type PrimitiveArray<T> = Types.Array<T>;
 
-// @ts-ignore
 export const PrimitiveArray = Types.Array;
 
 export type DocumentArray<T extends BaseDoc> = Types.DocumentArray<DocumentType<T>>;

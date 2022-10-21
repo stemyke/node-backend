@@ -35,7 +35,7 @@ export class Configuration {
             console.log(
                 `Processing param value`,
                 colorize(param.name, ConsoleColor.FgGreen),
-                colorize(envName, ConsoleColor.BgBlue),
+                colorize(envName, ConsoleColor.FgBlue),
                 envValue,
                 value
             );

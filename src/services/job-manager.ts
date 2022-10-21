@@ -28,6 +28,7 @@ import {
     promiseTimeout
 } from "../utils";
 import {Configuration} from "./configuration";
+import {Logger} from "./logger";
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
@@ -45,7 +46,10 @@ export class JobManager {
 
     readonly maxTimeout: number;
 
-    constructor(readonly config: Configuration, @inject(DI_CONTAINER) readonly container: DependencyContainer, @injectAll(JOB) jobTypes: Type<IJob>[]) {
+    constructor(readonly config: Configuration,
+                readonly logger: Logger,
+                @inject(DI_CONTAINER) readonly container: DependencyContainer,
+                @injectAll(JOB) jobTypes: Type<IJob>[]) {
         this.jobTypes = jobTypes || [];
         this.jobs = this.jobTypes.reduce((res, jobType) => {
             const jobName = getConstructorName(jobType);
@@ -105,12 +109,12 @@ export class JobManager {
         }).join(" ");
         const jobName = getConstructorName(jobType);
         if (!validate(expression)) {
-            console.log(`Can't schedule the task: '${jobName}' because time expression is invalid.`);
+            this.logger.log("job-manager", `Can't schedule the task: '${jobName}' because time expression is invalid.`);
             return null;
         }
         return schedule(expression, () => {
             this.enqueue(jobType, params).catch(e => {
-                console.log(`Can't enqueue job: '${jobName}' because: ${e}`);
+                this.logger.log("job-manager", `Can't enqueue job: '${jobName}' because: ${e}`);
             });
         });
     }
@@ -120,7 +124,7 @@ export class JobManager {
         this.processing = true;
 
         if (!this.config.resolve("isWorker")) {
-            console.log(colorize(`Processing can not be started because this is NOT a worker process!`, ConsoleColor.FgRed));
+            this.logger.log("job-manager", colorize(`Processing can not be started because this is NOT a worker process!`, ConsoleColor.FgRed));
             return null;
         }
 
@@ -128,12 +132,12 @@ export class JobManager {
         const pushHost = `${host}:${this.config.resolve("zmqBackPort")}`;
         this.workerPush = socket("push");
         await this.workerPush.connect(pushHost);
-        console.log(`Worker producer connected to: ${pushHost}`);
+        this.logger.log("job-manager", `Worker producer connected to: ${pushHost}`);
 
         const pullHost = `${host}:${this.config.resolve("zmqPort")}`;
         this.workerPull = socket("pull");
         await this.workerPull.connect(pullHost);
-        console.log(`Worker consumer connected to: ${pullHost}`);
+        this.logger.log("job-manager", `Worker consumer connected to: ${pullHost}`);
 
         this.workerPull.on("message", async (name: Buffer, args: Buffer, uniqId: Buffer) => {
             try {
@@ -152,7 +156,7 @@ export class JobManager {
                 }
                 console.timeEnd(uniqueId);
             } catch (e) {
-                console.log(`Failed to start job: ${e.message}`);
+                this.logger.log("job-manager", `Failed to start job: ${e.message}`);
             }
         });
     }
@@ -185,7 +189,7 @@ export class JobManager {
             const port = this.config.resolve("zmqPort");
             this.apiPush = socket("push");
             this.apiPush.bind(`tcp://0.0.0.0:${port}`);
-            console.log(`API producer bound to port: ${port}`);
+            this.logger.log("job-manager", `API producer bound to port: ${port}`);
         }
         if (!this.apiPull) {
             const backPort = this.config.resolve("zmqBackPort");
@@ -198,10 +202,10 @@ export class JobManager {
                     res[key] = getType(params[key]);
                     return res;
                 }, {});
-                console.log(`Received a message from worker: "${colorize(message, ConsoleColor.FgCyan)}" with args: ${jsonHighlight(paramTypes)}\n\n`);
+                this.logger.log("job-manager", `Received a message from worker: "${colorize(message, ConsoleColor.FgCyan)}" with args: ${jsonHighlight(paramTypes)}\n\n`);
                 this.messages.next({message, params});
             });
-            console.log(`API consumer bound to port: ${backPort}`);
+            this.logger.log("job-manager", `API consumer bound to port: ${backPort}`);
         }
         return this.tryResolve(jobType, params);
     }

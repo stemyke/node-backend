@@ -39,6 +39,7 @@ import {GalleryCache} from "./services/gallery-cache";
 import {IdGenerator} from "./services/id-generator";
 import {JobManager} from "./services/job-manager";
 import {LazyAssets} from "./services/lazy-assets";
+import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
 import {MemoryCache} from "./services/memory-cache";
 import {MongoConnector} from "./services/mongo-connector";
@@ -291,6 +292,7 @@ export function createServices(): IDependencyContainer {
         new Parameter("jsonLimit", "250mb"),
         new Parameter("jobTimeout", 5 * 60 * 1000),
         new Parameter("cacheCollection", "cache"),
+        new Parameter("logTags", []),
     ];
 
     // Convert parameters to providers
@@ -317,6 +319,7 @@ export function createServices(): IDependencyContainer {
         IdGenerator,
         JobManager,
         LazyAssets,
+        Logger,
         MailSender,
         MemoryCache,
         MongoConnector,

@@ -6,6 +6,7 @@ import {deleteFromBucket} from "../../utils";
 import {Assets} from "../assets";
 import {Progresses} from "../progresses";
 import {BaseEntity} from "./base-entity";
+import {Logger} from "../logger";
 
 export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
 
@@ -32,6 +33,7 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
     constructor(id: ObjectId,
                 data: Partial<ILazyAsset>,
                 collection: Collection,
+                protected logger: Logger,
                 protected assets: Assets,
                 protected progresses: Progresses) {
         super(id, data, collection);
@@ -52,9 +54,9 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
                 p?.cancel();
             });
             this.startWorkingOnAsset(false).then(() => {
-                console.log(`Started working on lazy asset: ${this.id}`);
+                this.logger.log("lazy-assets", `Started working on lazy asset: ${this.id}`);
             }).catch(reason => {
-                console.log(`Can't start working on lazy asset: ${this.id}\nReason: ${reason}`);
+                this.logger.log("lazy-assets", `Can't start working on lazy asset: ${this.id}\nReason: ${reason}`);
             });
         });
     }

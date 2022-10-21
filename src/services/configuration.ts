@@ -1,17 +1,18 @@
-import {injectable, injectAll, scoped, Lifecycle} from "tsyringe";
+import {injectAll, singleton} from "tsyringe";
 import {PARAMETER, Parameter} from "../common-types";
 import {convertValue, getType, isFunction} from "../utils";
 import dotenv from "dotenv";
 
-@injectable()
-@scoped(Lifecycle.ContainerScoped)
+@singleton()
 export class Configuration {
 
     protected paramMap: {[name: string]: Parameter};
+    protected paramValues: {[name: string]: any};
 
     constructor(@injectAll(PARAMETER) params: Parameter[]) {
         dotenv.config();
         this.paramMap = {};
+        this.paramValues = {};
         (params || []).forEach(param => this.add(param));
     }
 
@@ -22,13 +23,7 @@ export class Configuration {
         this.paramMap[param.name] = existingParam;
     }
 
-    hasParam(name: string): boolean {
-        return !!this.paramMap[name];
-    }
-
-    resolve(name: string): any {
-        const param = this.paramMap[name];
-        if (!param) throw new Error(`Parameter with name: '${name}' does not exists in configuration`);
+    protected resolveValue(param: Parameter): any {
         const envName = param.name.replace(/\.?([A-Z|0-9]+)/g, function (x, y) {
             return "_" + y.toLowerCase()
         }).replace(/\./gi, "_").replace(/^_/, "").toUpperCase();
@@ -37,9 +32,22 @@ export class Configuration {
             const value = isFunction(param.resolver)
                 ? param.resolver(envValue)
                 : convertValue(envValue, getType(param.defaultValue));
-            console.log(`Processing param value`, name, envName, envValue, value);
+            console.log(`Processing param value`, param.name, envName, envValue, value);
             return value;
         }
         return param.defaultValue;
+    }
+
+    hasParam(name: string): boolean {
+        return !!this.paramMap[name];
+    }
+
+    resolve(name: string): any {
+        const param = this.paramMap[name];
+        if (!param) throw new Error(`Parameter with name: '${name}' does not exists in configuration`);
+        if (!(name in this.paramValues)) {
+            this.paramValues[name] = this.resolveValue(param);
+        }
+        return this.paramValues[name];
     }
 }

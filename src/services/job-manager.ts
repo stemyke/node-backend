@@ -83,7 +83,7 @@ export class JobManager {
             instance = this.resolveJobInstance(jobType, params);
         } catch (e) {
             const jobName = getConstructorName(jobType);
-            throw `Can't resolve params for job: ${jobName}, with params: ${JSON.stringify(params)}. Reason: ${e}`;
+            throw new Error(`Can't resolve params for job: ${jobName}, with params: ${JSON.stringify(params)}. Reason: ${e}`);
         }
         return instance.process();
     }

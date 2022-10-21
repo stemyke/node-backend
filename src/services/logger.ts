@@ -1,13 +1,13 @@
-import {injectable, Lifecycle, scoped} from "tsyringe";
+import {singleton} from "tsyringe";
 import {Configuration} from "./configuration";
 
-@injectable()
-@scoped(Lifecycle.ContainerScoped)
+@singleton()
 export class Logger {
 
     protected tags: string[];
 
     constructor(readonly config: Configuration) {
+        console.log("Logger created");
         this.tags = this.config.resolve("logTags");
     }
 

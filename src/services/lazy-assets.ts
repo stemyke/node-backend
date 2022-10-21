@@ -7,6 +7,7 @@ import {MongoConnector} from "./mongo-connector";
 import {Assets} from "./assets";
 import {LazyAsset} from "./entities/lazy-asset";
 import {JobManager} from "./job-manager";
+import {Logger} from "./logger";
 import {Progresses} from "./progresses";
 
 @injectable()
@@ -18,6 +19,7 @@ export class LazyAssets {
     constructor(readonly connector: MongoConnector,
                 readonly assets: Assets,
                 readonly progresses: Progresses,
+                readonly logger: Logger,
                 readonly jobMan: JobManager) {
         this.collection = connector.database.collection("lazyassets");
     }
@@ -32,7 +34,7 @@ export class LazyAssets {
         const existingAsset = await this.find(data);
         if (existingAsset) return existingAsset;
         const res = await this.collection.insertOne(data);
-        return new LazyAsset(res.insertedId, data, this.collection, this.assets, this.progresses);
+        return new LazyAsset(res.insertedId, data, this.collection, this.logger, this.assets, this.progresses);
     }
 
     async read(id: string): Promise<ILazyAsset> {
@@ -43,7 +45,7 @@ export class LazyAssets {
         const data = await this.collection.findOne(where);
         return !data
             ? null
-            : new LazyAsset(data._id, data, this.collection, this.assets, this.progresses);
+            : new LazyAsset(data._id, data, this.collection, this.logger, this.assets, this.progresses);
     }
 
     async unlink(id: string): Promise<any> {

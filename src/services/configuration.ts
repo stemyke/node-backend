@@ -36,7 +36,7 @@ export class Configuration {
                 `Processing param value`,
                 colorize(param.name, ConsoleColor.FgGreen),
                 colorize(envName, ConsoleColor.FgBlue),
-                envValue,
+                `"${envValue}"`,
                 value
             );
             return value;

@@ -29,7 +29,7 @@ export class Configuration {
     resolve(name: string): any {
         const param = this.paramMap[name];
         if (!param) throw new Error(`Parameter with name: '${name}' does not exists in configuration`);
-        const envName = param.name.replace(/\.?([A-Z|0-9]+)/g, function (x,y){
+        const envName = param.name.replace(/\.?([A-Z|0-9]+)/g, function (x, y) {
             return "_" + y.toLowerCase()
         }).replace(/\./gi, "_").replace(/^_/, "").toUpperCase();
         const envValue = process.env[envName];

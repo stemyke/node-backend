@@ -84,6 +84,12 @@ export type PickMatching<T, V> = { [K in keyof T as T[K] extends V ? K : never]:
 
 export type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R ? (...args: P) => R : never;
 
+// --- OpenApi ---
+
+export type SchemaConverter = (meta: any, options: any) => SchemaObject;
+
+export type OpenApiValidation = SchemaConverter | SchemaObject;
+
 // --- Injection tokens ---
 
 export const FIXTURE: InjectionToken<IFixture> = Symbol.for("fixture-token");
@@ -99,6 +105,8 @@ export const SOCKET_SERVER: InjectionToken<SocketServer> = Symbol.for("socket-se
 export const PARAMETER: InjectionToken<Parameter> = Symbol.for("parameter-token");
 
 export const DI_CONTAINER: InjectionToken<IDependencyContainer> = Symbol.for("di-container-token");
+
+export const OPENAPI_VALIDATION: InjectionToken<OpenApiValidation> = Symbol.for("openapi-validation-token");
 
 // --- Mongo interfaces and types
 
@@ -123,11 +131,6 @@ export interface IUnwindOptions {
 export interface IFixture {
     load(): Promise<any>;
 }
-
-export type SchemaConverter = (
-    meta: any,
-    options: any
-) => SchemaObject;
 
 export type ParamResolver = (value: string) => any;
 

@@ -5,8 +5,6 @@ import {container, DependencyContainer} from "tsyringe";
 import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
 import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
 
-import {getApiDocs} from "./rest-openapi";
-
 import {
     DI_CONTAINER,
     EXPRESS,
@@ -17,7 +15,7 @@ import {
     IPaginationParams,
     IRequest,
     IUser,
-    JOB,
+    JOB, OPENAPI_VALIDATION,
     Parameter,
     PARAMETER,
     Provider,
@@ -43,6 +41,7 @@ import {Logger} from "./services/logger";
 import {MailSender} from "./services/mail-sender";
 import {MemoryCache} from "./services/memory-cache";
 import {MongoConnector} from "./services/mongo-connector";
+import {OpenApi} from "./services/open-api";
 import {Progresses} from "./services/progresses";
 import {TemplateRenderer} from "./services/template-renderer";
 import {TranslationProvider} from "./services/translation-provider";
@@ -63,6 +62,9 @@ import {RequestStartedMiddleware} from "./rest-middlewares/request-started.middl
 import {ProgressController} from "./socket-controllers/progress.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
+
+import {DiContainer} from "./utilities/di-container";
+import {EmptyJob} from "./utilities/empty-job";
 import {diContainers, isFunction, isString, isType, valueToPromise} from "./utils";
 import {setupStatic} from "./static";
 
@@ -139,6 +141,7 @@ export {
     SOCKET_SERVER,
     PARAMETER,
     DI_CONTAINER,
+    OPENAPI_VALIDATION,
     Type,
     FactoryProvider,
     IDependencyContainer,
@@ -157,6 +160,7 @@ export {
     IUnwindOptions,
     IFixture,
     SchemaConverter,
+    OpenApiValidation,
     ParamResolver,
     Parameter,
     SocketParam,
@@ -208,6 +212,7 @@ export {LazyAssets} from "./services/lazy-assets";
 export {MailSender} from "./services/mail-sender";
 export {MemoryCache} from "./services/memory-cache";
 export {MongoConnector} from "./services/mongo-connector";
+export {OpenApi} from "./services/open-api";
 export {Progresses} from "./services/progresses";
 export {TemplateRenderer} from "./services/template-renderer";
 export {TranslationProvider} from "./services/translation-provider";
@@ -223,8 +228,7 @@ export {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middlewar
 export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 export {BaseDoc, DocumentArray, PrimitiveArray} from "./utilities/base-doc";
-import {DiContainer} from "./utilities/di-container";
-import {EmptyJob} from "./utilities/empty-job";
+export {IsDocumented} from "./utilities/decorators";
 export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
 export {
     ResolveEntity,
@@ -323,6 +327,7 @@ export function createServices(): IDependencyContainer {
         MailSender,
         MemoryCache,
         MongoConnector,
+        OpenApi,
         Progresses,
         TemplateRenderer,
         TranslationProvider,
@@ -454,6 +459,10 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         useValue: diContainer
     });
 
+    diContainer.register(OPENAPI_VALIDATION, {
+        useValue: config.customValidation || (() => null)
+    });
+
     diContainers.appContainer = diContainers.appContainer || diContainer;
 
     // Authentication
@@ -505,8 +514,12 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         useRoutingContainer(diContainer);
         useExpressServer(bp.express, restOptions);
         // Setup rest ai docs
+        let openApi: OpenApi = null
         bp.express.get("/api-docs", (req, res) => {
-            res.status(200).end(getApiDocs(config.customValidation));
+            openApi = openApi || diContainer.get(OpenApi);
+            res.header("Content-Type", "application/json")
+                .status(200)
+                .end(openApi.apiDocsStr);
         });
     }
     if (config.socketOptions) {

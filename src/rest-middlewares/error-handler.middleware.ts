@@ -5,6 +5,7 @@ import {Response} from "express";
 import {IRequest} from "../common-types";
 import {Translator} from "../services/translator";
 import {Configuration} from "../services/configuration";
+import {AxiosError} from "axios";
 
 @injectable()
 @Middleware({ type: "after" })
@@ -36,6 +37,9 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
                 result.message = await this.translator.getTranslation(req.language, "message.parameter-required.error");
                 result.param = error.message;
             } else {
+                if (error instanceof AxiosError) {
+                    console.log(error.response);
+                }
                 result.message = error.message || await this.translator.getTranslation(req.language, "message.form-validation.error");
                 result.errors = error["errors"];
                 if (this.isDev) {

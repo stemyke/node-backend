@@ -1,13 +1,13 @@
 import {inject, singleton} from "tsyringe";
-import {OpenAPIObject} from "openapi3-ts";
+import {OpenAPIObject, ReferenceObject, SchemaObject} from "openapi3-ts";
 import {getMetadataArgsStorage} from "routing-controllers";
 import {routingControllersToSpec} from "routing-controllers-openapi";
 import {validationMetadatasToSchemas} from "class-validator-jsonschema";
 import {defaultMetadataStorage} from "class-transformer/storage";
 import {ValidationTypes} from "class-validator";
-import {isFunction, isObject} from "../utils";
+import {isDefined, isFunction, isObject} from "../utils";
 import {IsFile, IsObjectId} from "../validators";
-import {OPENAPI_VALIDATION, OpenApiValidation} from "../common-types";
+import {DI_CONTAINER, IDependencyContainer, IRequest, OPENAPI_VALIDATION, OpenApiValidation} from "../common-types";
 
 @singleton()
 export class OpenApi {
@@ -25,8 +25,55 @@ export class OpenApi {
         return this.docsStr;
     }
 
-    constructor(@inject(OPENAPI_VALIDATION) protected customValidation: OpenApiValidation = null) {
+    constructor(@inject(DI_CONTAINER) protected container: IDependencyContainer,
+                @inject(OPENAPI_VALIDATION) protected customValidation: OpenApiValidation) {
         this.docs = null;
+    }
+
+    async schemaToExample(src: ReferenceObject | SchemaObject, req?: IRequest): Promise<any> {
+        if (src.$ref) {
+            const schemas = this.apiDocs.components.schemas;
+            return this.schemaToExample(schemas[src.$ref.replace("#/components/schemas/", "")], req);
+        }
+        let schema = src as SchemaObject;
+        if (schema.oneOf) {
+            schema = Object.assign({}, schema, schema.oneOf[0]);
+        }
+        if (schema.type === "object") {
+            const result = {};
+            await Promise.all(Object.keys(schema.properties).map(async key => {
+                result[key] = await this.schemaToExample(schema.properties[key], req);
+            }));
+            return result;
+        }
+        if (schema.type === "array") {
+            return [await this.schemaToExample(schema.items, req)];
+        }
+        if (schema.type === "string") {
+            if (isDefined(schema.default)) {
+                if (isFunction(schema.default)) {
+                    return schema.default(this.container);
+                }
+                return schema.default;
+            }
+            if (schema.format == "date") {
+                return new Date().toISOString().substr(0, 10);
+            }
+            if (schema.format == "date-time") {
+                return new Date().toISOString();
+            }
+            if (schema.enum) {
+                return schema.enum[0];
+            }
+            return "string";
+        }
+        if (schema.type === "number") {
+            return schema.default ?? 0;
+        } else if (schema.type === "boolean") {
+            return schema.default ?? false;
+        } else {
+            return schema.default ?? null;
+        }
     }
 
     protected createApiDocs(): OpenAPIObject {

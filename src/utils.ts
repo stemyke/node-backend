@@ -708,3 +708,9 @@ export function jsonHighlight(input: string | object, colorOptions?: IJsonColors
 export function replaceSpecialChars(str: string, to: string = "-"): string {
     return `${str}`.replace(/[&\/\\#, +()$~%.@'":*?<>{}]/g, to);
 }
+
+export function flatten(arr: any[]): any[] {
+    return arr.reduce((flat, toFlatten) => {
+        return flat.concat(isArray(toFlatten) ? flatten(toFlatten) : toFlatten);
+    }, []);
+}

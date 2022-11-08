@@ -128,7 +128,8 @@ export {
     IJsonColors,
     colorize,
     jsonHighlight,
-    replaceSpecialChars
+    replaceSpecialChars,
+    flatten
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";
@@ -228,7 +229,7 @@ export {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middlewar
 export {LanguageMiddleware} from "./rest-middlewares/language.middleware";
 
 export {BaseDoc, DocumentArray, PrimitiveArray} from "./utilities/base-doc";
-export {IsDocumented} from "./utilities/decorators";
+export {IsDocumented, JsonResponse, ResponseType} from "./utilities/decorators";
 export {LazyAssetGenerator} from "./utilities/lazy-asset-generator";
 export {
     ResolveEntity,

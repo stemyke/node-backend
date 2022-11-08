@@ -33,7 +33,10 @@ export class OpenApi {
     async schemaToExample(src: ReferenceObject | SchemaObject, req?: IRequest): Promise<any> {
         if (src.$ref) {
             const schemas = this.apiDocs.components.schemas;
-            return this.schemaToExample(schemas[src.$ref.replace("#/components/schemas/", "")], req);
+            const schema = src.$ref
+                .replace("#/components/schemas/", "")
+                .replace("#/definitions/", "");
+            return this.schemaToExample(schemas[schema], req);
         }
         let schema = src as SchemaObject;
         if (schema.oneOf) {

@@ -44,6 +44,7 @@ import {MongoConnector} from "./services/mongo-connector";
 import {OpenApi} from "./services/open-api";
 import {Progresses} from "./services/progresses";
 import {TemplateRenderer} from "./services/template-renderer";
+import {TokenGenerator} from "./services/token-generator";
 import {TranslationProvider} from "./services/translation-provider";
 import {Translator} from "./services/translator";
 import {UserManager} from "./services/user-manager";
@@ -216,6 +217,7 @@ export {MongoConnector} from "./services/mongo-connector";
 export {OpenApi} from "./services/open-api";
 export {Progresses} from "./services/progresses";
 export {TemplateRenderer} from "./services/template-renderer";
+export {TokenGenerator} from "./services/token-generator";
 export {TranslationProvider} from "./services/translation-provider";
 export {Translator} from "./services/translator";
 export {UserManager} from "./services/user-manager";
@@ -331,6 +333,7 @@ export function createServices(): IDependencyContainer {
         OpenApi,
         Progresses,
         TemplateRenderer,
+        TokenGenerator,
         TranslationProvider,
         Translator,
         UserManager

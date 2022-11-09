@@ -1,4 +1,4 @@
-import {injectable, singleton} from "tsyringe";
+import {singleton} from "tsyringe";
 import {createTransport} from "nodemailer";
 import * as Mail from "nodemailer/lib/mailer";
 
@@ -15,7 +15,6 @@ export interface MailOptions {
     attachments?: Mail.Attachment[]
 }
 
-@injectable()
 @singleton()
 export class MailSender {
 

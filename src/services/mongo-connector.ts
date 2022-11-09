@@ -1,10 +1,8 @@
-import {injectable, singleton} from "tsyringe";
+import {singleton} from "tsyringe";
 import {Db, GridFSBucket} from "mongodb";
 import {connect, Connection} from "mongoose";
 import {Configuration} from "./configuration";
-import {getType} from "../utils";
 
-@injectable()
 @singleton()
 export class MongoConnector {
 

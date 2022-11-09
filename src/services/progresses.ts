@@ -1,4 +1,4 @@
-import {injectable, singleton} from "tsyringe";
+import {singleton} from "tsyringe";
 import {ObjectId} from "bson";
 import {Collection} from "mongodb";
 import {FilterQuery} from "mongoose";
@@ -8,7 +8,6 @@ import {MongoConnector} from "./mongo-connector";
 import {JobManager} from "./job-manager";
 import {Progress} from "./entities/progress";
 
-@injectable()
 @singleton()
 export class Progresses {
 

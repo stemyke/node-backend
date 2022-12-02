@@ -7,23 +7,22 @@ import {TranslationProvider} from "./translation-provider";
 @singleton()
 export class Translator {
 
-    protected cache: { [lang: string]: ITranslations };
+    protected dictionaries: { [lang: string]: ITranslations };
 
     constructor(private translationProvider: TranslationProvider) {
-        this.cache = {};
+        this.dictionaries = {};
     }
 
     async getDictionary(language: string): Promise<ITranslations> {
-        const dictionary = await this.translationProvider.getDictionary(language);
-        this.cache[language] = dictionary;
-        return dictionary;
+        this.dictionaries[language] = await this.translationProvider.getDictionary(language);
+        return this.dictionaries[language];
     }
 
     getTranslationSync(language: string, key: string, params?: any): string {
         if (!isString(key) || !key.length) {
             throw new Error(`Parameter "key" required`);
         }
-        const dictionary = this.cache[language];
+        const dictionary = this.dictionaries[language];
         const translation = getValue(dictionary, key, key) || key;
         return this.interpolate(translation, params);
     }

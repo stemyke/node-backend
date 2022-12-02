@@ -1,4 +1,4 @@
-import {injectable, Lifecycle, scoped} from "tsyringe";
+import {singleton} from "tsyringe";
 import {Collection} from "mongodb";
 import {MongoConnector} from "./mongo-connector";
 import {Configuration} from "./configuration";
@@ -12,8 +12,7 @@ export interface ICacheItem {
     expiresAt?: number;
 }
 
-@injectable()
-@scoped(Lifecycle.ContainerScoped)
+@singleton()
 export class Cache {
 
     protected collection: Collection<ICacheItem>;

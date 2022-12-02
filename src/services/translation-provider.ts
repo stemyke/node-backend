@@ -1,24 +1,33 @@
 import {singleton} from "tsyringe";
 import axios from "axios";
+import {isObject} from "../utils";
 import {Configuration} from "./configuration";
 import {ITranslations} from "../common-types";
+import {Cache} from "./cache";
 
 @singleton()
 export class TranslationProvider {
 
-    protected cache: { [lang: string]: Promise<ITranslations> };
+    constructor(readonly config: Configuration, readonly cache: Cache) {
 
-    constructor(readonly config: Configuration) {
-        this.cache = {};
     }
 
     getDictionary(language: string): Promise<ITranslations> {
-        this.cache[language] = this.cache[language] || axios.get(this.config.resolve("translationsTemplate").replace(`[lang]`, language)).then(
-            r => r.data,
-            reason => ({
-                message: reason
-            })
-        );
-        return this.cache[language];
+        return this.cache.getOrSet(`translations-${language}`, async () => {
+            try {
+                const url = this.config.resolve("translationsTemplate")
+                    .replace(`__lang__`, language)
+                    .replace(`[lang]`, language);
+                const data = await axios.get(url).then(t => t.data);
+                if (isObject(data[language])) {
+                    return data[language];
+                }
+                return data;
+            } catch (e) {
+                return {
+                    message: `${e}`
+                }
+            }
+        }, 5 * 60);
     }
 }

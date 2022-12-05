@@ -58,9 +58,10 @@ export class Assets {
     async writeUrl(url: string, metadata: IAssetMeta = null): Promise<IAsset> {
         metadata = metadata || {};
         metadata.filename = metadata.filename || url;
+        metadata.url = url;
         metadata.uploadTime = new Date().getTime();
         const oneWeek = 1000 * 3600 * 24 * 7;
-        const asset = await this.find({filename: url, "metadata.uploadTime": {$gt: metadata.uploadTime - oneWeek}});
+        const asset = await this.find({"metadata.url": url, "metadata.uploadTime": {$gt: metadata.uploadTime - oneWeek}});
         if (asset) return asset;
         const buffer = (await axios({ url, responseType: "arraybuffer" })).data as Buffer;
         return this.writeBuffer(buffer, metadata);

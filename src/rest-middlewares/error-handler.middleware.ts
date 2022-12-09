@@ -40,6 +40,7 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
             res.status(error.response.status);
             result.message = error.message;
             result.error = error.response.data;
+            result.headers = error.response.headers;
             result.url = `${error.config.baseURL}${error.config.url}`;
             return result;
         }

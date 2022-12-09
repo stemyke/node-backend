@@ -11,6 +11,9 @@ import {Document, Types} from "mongoose";
 import {PassThrough, Readable, ReadableOptions} from "stream";
 import sharp_, {Region} from "sharp";
 import {IAssetCropInfo, IAssetImageParams, IAssetMeta, IClientSocket, Type} from "./common-types";
+import {HttpError} from "routing-controllers";
+import {AxiosError} from "axios";
+import {error} from "ng-packagr/lib/utils/log";
 
 const sharp = sharp_;
 
@@ -713,4 +716,12 @@ export function flatten(arr: any[]): any[] {
     return arr.reduce((flat, toFlatten) => {
         return flat.concat(isArray(toFlatten) ? flatten(toFlatten) : toFlatten);
     }, []);
+}
+
+export function wrapError(e: any, message: string, httpCode: number = 500): Error {
+    if (e instanceof AxiosError) {
+        e.message = `${message}: ${e}`;
+        return e;
+    }
+    return new HttpError(httpCode, `${message}: ${e}`);
 }

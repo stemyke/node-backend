@@ -22,7 +22,12 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
     async error(error: any, req: IRequest, res: Response, next: (err?: any) => any) {
         const result = await this.getResult(error, req, res);
         if (this.isDev) {
-            console.log("ERROR", result, res.statusCode);
+            if (error instanceof AxiosError) {
+                console.log(`Axios error:`, result);
+                console.log(error.config.data);
+            } else {
+                console.log(error.constructor?.name || "Error", result, res.statusCode);
+            }
         }
         res.json(result);
     }
@@ -31,18 +36,23 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
 
         const result: any = {};
 
+        if (error instanceof AxiosError) {
+            res.status(error.response.status);
+            result.message = error.message;
+            result.error = error.response.data;
+            result.url = `${error.config.baseURL}${error.config.url}`;
+            return result;
+        }
+
         if (error instanceof BadRequestError) {
             res.status(400);
             if (error.constructor.name === "ParamRequiredError") {
                 result.message = await this.translator.getTranslation(req.language, "message.parameter-required.error");
                 result.param = error.message;
             } else {
-                if (error instanceof AxiosError) {
-                    console.log(error.response);
-                }
                 result.message = error.message || await this.translator.getTranslation(req.language, "message.form-validation.error");
                 result.errors = error["errors"];
-                if (this.isDev) {
+                if (error.stack && this.isDev) {
                     result.stack = error.stack;
                 }
             }

@@ -130,7 +130,8 @@ export {
     colorize,
     jsonHighlight,
     replaceSpecialChars,
-    flatten
+    flatten,
+    wrapError
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";

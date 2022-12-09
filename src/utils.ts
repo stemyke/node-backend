@@ -720,7 +720,7 @@ export function flatten(arr: any[]): any[] {
 
 export function wrapError(e: any, message: string, httpCode: number = 500): Error {
     if (e instanceof AxiosError) {
-        e.message = `${message}: ${e}`;
+        e.message = message;
         return e;
     }
     return new HttpError(httpCode, `${message}: ${e}`);

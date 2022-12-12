@@ -305,6 +305,7 @@ export function createServices(): IDependencyContainer {
         new Parameter("jobTimeout", 5 * 60 * 1000),
         new Parameter("cacheCollection", "cache"),
         new Parameter("logTags", []),
+        new Parameter("ignoredLogTags", []),
     ];
 
     // Convert parameters to providers

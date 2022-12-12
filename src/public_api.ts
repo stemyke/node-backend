@@ -215,6 +215,7 @@ export {GalleryCache} from "./services/gallery-cache";
 export {IdGenerator} from "./services/id-generator";
 export {JobManager} from "./services/job-manager";
 export {LazyAssets} from "./services/lazy-assets";
+export {Logger} from "./services/logger";
 export {MailSender} from "./services/mail-sender";
 export {MemoryCache} from "./services/memory-cache";
 export {MongoConnector} from "./services/mongo-connector";

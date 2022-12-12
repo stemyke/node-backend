@@ -131,7 +131,8 @@ export {
     jsonHighlight,
     replaceSpecialChars,
     flatten,
-    wrapError
+    wrapError,
+    prepareUrl
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";

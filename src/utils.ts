@@ -10,10 +10,9 @@ import {GridFSBucket, ObjectId} from "mongodb";
 import {Document, Types} from "mongoose";
 import {PassThrough, Readable, ReadableOptions} from "stream";
 import sharp_, {Region} from "sharp";
-import {IAssetCropInfo, IAssetImageParams, IAssetMeta, IClientSocket, Type} from "./common-types";
+import {IAssetCropInfo, IAssetImageParams, IAssetMeta, IClientSocket, ParamResolver, Type} from "./common-types";
 import {HttpError} from "routing-controllers";
 import {AxiosError} from "axios";
-import {error} from "ng-packagr/lib/utils/log";
 
 const sharp = sharp_;
 
@@ -724,4 +723,10 @@ export function wrapError(e: any, message: string, httpCode: number = 500): Erro
         return e;
     }
     return new HttpError(httpCode, `${message}: ${e}`);
+}
+
+export function prepareUrl(ending = ""): ParamResolver {
+    return url => {
+        return url ? `${url.replace(/\/+$/, "")}${ending}` : ending;
+    }
 }

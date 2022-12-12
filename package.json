@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "3.5.10",
+    "version": "3.5.11",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {

@@ -725,8 +725,12 @@ export function wrapError(e: any, message: string, httpCode: number = 500): Erro
     return new HttpError(httpCode, `${message}: ${e}`);
 }
 
-export function prepareUrl(ending = ""): ParamResolver {
+export function prepareUrl(ending: string = "/"): ParamResolver {
     return url => {
         return url ? `${url.replace(/\/+$/, "")}${ending}` : ending;
     }
 }
+
+export const prepareUrlSlash = prepareUrl("/");
+
+export const prepareUrlEmpty = prepareUrl("");

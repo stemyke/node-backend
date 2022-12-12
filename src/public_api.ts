@@ -132,7 +132,9 @@ export {
     replaceSpecialChars,
     flatten,
     wrapError,
-    prepareUrl
+    prepareUrl,
+    prepareUrlSlash,
+    prepareUrlEmpty
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";

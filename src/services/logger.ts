@@ -7,7 +7,6 @@ export class Logger {
     protected tags: string[];
 
     constructor(readonly config: Configuration) {
-        console.log("Logger created");
         this.tags = this.config.resolve("logTags");
     }
 

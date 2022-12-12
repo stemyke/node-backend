@@ -1,7 +1,8 @@
 import {injectAll, singleton} from "tsyringe";
+import dotenv from "dotenv";
+
 import {PARAMETER, Parameter} from "../common-types";
 import {colorize, ConsoleColor, convertValue, getType, isFunction} from "../utils";
-import dotenv from "dotenv";
 
 @singleton()
 export class Configuration {
@@ -33,14 +34,28 @@ export class Configuration {
                 ? param.resolver(envValue)
                 : convertValue(envValue, getType(param.defaultValue));
             console.log(
-                `Processing param value`,
+                colorize(`Processing param value`, ConsoleColor.FgYellow),
                 colorize(param.name, ConsoleColor.FgGreen),
                 colorize(envName, ConsoleColor.FgBlue),
                 `"${envValue}"`,
                 value
             );
             return value;
+        } else if (isFunction(param.resolver)) {
+            const value = param.resolver(param.defaultValue);
+            console.log(
+                colorize(`Processing default param value`, ConsoleColor.FgYellow),
+                colorize(param.name, ConsoleColor.FgGreen),
+                `"${param.defaultValue}"`,
+                value
+            );
+            return value;
         }
+        console.log(
+            colorize(`Using default param value`, ConsoleColor.FgYellow),
+            colorize(param.name, ConsoleColor.FgGreen),
+            `"${param.defaultValue}"`,
+        );
         return param.defaultValue;
     }
 

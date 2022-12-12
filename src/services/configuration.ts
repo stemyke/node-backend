@@ -46,7 +46,7 @@ export class Configuration {
             console.log(
                 colorize(`Processing default param value`, ConsoleColor.FgYellow),
                 colorize(param.name, ConsoleColor.FgGreen),
-                `"${param.defaultValue}"`,
+                param.defaultValue,
                 value
             );
             return value;
@@ -54,7 +54,7 @@ export class Configuration {
         console.log(
             colorize(`Using default param value`, ConsoleColor.FgYellow),
             colorize(param.name, ConsoleColor.FgGreen),
-            `"${param.defaultValue}"`,
+            param.defaultValue,
         );
         return param.defaultValue;
     }

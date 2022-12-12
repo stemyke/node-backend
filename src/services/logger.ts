@@ -11,7 +11,7 @@ export class Logger {
     }
 
     log(tag: string, ...params: any[]): void {
-        if (!this.tags.includes(tag)) {
+        if (this.tags.length == 0 || !this.tags.includes(tag)) {
             console.log(`[${tag}]`, ...params);
         }
     }

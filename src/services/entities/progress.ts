@@ -77,10 +77,13 @@ export class Progress extends BaseEntity<IProgress> implements IProgress {
 
     async advance(value: number = 1): Promise<any> {
         if (isNaN(value) || value <= 0) {
-            throw "Advance value must be bigger than zero";
+            throw new Error(`Advance value must be bigger than zero: ${this.id}`);
         }
         await this.load();
-        if (this.deleted || this.canceled) return null;
+        if (this.deleted || this.canceled) {
+            const status = this.deleted ? "deleted" : "canceled";
+            throw new Error(`Can't advance ${status} progress: ${this.id}`);
+        }
         this.data.current = Math.min(this.max, this.current + value);
         await this.save();
     }

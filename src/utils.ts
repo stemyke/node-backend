@@ -711,6 +711,10 @@ export function replaceSpecialChars(str: string, to: string = "-"): string {
     return `${str}`.replace(/[&\/\\#, +()$~%.@'":*?<>{}]/g, to);
 }
 
+export function regexEscape(str: string): string {
+    return `${str}`.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
 export function flatten(arr: any[]): any[] {
     return arr.reduce((flat, toFlatten) => {
         return flat.concat(isArray(toFlatten) ? flatten(toFlatten) : toFlatten);

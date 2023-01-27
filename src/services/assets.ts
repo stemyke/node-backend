@@ -32,7 +32,7 @@ export class Assets {
             fileType = await AssetProcessor.fileTypeFromBuffer(buffer);
         } catch (e) {
             if (!fileType.mime) {
-                throw `Can't determine mime type`;
+                throw new Error(`Can't determine mime type: ${e}`);
             }
             console.log(`Can't determine mime type`, e);
         }

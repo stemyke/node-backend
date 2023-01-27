@@ -1,4 +1,4 @@
-import {injectable, singleton} from "tsyringe";
+import {singleton} from "tsyringe";
 import {lstatSync, readdir, readFileSync} from "fs";
 import {join} from "path";
 import * as Handlebars from "handlebars";
@@ -6,7 +6,6 @@ import * as Handlebars from "handlebars";
 import {Translator} from "./translator";
 import {Configuration} from "./configuration";
 
-@injectable()
 @singleton()
 export class TemplateRenderer {
 

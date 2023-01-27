@@ -12,14 +12,18 @@ import {
     HTTP_SERVER,
     IBackendConfig,
     IDependencyContainer,
+    IJob,
     IPaginationParams,
     IRequest,
+    ITerminalCommand,
     IUser,
-    JOB, OPENAPI_VALIDATION,
+    JOB,
+    OPENAPI_VALIDATION,
     Parameter,
     PARAMETER,
     Provider,
     SOCKET_SERVER,
+    TERMINAL_COMMAND,
     Type
 } from "./common-types";
 
@@ -44,6 +48,7 @@ import {MongoConnector} from "./services/mongo-connector";
 import {OpenApi} from "./services/open-api";
 import {Progresses} from "./services/progresses";
 import {TemplateRenderer} from "./services/template-renderer";
+import {TerminalManager} from "./services/terminal-manager";
 import {TokenGenerator} from "./services/token-generator";
 import {TranslationProvider} from "./services/translation-provider";
 import {Translator} from "./services/translator";
@@ -53,6 +58,7 @@ import {AssetsController} from "./rest-controllers/assets.controller";
 import {AuthController} from "./rest-controllers/auth.controller";
 import {GalleryController} from "./rest-controllers/gallery.controller";
 import {ProgressesController} from "./rest-controllers/progresses.controller";
+import {TerminalController as TerminalRestController} from "./rest-controllers/terminal.controller";
 
 import {ErrorHandlerMiddleware} from "./rest-middlewares/error-handler.middleware";
 import {ContainerMiddleware} from "./rest-middlewares/container.middleware";
@@ -61,13 +67,15 @@ import {RequestEndedMiddleware} from "./rest-middlewares/request-ended.middlewar
 import {RequestStartedMiddleware} from "./rest-middlewares/request-started.middleware";
 
 import {ProgressController} from "./socket-controllers/progress.controller";
+import {TerminalController} from "./socket-controllers/terminal.controller";
 
 import {CompressionMiddleware} from "./socket-middlewares/compression.middleware";
 
 import {DiContainer} from "./utilities/di-container";
 import {EmptyJob} from "./utilities/empty-job";
-import {diContainers, isFunction, isString, isType, valueToPromise} from "./utils";
+import {diContainers, isFunction, isString, isType, valueToPromise, prepareUrlEmpty} from "./utils";
 import {setupStatic} from "./static";
+import {ClearCommand} from "./utilities/clear-command";
 
 export {
     FilterPredicate,
@@ -130,6 +138,7 @@ export {
     colorize,
     jsonHighlight,
     replaceSpecialChars,
+    regexEscape,
     flatten,
     wrapError,
     prepareUrl,
@@ -142,6 +151,7 @@ export {IsFile, IsObjectId} from "./validators";
 export {
     FIXTURE,
     JOB,
+    TERMINAL_COMMAND,
     EXPRESS,
     HTTP_SERVER,
     SOCKET_SERVER,
@@ -178,6 +188,9 @@ export {
     JobParams,
     JobScheduleRange,
     JobScheduleTime,
+    ITerminalFile,
+    ITerminal,
+    ITerminalCommand,
     IProgress,
     IAssetCropInfo,
     IAssetMeta,
@@ -222,6 +235,7 @@ export {MongoConnector} from "./services/mongo-connector";
 export {OpenApi} from "./services/open-api";
 export {Progresses} from "./services/progresses";
 export {TemplateRenderer} from "./services/template-renderer";
+export {TerminalManager} from "./services/terminal-manager";
 export {TokenGenerator} from "./services/token-generator";
 export {TranslationProvider} from "./services/translation-provider";
 export {Translator} from "./services/translator";
@@ -275,6 +289,14 @@ export async function resolveUser(req: IRequest): Promise<IUser> {
 export function createServices(): IDependencyContainer {
     // List of parameters
     const params = [
+        new Parameter("serviceName", "Backend"),
+        new Parameter("servicePassword", Math.random().toString(36).substring(7)),
+        new Parameter("serviceUrl", "http://localhost:3000", (value, helper) => {
+            // Replace port number to empty string
+            const url = prepareUrlEmpty(`${value}`.replace(/:[0-9]+$/, ""), helper) as string;
+            const port = helper("appPort");
+            return (!port || port === 80 || port === 443) ? url : `${url}:${port}`;
+        }),
         new Parameter("templatesDir", join(__dirname, "templates")),
         new Parameter("galleryDir", join(__dirname, "gallery")),
         new Parameter("cacheDir", join(__dirname, "cache")),
@@ -339,6 +361,7 @@ export function createServices(): IDependencyContainer {
         OpenApi,
         Progresses,
         TemplateRenderer,
+        TerminalManager,
         TokenGenerator,
         TranslationProvider,
         Translator,
@@ -380,9 +403,17 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     });
 
     // Create jobs
-    const jobProviders = [EmptyJob].concat(config.jobs || []).map(jobType => {
+    const jobProviders = [EmptyJob as Type<IJob>].concat(config.jobs || []).map(jobType => {
         return {
             provide: JOB,
+            useValue: jobType
+        };
+    });
+
+    // Create commands
+    const commandProviders = [ClearCommand as Type<ITerminalCommand>].concat(config.commands || []).map(jobType => {
+        return {
+            provide: TERMINAL_COMMAND,
             useValue: jobType
         };
     });
@@ -401,13 +432,13 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     restOptions.routePrefix = restOptions.routePrefix == "/" ? "" : restOptions.routePrefix;
     restOptions.middlewares = [ErrorHandlerMiddleware, ContainerMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
         .concat(restOptions.middlewares as any || []);
-    restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController]
+    restOptions.controllers = [AssetsController, AuthController, GalleryController, ProgressesController, TerminalRestController]
         .concat(restOptions.controllers as any || []);
 
     // Setup socket API
     const socketOptions = config.socketOptions || {};
     socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
-    socketOptions.controllers = [ProgressController].concat(socketOptions.controllers as any || []);
+    socketOptions.controllers = [ProgressController, TerminalController].concat(socketOptions.controllers as any || []);
 
     // Create providers
 
@@ -427,6 +458,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         ...fixtureProviders,
         ...paramProviders,
         ...jobProviders,
+        ...commandProviders,
         ...restOptions.middlewares as Type<any>[],
         ...restOptions.controllers as Type<any>[],
         ...socketOptions.middlewares as Type<any>[],

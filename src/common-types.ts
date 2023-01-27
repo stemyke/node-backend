@@ -15,6 +15,7 @@ import {SchemaObject} from "openapi3-ts";
 import {Readable} from "stream";
 import {Moment} from "moment";
 import {AnyExpression, Expression} from "mongoose";
+import {ICommandArgs, ISuggestion, ITerminal as ITerminalBase} from "@stemy/terminal-commands-addon";
 
 // --- DI functions ---
 
@@ -96,6 +97,8 @@ export const FIXTURE: InjectionToken<IFixture> = Symbol.for("fixture-token");
 
 export const JOB: InjectionToken<IJob> = Symbol.for("job-token");
 
+export const TERMINAL_COMMAND: InjectionToken<ITerminalCommand> = Symbol.for("terminal-command-token");
+
 export const EXPRESS: InjectionToken<Express> = Symbol.for("express-token");
 
 export const HTTP_SERVER: InjectionToken<Server> = Symbol.for("http-server-token");
@@ -132,7 +135,7 @@ export interface IFixture {
     load(): Promise<any>;
 }
 
-export type ParamResolver = (value: string) => any;
+export type ParamResolver = (value: string, helper?: (param: string) => any) => any;
 
 export class Parameter {
 
@@ -158,6 +161,8 @@ export interface IMessageBridge {
     sendMessage(message: string, params?: SocketParams): void;
 }
 
+// --- JOBS ---
+
 export interface IJob {
     process(messaging?: IMessageBridge): Promise<any>;
 }
@@ -175,6 +180,26 @@ export interface JobScheduleRange {
 }
 
 export type JobScheduleTime = string | number | JobScheduleRange | Array<string | number>;
+
+// --- COMMANDS & TERMINAL ---
+
+export interface ITerminalFile extends ISuggestion {
+    content?: string;
+    buffer?: Buffer;
+    accept?: string;
+}
+
+export interface ITerminal extends ITerminalBase {
+    suggestFiles(accept: string): Promise<ITerminalFile[]>;
+}
+
+export interface ITerminalCommand {
+    readonly name: string;
+    execute(args: ICommandArgs, terminal: ITerminal): Promise<any>;
+    suggest?(args: ICommandArgs, terminal: ITerminal): Promise<Array<string | ISuggestion>>;
+}
+
+// --- ASSETS ---
 
 export interface IProgress {
     id: string;
@@ -348,6 +373,7 @@ export interface IBackendConfig {
     params?: Parameter[];
     fixtures?: Type<IFixture>[];
     jobs?: Type<IJob>[];
+    commands?: Type<ITerminalCommand>[];
     restOptions?: RoutingControllersOptions;
     socketOptions?: SocketControllersOptions;
     customValidation?: SchemaConverter | SchemaObject;

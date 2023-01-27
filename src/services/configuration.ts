@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 
 import {PARAMETER, Parameter} from "../common-types";
 import {colorize, ConsoleColor, convertValue, getType, isFunction} from "../utils";
+import {help} from "commander";
 
 @singleton()
 export class Configuration {
@@ -24,14 +25,15 @@ export class Configuration {
         this.paramMap[param.name] = existingParam;
     }
 
-    protected resolveValue(param: Parameter): any {
+    protected resolveValue(param: Parameter, alreadyResolved: string[]): any {
         const envName = param.name.replace(/\.?([A-Z|0-9]+)/g, function (x, y) {
             return "_" + y.toLowerCase()
         }).replace(/\./gi, "_").replace(/^_/, "").toUpperCase();
         const envValue = process.env[envName];
+        const helper = (p: string) => this.resolveInternal(p, alreadyResolved);
         if (typeof envValue !== "undefined") {
             const value = isFunction(param.resolver)
-                ? param.resolver(envValue)
+                ? param.resolver(envValue, helper)
                 : convertValue(envValue, getType(param.defaultValue));
             console.log(
                 colorize(`Processing param value`, ConsoleColor.FgYellow),
@@ -42,7 +44,7 @@ export class Configuration {
             );
             return value;
         } else if (isFunction(param.resolver)) {
-            const value = param.resolver(param.defaultValue);
+            const value = param.resolver(param.defaultValue, helper);
             console.log(
                 colorize(`Processing default param value`, ConsoleColor.FgYellow),
                 colorize(param.name, ConsoleColor.FgGreen),
@@ -64,10 +66,18 @@ export class Configuration {
     }
 
     resolve(name: string): any {
+        return this.resolveInternal(name, []);
+    }
+
+    protected resolveInternal(name: string, alreadyResolved: string[]): any {
+        if (alreadyResolved.includes(name)) {
+            throw new Error(`Circular dependency detected: ${alreadyResolved.join(" -> ")} -> ${name}`);
+        }
+        alreadyResolved.push(name);
         const param = this.paramMap[name];
         if (!param) throw new Error(`Parameter with name: '${name}' does not exists in configuration`);
         if (!(name in this.paramValues)) {
-            this.paramValues[name] = this.resolveValue(param);
+            this.paramValues[name] = this.resolveValue(param, alreadyResolved);
         }
         return this.paramValues[name];
     }

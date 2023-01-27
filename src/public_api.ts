@@ -127,6 +127,7 @@ export {
     observableFromFunction,
     padLeft,
     padRight,
+    camelCaseToDash,
     deleteFromBucket,
     filter,
     copy,
@@ -143,7 +144,8 @@ export {
     wrapError,
     prepareUrl,
     prepareUrlSlash,
-    prepareUrlEmpty
+    prepareUrlEmpty,
+    fileTypeFromBuffer
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";
@@ -411,10 +413,10 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     });
 
     // Create commands
-    const commandProviders = [ClearCommand as Type<ITerminalCommand>].concat(config.commands || []).map(jobType => {
+    const commandProviders = [ClearCommand as Type<ITerminalCommand>].concat(config.commands || []).map(commandType => {
         return {
             provide: TERMINAL_COMMAND,
-            useValue: jobType
+            useClass: commandType
         };
     });
 

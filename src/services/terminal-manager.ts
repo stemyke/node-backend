@@ -3,7 +3,7 @@ import {CommandsAddon, ICommandMap, ISuggestionMap} from "@stemy/terminal-comman
 import {ITerminal, ITerminalCommand, TERMINAL_COMMAND} from "../common-types";
 import {Logger} from "./logger";
 import {Configuration} from "./configuration";
-import {colorize, ConsoleColor} from "../utils";
+import {camelCaseToDash, colorize, ConsoleColor} from "../utils";
 
 @singleton()
 export class TerminalManager {
@@ -30,16 +30,15 @@ export class TerminalManager {
                 }];
             },
             ...commands.reduce((acc, command) => {
-                acc[command.name] = async (args, terminal: ITerminal) => {
-                    return !command.suggest ? null : command.suggest(args, terminal);
-                };
+                command.name = camelCaseToDash(command.name || command.constructor.name || "");
+                if (!command.name || !command.suggest) return acc;
+                acc[command.name] = async (a, t) => command.suggest(a, t);
                 return acc;
             }, {})
         };
         this.commands = commands.reduce((acc, command) => {
-            acc[command.name] = async (args, terminal: ITerminal) => {
-                return command.execute(args, terminal);
-            };
+            if (!command.name) return acc;
+            acc[command.name] = async (a, t) => command.execute(a, t);
             return acc;
         }, {});
         this.loggedOutCommands = ["login", "clear"];

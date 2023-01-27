@@ -1,6 +1,5 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
 import fontKit_, {Font} from "fontkit";
-import {fromBuffer} from "file-type";
 import sharp_ from "sharp";
 import {FontFormat, IAssetMeta, IFileType} from "../common-types";
 
@@ -24,26 +23,6 @@ const fontProps = [
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
 export class AssetProcessor {
-
-    private static checkTextFileType(type: IFileType): boolean {
-        return type.mime.indexOf("text") >= 0 || type.mime.indexOf("xml") >= 0;
-    }
-
-    private static fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
-        const text = buffer.toString("utf8");
-        if (text.indexOf("<svg") >= 0) {
-            return {ext: "svg", mime: "image/svg+xml"};
-        }
-        return type;
-    }
-
-    static async fileTypeFromBuffer(buffer: Buffer): Promise<IFileType> {
-        const type = (await fromBuffer(buffer) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
-        if (AssetProcessor.checkTextFileType(type)) {
-            return AssetProcessor.fixTextFileType(type, buffer);
-        }
-        return type;
-    }
 
     static extractFontFormat(font: Font): FontFormat {
         const name: string = font.constructor.name;

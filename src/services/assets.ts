@@ -5,7 +5,7 @@ import {Collection, GridFSBucket} from "mongodb";
 import {FilterQuery} from "mongoose";
 import axios from "axios";
 
-import {bufferToStream, copyStream, streamToBuffer} from "../utils";
+import {bufferToStream, copyStream, streamToBuffer, fileTypeFromBuffer} from "../utils";
 import {IAsset, IAssetMeta, IFileType} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
@@ -29,7 +29,7 @@ export class Assets {
         const buffer = await streamToBuffer(stream);
         let fileType = {ext: "", mime: contentType} as IFileType;
         try {
-            fileType = await AssetProcessor.fileTypeFromBuffer(buffer);
+            fileType = await fileTypeFromBuffer(buffer);
         } catch (e) {
             if (!fileType.mime) {
                 throw new Error(`Can't determine mime type: ${e}`);
@@ -43,7 +43,7 @@ export class Assets {
     async writeBuffer(buffer: Buffer, metadata: IAssetMeta = null, contentType: string = null): Promise<IAsset> {
         let fileType = {ext: "", mime: contentType} as IFileType;
         try {
-            fileType = await AssetProcessor.fileTypeFromBuffer(buffer);
+            fileType = await fileTypeFromBuffer(buffer);
         } catch (e) {
             if (!fileType.mime) {
                 throw `Can't determine mime type`;
@@ -71,7 +71,7 @@ export class Assets {
         let buffer = (await axios({ url, responseType: "arraybuffer" })).data as Buffer;
         let fileType = {ext: "", mime: contentType} as IFileType;
         try {
-            fileType = await AssetProcessor.fileTypeFromBuffer(buffer);
+            fileType = await fileTypeFromBuffer(buffer);
         } catch (e) {
             if (!fileType.mime) {
                 throw `Can't determine mime type`;

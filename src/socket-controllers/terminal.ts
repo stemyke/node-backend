@@ -2,6 +2,7 @@ import {BehaviorSubject, Subject} from "rxjs";
 import {first, map, timeout} from "rxjs/operators";
 import {IDisposable, ISuggestion, ITerminalAddon} from "@stemy/terminal-commands-addon";
 import {IClientSocket, ITerminal, ITerminalFile} from "../common-types";
+import {fileTypeFromBuffer} from "../utils";
 
 export class Terminal implements ITerminal {
     protected addons: ITerminalAddon[];
@@ -60,7 +61,7 @@ export class Terminal implements ITerminal {
                     });
                     const file = await this.files$
                         .pipe(first(v => v.some(f => f.id === id)))
-                        .pipe(timeout(60000))
+                        .pipe(timeout(120000))
                         .pipe(map(v => v.find(f => f.id === id)))
                         .toPromise();
                     if (file.error) {
@@ -73,6 +74,16 @@ export class Terminal implements ITerminal {
                 accept: accept,
             }
         ]);
+    }
+
+    async downloadFile(filename: string, buffer: Buffer): Promise<void> {
+        const type = await fileTypeFromBuffer(buffer);
+        const data = buffer.toString("base64");
+        const content = `data:${type.mime};base64,${data}`;
+        this.client.emit("terminal-download", {
+            filename,
+            content
+        });
     }
 
     addFile(upload: ITerminalFile) {

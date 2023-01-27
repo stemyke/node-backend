@@ -10,9 +10,18 @@ import {GridFSBucket, ObjectId} from "mongodb";
 import {Document, Types} from "mongoose";
 import {PassThrough, Readable, ReadableOptions} from "stream";
 import sharp_, {Region} from "sharp";
-import {IAssetCropInfo, IAssetImageParams, IAssetMeta, IClientSocket, ParamResolver, Type} from "./common-types";
 import {HttpError} from "routing-controllers";
 import {AxiosError} from "axios";
+import {fromBuffer as extractFileType} from "file-type";
+import {
+    IAssetCropInfo,
+    IAssetImageParams,
+    IAssetMeta,
+    IClientSocket,
+    IFileType,
+    ParamResolver,
+    Type
+} from "./common-types";
 
 const sharp = sharp_;
 
@@ -510,6 +519,10 @@ export function padRight(value: any, count: number = 3, padWith: string = "0"): 
     return `${value}`.padEnd(count, padWith);
 }
 
+export function camelCaseToDash(str: string): string {
+    return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
 export function deleteFromBucket(bucket: GridFSBucket, fileId: ObjectId): Promise<string> {
     return new Promise<string>(((resolve, reject) => {
         bucket.delete(fileId, error => {
@@ -738,3 +751,23 @@ export function prepareUrl(ending: string = "/"): ParamResolver {
 export const prepareUrlSlash = prepareUrl("/");
 
 export const prepareUrlEmpty = prepareUrl("");
+
+function checkTextFileType(type: IFileType): boolean {
+    return type.mime.indexOf("text") >= 0 || type.mime.indexOf("xml") >= 0;
+}
+
+function fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
+    const text = buffer.toString("utf8");
+    if (text.indexOf("<svg") >= 0) {
+        return {ext: "svg", mime: "image/svg+xml"};
+    }
+    return type;
+}
+
+export async function fileTypeFromBuffer(buffer: Buffer): Promise<IFileType> {
+    const type = (await extractFileType(buffer) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
+    if (checkTextFileType(type)) {
+        return fixTextFileType(type, buffer);
+    }
+    return type;
+}

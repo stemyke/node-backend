@@ -115,6 +115,12 @@ export class TerminalController {
                     };
                     input.click();
                 });
+                socket.on("terminal-download", function (data) {
+                    var link = document.createElement("a");
+                    link.href = data.content;
+                    link.download = data.filename;
+                    link.click();
+                });
                 socket.on("connect", function () {
                     clear();
                     terminal.writeln("Welcome to ${this.serviceName} service's console!");

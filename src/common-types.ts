@@ -191,10 +191,11 @@ export interface ITerminalFile extends ISuggestion {
 
 export interface ITerminal extends ITerminalBase {
     suggestFiles(accept: string): Promise<ITerminalFile[]>;
+    downloadFile(filename: string, buffer: Buffer): Promise<void>;
 }
 
 export interface ITerminalCommand {
-    readonly name: string;
+    name?: string;
     execute(args: ICommandArgs, terminal: ITerminal): Promise<any>;
     suggest?(args: ICommandArgs, terminal: ITerminal): Promise<Array<string | ISuggestion>>;
 }

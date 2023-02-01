@@ -1,9 +1,10 @@
 import {injectable} from "tsyringe";
 import {Controller, Get, Header} from "routing-controllers";
 import {Configuration} from "../services/configuration";
+import styles from "./terminal-styles";
 
 @injectable()
-@Controller("/console")
+@Controller()
 export class TerminalController {
 
     protected serviceName: string;
@@ -15,45 +16,31 @@ export class TerminalController {
         this.serviceUrl = config.resolve("serviceUrl");
     }
 
-    @Get()
+    @Get("/terminal")
     @Header("Content-Type", "text/html")
     terminal() {
+        return this.generateClient("terminal");
+    }
+
+    @Get("/console")
+    @Header("Content-Type", "text/html")
+    console() {
+        return this.generateClient("console");
+    }
+
+    @Get()
+    @Header("Content-Type", "text/html")
+    protected generateClient(alias: string): string {
         return `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
-            <title>${this.serviceName} console</title>
+            <title>${this.serviceName} ${alias}</title>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.min.css"/>
             <script type="text/javascript" src="${this.serviceUrl}/socket/socket.io.js"></script>
             <style>
-                body {
-                    margin: 0;
-                    padding: 0;
-                    background: #1e1e1e;
-                }
-                body * {
-                    box-sizing: border-box;
-                }
-                #terminal {
-                    margin: 40px;
-                    background: black;
-                    border: 1px solid #dedede;
-                    border-radius: 5px;
-                    overflow: hidden;
-                }
-                #terminal .xterm {
-                    margin: 10px;
-                    height: calc(100vh - 120px);
-                    border-radius: 5px;
-                }
-                #terminal .xterm-viewport::-webkit-scrollbar {
-                    width: 0.4em;
-                    background-color: #222;
-                }
-                #terminal .xterm-viewport::-webkit-scrollbar-thumb {
-                    background-color: #555;
-                }
+                ${styles}
             </style>
         </head>
         <body>
@@ -94,7 +81,6 @@ export class TerminalController {
                         var file = input.files[0];
                         var reader = new FileReader();
                         reader.onload = function () {
-                            console.log(reader.result);
                             socket.emit("terminal-upload", {
                                 id: data.id,
                                 label: file.name,
@@ -103,7 +89,6 @@ export class TerminalController {
                             });
                         };
                         reader.onerror = function () {
-                            console.error(reader.error);
                             socket.emit("terminal-upload", {
                                 id: data.id,
                                 label: file.name,
@@ -123,12 +108,12 @@ export class TerminalController {
                 });
                 socket.on("connect", function () {
                     clear();
-                    terminal.writeln("Welcome to ${this.serviceName} service's console!");
+                    terminal.writeln("Welcome to ${this.serviceName} service's ${alias}!");
                     socket.emit("terminal-init");
                 });
                 socket.on("disconnect", function () {
                     clear();
-                    terminal.writeln("Disconnected from ${this.serviceName} service's console.");
+                    terminal.writeln("Disconnected from ${this.serviceName} service's ${alias}.");
                 });
             </script>
         </body>

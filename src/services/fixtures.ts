@@ -1,5 +1,5 @@
 import {injectable, injectAll, Lifecycle, scoped} from "tsyringe";
-import {FIXTURE, IFixture} from "../common-types";
+import {FIXTURE, IFixture, IFixtureOutput} from "../common-types";
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
@@ -9,11 +9,14 @@ export class Fixtures {
 
     }
 
-    async load() {
+    async load(output: IFixtureOutput): Promise<any> {
         if (!this.fixtures) return;
-
+        output = output || {
+            write: console.log,
+            writeln: t => console.log(t + "\n")
+        };
         for (let fixture of this.fixtures) {
-            await fixture.load();
+            await fixture.load(output);
         }
     }
 }

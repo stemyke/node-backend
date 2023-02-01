@@ -132,7 +132,12 @@ export interface IUnwindOptions {
 // --- Interfaces and utility classes ---
 
 export interface IFixture {
-    load(): Promise<any>;
+    load(output?: IFixtureOutput): Promise<any>;
+}
+
+export interface IFixtureOutput {
+    write(message: string): void;
+    writeln(message: string): void;
 }
 
 export type ParamResolver = (value: string, helper?: (param: string) => any) => any;

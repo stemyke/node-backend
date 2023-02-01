@@ -2,7 +2,7 @@ import {Server} from "http";
 import {Request, Express} from "express";
 import {Socket, Server as SocketServer} from "socket.io";
 import {RoutingControllersOptions} from "routing-controllers";
-import {SocketControllersOptions} from "socket-controllers";
+import {SocketControllers, SocketControllersOptions} from "socket-controllers";
 import {
     ClassProvider,
     DependencyContainer,
@@ -104,6 +104,8 @@ export const EXPRESS: InjectionToken<Express> = Symbol.for("express-token");
 export const HTTP_SERVER: InjectionToken<Server> = Symbol.for("http-server-token");
 
 export const SOCKET_SERVER: InjectionToken<SocketServer> = Symbol.for("socket-server-token");
+
+export const SOCKET_CONTROLLERS: InjectionToken<SocketControllers> = Symbol.for("socket-controllers-token");
 
 export const PARAMETER: InjectionToken<Parameter> = Symbol.for("parameter-token");
 

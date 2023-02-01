@@ -2,8 +2,14 @@ import {join} from "path";
 import {json} from "body-parser";
 import {verify} from "jsonwebtoken";
 import {container, DependencyContainer} from "tsyringe";
-import {Action, HttpError, useContainer as useRoutingContainer, useExpressServer} from "routing-controllers";
-import {useContainer as useSocketContainer, useSocketServer} from "socket-controllers";
+import {
+    Action,
+    HttpError,
+    RoutingControllersOptions,
+    useContainer as useRoutingContainer,
+    useExpressServer
+} from "routing-controllers";
+import {SocketControllersOptions, SocketControllers} from "socket-controllers";
 
 import {
     DI_CONTAINER,
@@ -23,6 +29,7 @@ import {
     PARAMETER,
     Provider,
     SOCKET_SERVER,
+    SOCKET_CONTROLLERS,
     TERMINAL_COMMAND,
     Type
 } from "./common-types";
@@ -73,9 +80,9 @@ import {CompressionMiddleware} from "./socket-middlewares/compression.middleware
 
 import {DiContainer} from "./utilities/di-container";
 import {EmptyJob} from "./utilities/empty-job";
-import {diContainers, isFunction, isString, isType, valueToPromise, prepareUrlEmpty} from "./utils";
+import {diContainers, isFunction, isString, isType, prepareUrlEmpty, valueToPromise} from "./utils";
 import {setupStatic} from "./static";
-import {ClearCommand} from "./utilities/clear-command";
+import {commands} from "./commands";
 
 export {
     FilterPredicate,
@@ -157,6 +164,7 @@ export {
     EXPRESS,
     HTTP_SERVER,
     SOCKET_SERVER,
+    SOCKET_CONTROLLERS,
     PARAMETER,
     DI_CONTAINER,
     OPENAPI_VALIDATION,
@@ -177,6 +185,7 @@ export {
     IProjectOptions,
     IUnwindOptions,
     IFixture,
+    IFixtureOutput,
     SchemaConverter,
     OpenApiValidation,
     ParamResolver,
@@ -413,16 +422,22 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     });
 
     // Create commands
-    const commandProviders = [ClearCommand as Type<ITerminalCommand>].concat(config.commands || []).map(commandType => {
+    const commandProviders = commands.concat(config.commands || []).map(commandType => {
         return {
             provide: TERMINAL_COMMAND,
             useClass: commandType
         };
     });
 
+    // Create DI container
+    const diContainer = parent.createChildContainer();
+
     // Setup rest API
-    const restOptions = config.restOptions || {};
-    restOptions.defaultErrorHandler = false;
+    const restOptions: RoutingControllersOptions = {
+        routePrefix: config.routePrefix || "/api",
+        defaultErrorHandler: false,
+        ...(config.restOptions || {})
+    };
     restOptions.cors = Object.assign({
         credentials: true,
         exposedHeaders: ["content-disposition"],
@@ -430,7 +445,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
             callback(null, true);
         }
     }, restOptions.cors || {});
-    restOptions.routePrefix = config.routePrefix || "/api";
     restOptions.routePrefix = restOptions.routePrefix == "/" ? "" : restOptions.routePrefix;
     restOptions.middlewares = [ErrorHandlerMiddleware, ContainerMiddleware, LanguageMiddleware, RequestStartedMiddleware, RequestEndedMiddleware]
         .concat(restOptions.middlewares as any || []);
@@ -438,7 +452,14 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         .concat(restOptions.controllers as any || []);
 
     // Setup socket API
-    const socketOptions = config.socketOptions || {};
+    const socketOptions: SocketControllersOptions = {
+        container: {
+            get<T>(someClass: Type<any>): T {
+                return diContainer.get<T>(someClass);
+            }
+        },
+        ...(config.socketOptions || {})
+    };
     socketOptions.middlewares = [CompressionMiddleware].concat(socketOptions.middlewares as any || []);
     socketOptions.controllers = [ProgressController, TerminalController].concat(socketOptions.controllers as any || []);
 
@@ -485,10 +506,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
             }
         }
     )
-
-    // Create DI container
-
-    const diContainer = parent.createChildContainer();
 
     allProviders.forEach(provider => {
         if (isType(provider)) {
@@ -566,10 +583,13 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
                 .end(openApi.apiDocsStr);
         });
     }
-    if (config.socketOptions) {
-        useSocketContainer(diContainer);
-        useSocketServer(bp.io, socketOptions);
-    }
+
+    diContainer.register(SOCKET_CONTROLLERS, {
+        useValue: new SocketControllers({
+            io: bp.io,
+            ...socketOptions,
+        })
+    });
 
     // Connect to mongo if necessary
     if (configuration.hasParam("mongoUri") && configuration.resolve("mongoUri")) {

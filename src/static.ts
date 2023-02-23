@@ -3,10 +3,11 @@ import {resolve} from "path";
 import {static as serveStatic} from "express";
 import {EXPRESS, IDependencyContainer} from "./common-types";
 import {EndpointProvider} from "./services/endpoint-provider";
+import {getDirName} from "./utils";
 
 export async function setupStatic(rootFolder: string, container: IDependencyContainer): Promise<any> {
 
-    const browserFolder = resolve(rootFolder || __dirname, `public_html`);
+    const browserFolder = resolve(rootFolder || getDirName(), `public_html`);
     const app = container.get(EXPRESS);
     const ep = container.get(EndpointProvider);
 

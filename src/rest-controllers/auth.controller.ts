@@ -1,5 +1,5 @@
 import {Response} from "express";
-import {sign} from "jsonwebtoken";
+import webToken from "jsonwebtoken";
 import {injectable} from "tsyringe";
 import {
     Authorized,
@@ -36,7 +36,7 @@ export class AuthController {
         if (valid !== true)
             throw new UnauthorizedError(`message.login.error`);
         return {
-            token: sign({ id: user._id || user.id }, this.config.resolve("jwtSecret")),
+            token: webToken.sign({ id: user._id || user.id }, this.config.resolve("jwtSecret")),
             user: await this.userManager.serialize(user)
         };
     }

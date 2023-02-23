@@ -1,6 +1,6 @@
 import {join} from "path";
-import {json} from "body-parser";
-import {verify} from "jsonwebtoken";
+import bodyParser from "body-parser";
+import webToken from "jsonwebtoken";
 import {container, DependencyContainer} from "tsyringe";
 import {
     Action,
@@ -80,7 +80,7 @@ import {CompressionMiddleware} from "./socket-middlewares/compression.middleware
 
 import {DiContainer} from "./utilities/di-container";
 import {EmptyJob} from "./utilities/empty-job";
-import {diContainers, isFunction, isString, isType, prepareUrlEmpty, valueToPromise} from "./utils";
+import {diContainers, isFunction, isString, isType, prepareUrlEmpty, valueToPromise, getDirName} from "./utils";
 import {setupStatic} from "./static";
 import {commands} from "./commands";
 
@@ -91,6 +91,7 @@ export {
     getType,
     isObject,
     isArray,
+    isBuffer,
     isBoolean,
     isDate,
     isPrimitive,
@@ -149,6 +150,7 @@ export {
     regexEscape,
     flatten,
     wrapError,
+    getDirName,
     prepareUrl,
     prepareUrlSlash,
     prepareUrlEmpty,
@@ -286,7 +288,7 @@ export async function resolveUser(req: IRequest): Promise<IUser> {
     let payload = null;
     try {
         const config = container.resolve(Configuration);
-        payload = verify(auth.split(" ")[1], config.resolve("jwtSecret")) as any;
+        payload = webToken.verify(auth.split(" ")[1], config.resolve("jwtSecret")) as any;
     } catch (e) {
         throw new HttpError(401, `Authentication failed. (${e.message})`);
     }
@@ -299,6 +301,7 @@ export async function resolveUser(req: IRequest): Promise<IUser> {
 
 export function createServices(): IDependencyContainer {
     // List of parameters
+    const dirName = getDirName();
     const params = [
         new Parameter("serviceName", "Backend"),
         new Parameter("servicePassword", Math.random().toString(36).substring(7)),
@@ -308,9 +311,9 @@ export function createServices(): IDependencyContainer {
             const port = helper("appPort");
             return (!port || port === 80 || port === 443) ? url : `${url}:${port}`;
         }),
-        new Parameter("templatesDir", join(__dirname, "templates")),
-        new Parameter("galleryDir", join(__dirname, "gallery")),
-        new Parameter("cacheDir", join(__dirname, "cache")),
+        new Parameter("templatesDir", join(dirName, "templates")),
+        new Parameter("galleryDir", join(dirName, "gallery")),
+        new Parameter("cacheDir", join(dirName, "cache")),
         new Parameter("defaultLanguage", "en"),
         new Parameter("smtpHost", "smtp.sendgrid.net"),
         new Parameter("smtpPort", 587),
@@ -567,7 +570,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     const bp = diContainer.resolve(BackendProvider);
 
     if (config.restOptions) {
-        bp.express.use(json({
+        bp.express.use(bodyParser.json({
             limit: configuration.hasParam("jsonLimit")
                 ? configuration.resolve("jsonLimit")
                 : "250mb"

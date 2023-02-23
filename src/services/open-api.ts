@@ -3,7 +3,6 @@ import {OpenAPIObject, ReferenceObject, SchemaObject} from "openapi3-ts";
 import {getMetadataArgsStorage} from "routing-controllers";
 import {routingControllersToSpec} from "routing-controllers-openapi";
 import {validationMetadatasToSchemas} from "class-validator-jsonschema";
-import {defaultMetadataStorage} from "class-transformer/storage";
 import {ValidationTypes} from "class-validator";
 import {isDefined, isFunction, isObject} from "../utils";
 import {IsFile, IsObjectId} from "../validators";
@@ -84,7 +83,6 @@ export class OpenApi {
         const docs = routingControllersToSpec(storage);
         docs.basePath = "/api/";
         docs.definitions = validationMetadatasToSchemas({
-            classTransformerMetadataStorage: defaultMetadataStorage,
             additionalConverters: {
                 [ValidationTypes.CUSTOM_VALIDATION]: (meta, options) => {
                     const res = isFunction(this.customValidation) ? this.customValidation(meta, options) : this.customValidation;
@@ -94,14 +92,14 @@ export class OpenApi {
                         return {
                             multi: constraints[0] || false,
                             type: "file"
-                        }
+                        } as any;
                     }
                     if (meta.constraintCls === IsObjectId) {
                         return {
                             endpoint: constraints[0] || false,
                             multi: constraints[1] || false,
                             type: "list"
-                        }
+                        } as any;
                     }
                     return null;
                 }

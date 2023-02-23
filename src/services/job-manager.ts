@@ -1,5 +1,5 @@
 import {DependencyContainer, inject, injectable, injectAll, Lifecycle, scoped} from "tsyringe";
-import {schedule, validate} from "node-cron";
+import cron from "node-cron";
 import {socket, Socket} from "zeromq";
 import {Subject, Subscription} from "rxjs";
 import {filter, map} from "rxjs/operators";
@@ -108,11 +108,11 @@ export class JobManager {
             return `${t}`;
         }).join(" ");
         const jobName = getConstructorName(jobType);
-        if (!validate(expression)) {
+        if (!cron.validate(expression)) {
             this.logger.log("job-manager", `Can't schedule the task: '${jobName}' because time expression is invalid.`);
             return null;
         }
-        return schedule(expression, () => {
+        return cron.schedule(expression, () => {
             this.enqueue(jobType, params).catch(e => {
                 this.logger.log("job-manager", `Can't enqueue job: '${jobName}' because: ${e}`);
             });

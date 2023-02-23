@@ -175,10 +175,8 @@ export interface IJob {
 }
 
 export interface IJobTask {
-    start: () => this;
-    stop: () => this;
-    destroy: () => void;
-    getStatus: () => string;
+    start: () => void;
+    stop: () => void;
 }
 
 export interface JobScheduleRange {

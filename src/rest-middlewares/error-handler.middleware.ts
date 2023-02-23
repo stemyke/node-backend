@@ -1,11 +1,11 @@
 import {injectable} from "tsyringe";
 import {BadRequestError, ExpressErrorMiddlewareInterface, Middleware} from "routing-controllers";
+import axios from "axios";
 import {Response} from "express";
 
 import {IRequest} from "../common-types";
 import {Translator} from "../services/translator";
 import {Configuration} from "../services/configuration";
-import {AxiosError} from "axios";
 
 @injectable()
 @Middleware({ type: "after" })
@@ -22,7 +22,7 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
     async error(error: any, req: IRequest, res: Response, next: (err?: any) => any) {
         const result = await this.getResult(error, req, res);
         if (this.isDev) {
-            if (error instanceof AxiosError) {
+            if (axios.isAxiosError(error)) {
                 console.log(`Axios error:`, result);
                 console.log(error.config.data);
             } else {
@@ -36,7 +36,7 @@ export class ErrorHandlerMiddleware implements ExpressErrorMiddlewareInterface {
 
         const result: any = {};
 
-        if (error instanceof AxiosError) {
+        if (axios.isAxiosError(error)) {
             res.status(error.response.status);
             result.message = error.message;
             result.error = error.response.data;

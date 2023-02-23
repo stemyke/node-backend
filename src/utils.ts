@@ -1,18 +1,19 @@
+import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
+import {basename, dirname} from "path";
+import {fileURLToPath} from "url";
 import {exec as execChildProcess} from "child_process";
 import {createHash} from "crypto";
 import {DependencyContainer} from "tsyringe";
 import {from, Observable, Subject, Subscription} from "rxjs";
 import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
-import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
-import {basename, dirname} from "path";
 import {GridFSBucket, ObjectId} from "mongodb";
 import {Document, Types} from "mongoose";
 import {PassThrough, Readable, ReadableOptions} from "stream";
 import sharp_, {Region} from "sharp";
 import {HttpError} from "routing-controllers";
-import {AxiosError} from "axios";
-import {fromBuffer as extractFileType} from "file-type";
+import axios from "axios";
+import {fileTypeFromStream as extractFileType} from "file-type/core";
 import {
     IAssetCropInfo,
     IAssetImageParams,
@@ -54,6 +55,10 @@ export function isObject(value: any): boolean {
 
 export function isArray(value: any): value is Array<any> {
     return Array.isArray(value);
+}
+
+export function isBuffer(value: any): value is Buffer {
+    return value instanceof Buffer;
 }
 
 export function isBoolean(value: any): value is boolean {
@@ -555,6 +560,7 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
         });
         return target;
     }
+    if (isBuffer(source)) return Buffer.from(source);
     const shouldCopy = isFunction(source.__shouldCopy) ? source.__shouldCopy : () => true;
     if (isConstructor(source.constructor)) {
         if (source.__shouldCopy === false) return source;
@@ -735,11 +741,19 @@ export function flatten(arr: any[]): any[] {
 }
 
 export function wrapError(e: any, message: string, httpCode: number = 500): Error {
-    if (e instanceof AxiosError) {
+    if (axios.isAxiosError(e)) {
         e.message = message;
         return e;
     }
     return new HttpError(httpCode, `${message}: ${e}`);
+}
+
+export function getDirName(): string {
+    if (typeof __dirname === "undefined") {
+        const __filename = fileURLToPath(import.meta.url);
+        return dirname(__filename);
+    }
+    return __dirname;
 }
 
 export function prepareUrl(ending: string = "/"): ParamResolver {
@@ -765,7 +779,8 @@ function fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
 }
 
 export async function fileTypeFromBuffer(buffer: Buffer): Promise<IFileType> {
-    const type = (await extractFileType(buffer) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
+    const stream = bufferToStream(buffer);
+    const type = (await extractFileType(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
     if (checkTextFileType(type)) {
         return fixTextFileType(type, buffer);
     }

@@ -9,7 +9,7 @@ export class Fixtures {
 
     }
 
-    async load(output: IFixtureOutput): Promise<any> {
+    async load(output?: IFixtureOutput): Promise<any> {
         if (!this.fixtures) return;
         output = output || {
             write: console.log,

@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "4.0.0",
+    "version": "4.0.1",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -38,7 +38,7 @@
         "dotenv": "^8.2.0",
         "file-type": "^18.2.1",
         "zeromq": "^5.2.8",
-        "node-cron": "^2.0.3",
+        "node-cron": "^3.0.2",
         "fontkit": "^1.8.1",
         "moment": "^2.29.4",
         "@stemy/terminal-commands-addon": "^1.0.0"

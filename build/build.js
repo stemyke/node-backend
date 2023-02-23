@@ -10,7 +10,7 @@ const buildCallbacks = [
         cb: () => {
             ngPackage
                 .ngPackagr()
-                .withTsConfig('tsconfig.json')
+                .withTsConfig('tsconfig.lib.json')
                 .forProject('ng-package.json')
                 .build()
                 .catch(error => {

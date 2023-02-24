@@ -561,9 +561,23 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
         return target;
     }
     if (isBuffer(source)) return Buffer.from(source);
+
+    // Copy map entries
+    if (target instanceof Map) {
+        if (source instanceof Map) {
+            for (let [key, value] of source.entries()) {
+                if (!predicate(value, key, target, source)) continue;
+                target.set(key, copyRecursive(target.get(key), value, predicate));
+            }
+        }
+        return target;
+    }
+
+    // If object defines __shouldCopy as false, then don't copy it
+    if (source.__shouldCopy === false) return source;
+    // Copy object
     const shouldCopy = isFunction(source.__shouldCopy) ? source.__shouldCopy : () => true;
     if (isConstructor(source.constructor)) {
-        if (source.__shouldCopy === false) return source;
         if (!target) {
             try {
                 target = new source.constructor();
@@ -574,16 +588,6 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
         }
     } else {
         target = Object.assign({}, target || {});
-    }
-    // Copy map entries
-    if (target instanceof Map) {
-        if (source instanceof Map) {
-            for (let [key, value] of source.entries()) {
-                if (!predicate(value, key, target, source)) continue;
-                target.set(key, !shouldCopy(key, value) ? value : copyRecursive(target.get(key), value, predicate));
-            }
-        }
-        return target;
     }
 
     // Copy object members

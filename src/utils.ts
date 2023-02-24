@@ -584,7 +584,7 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
         if (source instanceof Map) {
             for (let [key, value] of source.entries()) {
                 if (!predicate(value, key, target, source)) continue;
-                target.set(key, copyRecursive(target.get(key), value, predicate));
+                target.set(key, !shouldCopy(key, value) ? value : copyRecursive(target.get(key), value, predicate));
             }
         }
         return target;

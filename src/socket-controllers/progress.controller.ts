@@ -1,5 +1,5 @@
 import {inject, singleton} from "tsyringe";
-import {ConnectedSocket, MessageBody, OnMessage, SocketController,} from "socket-controllers";
+import {ConnectedSocket, MessageBody, OnMessage, SocketController} from "socket-controllers";
 import {Server} from "socket.io";
 import {IClientSocket, SOCKET_SERVER} from "../common-types";
 import {broadcast} from "../utils";

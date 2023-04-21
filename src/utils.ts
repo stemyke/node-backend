@@ -8,12 +8,13 @@ import {from, Observable, Subject, Subscription} from "rxjs";
 import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
 import {GridFSBucket, ObjectId} from "mongodb";
-import {Document, Types} from "mongoose";
+import {Document} from "mongoose";
+import mongoose from "mongoose";
 import {PassThrough, Readable, ReadableOptions} from "stream";
 import sharp_, {Region} from "sharp";
 import {HttpError} from "routing-controllers";
 import axios from "axios";
-import {fileTypeFromStream as extractFileType} from "file-type/core";
+import fileType from "file-type/core";
 import {
     IAssetCropInfo,
     IAssetImageParams,
@@ -460,7 +461,7 @@ export function idToString(value: any): any {
     if (Array.isArray(value)) {
         return value.map(idToString);
     }
-    return value instanceof ObjectId || value instanceof Types.ObjectId
+    return value instanceof ObjectId || value instanceof mongoose.Types.ObjectId
         ? value.toHexString()
         : (isString(value) ? value : value || null);
 }
@@ -784,9 +785,14 @@ function fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
 
 export async function fileTypeFromBuffer(buffer: Buffer): Promise<IFileType> {
     const stream = bufferToStream(buffer);
-    const type = (await extractFileType(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
+    const type = (await fileType.fromStream(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
     if (checkTextFileType(type)) {
         return fixTextFileType(type, buffer);
     }
     return type;
+}
+
+export async function fileTypeFromStream(buffer: Buffer): Promise<IFileType> {
+    const stream = bufferToStream(buffer);
+    return (await fileType.fromStream(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
 }

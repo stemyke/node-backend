@@ -154,7 +154,8 @@ export {
     prepareUrl,
     prepareUrlSlash,
     prepareUrlEmpty,
-    fileTypeFromBuffer
+    fileTypeFromBuffer,
+    fileTypeFromStream
 } from "./utils";
 
 export {IsFile, IsObjectId} from "./validators";

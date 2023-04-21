@@ -1,4 +1,5 @@
-import {Document, FilterQuery, model, Model, PipelineStage, Query, Schema, Types} from "mongoose";
+import {Document, FilterQuery, Model, PipelineStage, Query, Schema} from "mongoose";
+import mongoose from "mongoose";
 import {getValue as getMongoValue, setValue as setMongoValue} from "mongoose/lib/utils";
 import {DocumentType, ReturnModelType} from "@typegoose/typegoose";
 import {Action, BadRequestError, createParamDecorator, HttpError} from "routing-controllers";
@@ -160,8 +161,8 @@ export function hydratePopulated<T extends Document>(modelType: Model<T>, json: 
         if (!ref) continue;
         const value = getMongoValue(path, json);
         const hydrateVal = val => {
-            if (val == null || val instanceof Types.ObjectId) return val;
-            return hydratePopulated(model(ref) as any, val);
+            if (val == null || val instanceof mongoose.Types.ObjectId) return val;
+            return hydratePopulated(mongoose.model(ref) as any, val);
         };
         if (Array.isArray(value)) {
             setMongoValue(path, value.map(hydrateVal), object);

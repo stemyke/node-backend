@@ -1,8 +1,9 @@
-import {RefType, Types} from "mongoose";
+import {RefType} from "mongoose";
+import mongoose from "mongoose";
 import {DocumentType, getModelForClass, ReturnModelType} from "@typegoose/typegoose";
 import {Constructor} from "../common-types";
 
-export abstract class BaseDoc<IDType extends RefType = Types.ObjectId> {
+export abstract class BaseDoc<IDType extends RefType = mongoose.Types.ObjectId> {
 
     _id?: IDType;
 
@@ -47,10 +48,10 @@ export abstract class BaseDoc<IDType extends RefType = Types.ObjectId> {
     }
 }
 
-export type PrimitiveArray<T> = Types.Array<T>;
+export type PrimitiveArray<T> = mongoose.Types.Array<T>;
 
-export const PrimitiveArray = Types.Array;
+export const PrimitiveArray = mongoose.Types.Array;
 
-export type DocumentArray<T extends BaseDoc> = Types.DocumentArray<DocumentType<T>>;
+export type DocumentArray<T extends BaseDoc> = mongoose.Types.DocumentArray<DocumentType<T>>;
 
-export const DocumentArray = Types.DocumentArray;
+export const DocumentArray = mongoose.Types.DocumentArray;

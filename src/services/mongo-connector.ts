@@ -1,12 +1,12 @@
 import {singleton} from "tsyringe";
 import {Db, GridFSBucket} from "mongodb";
-import {connect, Connection} from "mongoose";
+import mongoose from "mongoose";
 import {Configuration} from "./configuration";
 
 @singleton()
 export class MongoConnector {
 
-    get connection(): Connection {
+    get connection(): mongoose.Connection {
         return this.conn;
     }
 
@@ -18,7 +18,7 @@ export class MongoConnector {
         return this.fsBucket;
     }
 
-    protected conn: Connection;
+    protected conn: mongoose.Connection;
     protected db: Db;
     protected fsBucket: GridFSBucket;
 
@@ -30,7 +30,7 @@ export class MongoConnector {
 
     async connect(): Promise<Db> {
         if (this.db) return this.db;
-        this.conn = (await connect(this.configuration.resolve("mongoUri") as string, {
+        this.conn = (await mongoose.connect(this.configuration.resolve("mongoUri") as string, {
             dbName: this.configuration.resolve("mongoDb"),
             user: this.configuration.resolve("mongoUser"),
             pass: this.configuration.resolve("mongoPassword")

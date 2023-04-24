@@ -12,7 +12,16 @@ export class BackendProvider {
     readonly server: Server;
 
     get io(): SocketServer {
-        this.ioServer = this.ioServer || new SocketServer(this.server, {path: "/socket"});
+        this.ioServer = this.ioServer || new SocketServer(this.server, {
+            path: "/socket",
+            cors: {
+                credentials: true,
+                exposedHeaders: ["content-disposition"],
+                origin: (origin, callback) => {
+                    callback(null, true);
+                }
+            }
+        });
         return this.ioServer;
     }
 

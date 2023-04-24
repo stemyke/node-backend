@@ -225,6 +225,8 @@ export {
     IPaginationParams,
     FontFormat,
     IFileType,
+    RoutingOptions,
+    SocketOptions,
     IBackendConfig
 } from "./common-types";
 

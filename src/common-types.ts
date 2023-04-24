@@ -373,6 +373,10 @@ export interface IFileType {
     mime: string;
 }
 
+export type RoutingOptions = RoutingControllersOptions;
+
+export type SocketOptions = Omit<SocketControllersOptions, "container">;
+
 export interface IBackendConfig {
     rootFolder?: string;
     routePrefix?: string;
@@ -380,7 +384,7 @@ export interface IBackendConfig {
     fixtures?: Type<IFixture>[];
     jobs?: Type<IJob>[];
     commands?: Type<ITerminalCommand>[];
-    restOptions?: RoutingControllersOptions;
-    socketOptions?: SocketControllersOptions;
+    restOptions?: RoutingOptions;
+    socketOptions?: SocketOptions;
     customValidation?: SchemaConverter | SchemaObject;
 }

@@ -28,8 +28,6 @@ export class TerminalController {
         return this.generateClient("console");
     }
 
-    @Get()
-    @Header("Content-Type", "text/html")
     protected generateClient(alias: string): string {
         return `
         <!DOCTYPE html>

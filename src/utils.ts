@@ -479,7 +479,9 @@ export function createTransformer(transform?: (doc: Document, ret: any, options?
 }
 
 export function broadcast(socketServer: Server, cb: (client: IClientSocket) => void): void {
-    Array.from(Object.values(socketServer.sockets.sockets)).forEach(cb);
+    socketServer.sockets.sockets.forEach((client: IClientSocket) => {
+        cb(client);
+    });
 }
 
 export function rand(min: number, max: number): number {

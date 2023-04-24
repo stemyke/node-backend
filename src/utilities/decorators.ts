@@ -1,5 +1,5 @@
 import {getStatusCode, OpenAPI} from "routing-controllers-openapi";
-import {ReferenceObject, SchemaObject} from "openapi3-ts";
+import {ParameterObject, ReferenceObject} from "openapi3-ts";
 
 export function IsDocumented(summary: string = null, paramDescriptions: {[name: string]: string} = {}) {
     return OpenAPI(op => {
@@ -7,7 +7,7 @@ export function IsDocumented(summary: string = null, paramDescriptions: {[name: 
         op.tags = ["Documented"].concat(op.tags || []);
         op.parameters?.forEach(p => {
             if (p.$ref) return;
-            const schema = p as SchemaObject;
+            const schema = p as ParameterObject;
             schema.description = paramDescriptions[schema.name]
                 || schema.description
                 || `param.${op.operationId}.${schema.name}`.toLowerCase();
@@ -43,15 +43,14 @@ export function ResponseType(type: Function, options: IResponseTypeOptions = {})
         const reference: ReferenceObject = {
             $ref: `#/components/schemas/${type.name}`,
         };
-        const schema: SchemaObject = options.isArray
-            ? { items: reference, type: "array" }
-            : reference;
         op.responses = op.responses || {};
         op.responses[statusCode] = {
             description: options.description || "Success",
             content: {
                 [contentType]: {
-                    schema
+                    schema: options.isArray
+                        ? { items: reference, type: "array" }
+                        : reference
                 }
             }
         };

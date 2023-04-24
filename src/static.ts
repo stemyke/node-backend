@@ -1,6 +1,6 @@
 import {existsSync} from "fs";
 import {resolve} from "path";
-import {static as serveStatic} from "express";
+import express from "express";
 import {EXPRESS, IDependencyContainer} from "./common-types";
 import {EndpointProvider} from "./services/endpoint-provider";
 import {getDirName} from "./utils";
@@ -15,7 +15,7 @@ export async function setupStatic(rootFolder: string, container: IDependencyCont
 
     if (existsSync(browserFolder)) {
         console.log(`public_html exists. setting up static files serving...`);
-        app.use(serveStatic(browserFolder, {
+        app.use(express.static(browserFolder, {
             maxAge: "1y"
         }));
     } else {

@@ -2,6 +2,7 @@ import {inject, singleton} from "tsyringe";
 import {OpenAPIObject, ReferenceObject, SchemaObject} from "openapi3-ts";
 import {getMetadataArgsStorage} from "routing-controllers";
 import {routingControllersToSpec} from "routing-controllers-openapi";
+import {defaultMetadataStorage} from "class-transformer/cjs/storage";
 import {validationMetadatasToSchemas} from "class-validator-jsonschema";
 import {ValidationTypes} from "class-validator";
 import {isDefined, isFunction, isObject} from "../utils";
@@ -84,6 +85,7 @@ export class OpenApi {
         const docs = routingControllersToSpec(storage);
         docs.basePath = "/api/";
         docs.definitions = validationMetadatasToSchemas({
+            classTransformerMetadataStorage: defaultMetadataStorage,
             additionalConverters: {
                 [ValidationTypes.CUSTOM_VALIDATION]: (meta, options) => {
                     const res = isFunction(this.customValidation) ? this.customValidation(meta, options) : this.customValidation;

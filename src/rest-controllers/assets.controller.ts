@@ -58,6 +58,15 @@ export class AssetsController {
         return asset.download();
     }
 
+    @Get("/metadata/:id")
+    async getMetadata(@Param("id") id: string, @QueryParam("lazy") lazy: boolean, @Res() res: Response): Promise<any> {
+        const asset = await this.assetResolver.resolve(id, lazy);
+        if (!asset) {
+            throw new HttpError(404, `Asset with id: '${id}' not found.`);
+        }
+        return asset.metadata;
+    }
+
     @Get("/image/:id/:rotation")
     async getImageRotation(@Param("id") id: string, @QueryParams() params: AssetImageParams, @Res() res: Response, @Param("rotation") rotation: number = 0): Promise<Readable> {
         const asset = await this.getAsset("Image", id, params.lazy, res);

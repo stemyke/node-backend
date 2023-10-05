@@ -1,7 +1,7 @@
-const cpy = require('cpy');
-const progress = require('cli-progress');
+import cpy from "cpy";
+import progress from "cli-progress";
 
-function copy(src, dist, what) {
+export function copy(src, dist, what) {
     return new Promise(resolve => {
         let started = false;
         const pb = new progress.Bar({}, progress.Presets.shades_classic);
@@ -22,5 +22,3 @@ function copy(src, dist, what) {
         });
     });
 }
-
-module.exports = copy;

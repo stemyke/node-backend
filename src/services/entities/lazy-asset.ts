@@ -2,7 +2,7 @@ import {Collection} from "mongodb";
 import {ObjectId} from "bson";
 
 import {IAsset, ILazyAsset} from "../../common-types";
-import {deleteFromBucket} from "../../utils";
+import {deleteFromBucket, gunzipPromised} from "../../utils";
 import {Assets} from "../assets";
 import {Progresses} from "../progresses";
 import {BaseEntity} from "./base-entity";
@@ -59,6 +59,13 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
                 this.logger.log("lazy-assets", `Can't start working on lazy asset: ${this.id}\nReason: ${reason}`);
             });
         });
+    }
+
+    async load(): Promise<this> {
+        await super.load();
+        if (this.deleted) return this;
+        this.data.jobParams = JSON.parse(await gunzipPromised(this.data.jobParams));
+        return this;
     }
 
     async loadAsset(): Promise<IAsset> {

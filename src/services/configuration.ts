@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 
 import {PARAMETER, Parameter} from "../common-types";
 import {colorize, ConsoleColor, convertValue, getType, isFunction} from "../utils";
-import {help} from "commander";
 
 @singleton()
 export class Configuration {

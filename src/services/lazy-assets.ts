@@ -9,6 +9,7 @@ import {LazyAsset} from "./entities/lazy-asset";
 import {JobManager} from "./job-manager";
 import {Logger} from "./logger";
 import {Progresses} from "./progresses";
+import {gzipPromised} from '../utils';
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
@@ -24,8 +25,9 @@ export class LazyAssets {
         this.collection = connector.database.collection("lazyassets");
     }
 
-    async create(jobType: Type<IJob>, jobParams: JobParams = {}, jobQue: string = "main"): Promise<ILazyAsset> {
-        const jobName = this.jobMan.tryResolve(jobType, {...jobParams, lazyId: ""});
+    async create(jobType: Type<IJob>, jobParamsObj: JobParams = {}, jobQue: string = "main"): Promise<ILazyAsset> {
+        const jobName = this.jobMan.tryResolve(jobType, {...jobParamsObj, lazyId: ""});
+        const jobParams = await gzipPromised(JSON.stringify(jobParamsObj))
         const data = {
             jobName,
             jobParams,

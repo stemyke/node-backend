@@ -136,6 +136,8 @@ export {
     padLeft,
     padRight,
     camelCaseToDash,
+    gzipPromised,
+    gunzipPromised,
     deleteFromBucket,
     filter,
     copy,

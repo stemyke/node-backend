@@ -1,4 +1,5 @@
 import {mkdir, readFile as fsReadFile, unlink, writeFile as fsWriteFile} from "fs";
+import {gzip, gunzip, ZlibOptions} from "zlib";
 import {basename, dirname} from "path";
 import {fileURLToPath} from "url";
 import {exec as execChildProcess} from "child_process";
@@ -531,6 +532,30 @@ export function camelCaseToDash(str: string): string {
     return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
+export function gzipPromised(data: string, opts?: ZlibOptions): Promise<string> {
+    return new Promise((resolve, reject) => {
+        gzip(data, opts, (err, result) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(result.toString("base64"));
+        });
+    });
+}
+
+export function gunzipPromised(data: string, opts?: ZlibOptions): Promise<string> {
+    return new Promise((resolve, reject) => {
+        gunzip(Buffer.from(data, "base64"), opts, (err, result) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(result.toString("utf8"));
+        });
+    });
+}
+
 export function deleteFromBucket(bucket: GridFSBucket, fileId: ObjectId): Promise<string> {
     return new Promise<string>(((resolve, reject) => {
         bucket.delete(fileId, error => {
@@ -549,18 +574,19 @@ export function deleteFromBucket(bucket: GridFSBucket, fileId: ObjectId): Promis
 
 const defaultPredicate: FilterPredicate = () => true;
 
-function copyRecursive(target: any, source: any, predicate?: FilterPredicate): any {
-    predicate = predicate || defaultPredicate;
+function copyRecursive(target: any, source: any, predicate: FilterPredicate, copies: Map<any, any>): any {
     if (isPrimitive(source) || isDate(source) || isFunction(source)) return source;
+    if (copies.has(source)) return copies.get(source);
     if (isArray(source)) {
         target = isArray(target) ? Array.from(target) : [];
         source.forEach((item, index) => {
             if (!predicate(item, index, target, source)) return;
             if (target.length > index)
-                target[index] = copyRecursive(target[index], item, predicate);
+                target[index] = copyRecursive(target[index], item, predicate, copies);
             else
-                target.push(copyRecursive(null, item, predicate));
+                target.push(copyRecursive(null, item, predicate, copies));
         });
+        copies.set(source, target);
         return target;
     }
     if (isBuffer(source)) return Buffer.from(source);
@@ -581,13 +607,15 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
     } else {
         target = Object.assign({}, target || {});
     }
+    // Set to copies to prevent circular references
+    copies.set(source, target);
 
     // Copy map entries
     if (target instanceof Map) {
         if (source instanceof Map) {
             for (let [key, value] of source.entries()) {
                 if (!predicate(value, key, target, source)) continue;
-                target.set(key, !shouldCopy(key, value) ? value : copyRecursive(target.get(key), value, predicate));
+                target.set(key, !shouldCopy(key, value) ? value : copyRecursive(target.get(key), value, predicate, copies));
             }
         }
         return target;
@@ -595,10 +623,9 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
 
     // Copy object members
     let keys = Object.keys(source);
-    target = keys.reduce((result, key) => {
-        if (!predicate(source[key], key, result, source)) return result;
-        result[key] = !shouldCopy(key, source[key]) ? source[key] : copyRecursive(result[key], source[key], predicate);
-        return result;
+    keys.forEach(key => {
+        if (!predicate(source[key], key, target, source)) return;
+        target[key] = !shouldCopy(key, source[key]) ? source[key] : copyRecursive(target[key], source[key], predicate, copies);
     }, target);
 
     // Copy object properties
@@ -611,15 +638,15 @@ function copyRecursive(target: any, source: any, predicate?: FilterPredicate): a
 }
 
 export function filter<T>(obj: T, predicate: FilterPredicate): Partial<T> {
-    return copyRecursive(null, obj, predicate);
+    return copyRecursive(null, obj, predicate || defaultPredicate, new Map());
 }
 
 export function copy<T>(obj: T): T {
-    return copyRecursive(null, obj);
+    return copyRecursive(null, obj, defaultPredicate, new Map());
 }
 
 export function assign<T>(target: T, source: any, predicate?: FilterPredicate): T {
-    return copyRecursive(target, source, predicate);
+    return copyRecursive(target, source, predicate, new Map());
 }
 
 export function md5(data: any): string {

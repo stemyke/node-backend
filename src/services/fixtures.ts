@@ -1,16 +1,25 @@
 import {injectable, injectAll, Lifecycle, scoped} from "tsyringe";
-import {FIXTURE, IFixture, IFixtureOutput} from "../common-types";
+import {DI_CONTAINER, FIXTURE, IDependencyContainer, IFixture, IFixtureOutput} from "../common-types";
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
 export class Fixtures {
 
-    constructor(@injectAll(FIXTURE) protected fixtures: IFixture[]) {
+    protected fixtures: IFixture[];
 
+    constructor(@injectAll(DI_CONTAINER) protected container: IDependencyContainer) {
+    }
+
+    protected init(): IFixture[] {
+        try {
+            return this.container.resolveAll(FIXTURE);
+        } catch (e) {
+            return [];
+        }
     }
 
     async load(output?: IFixtureOutput): Promise<any> {
-        if (!this.fixtures) return;
+        this.fixtures = this.fixtures || this.init();
         output = output || {
             write: console.log,
             writeln: t => console.log(t + "\n")

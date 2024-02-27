@@ -337,6 +337,8 @@ export function createServices(): IDependencyContainer {
         new Parameter("zmqBackPort", 3100),
         new Parameter("zmqRemoteHost", "tcp://127.0.0.1"),
         new Parameter("isWorker", false),
+        new Parameter("startWorker", false),
+        new Parameter("fixtures", true),
         new Parameter("mainEndpoint", ""),
         new Parameter("idChars", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
         new Parameter("idSeparator", "-"),
@@ -575,29 +577,18 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     const bp = diContainer.resolve(BackendProvider);
 
     if (config.restOptions) {
-        bp.express.use(bodyParser.json({
-            limit: configuration.hasParam("jsonLimit")
-                ? configuration.resolve("jsonLimit")
-                : "250mb"
-        }));
         useRoutingContainer(diContainer);
         useExpressServer(bp.express, restOptions);
-        // Setup rest ai docs
-        let openApi: OpenApi = null
-        bp.express.get("/api-docs", (req, res) => {
-            openApi = openApi || diContainer.get(OpenApi);
-            res.header("Content-Type", "application/json")
-                .status(200)
-                .end(openApi.apiDocsStr);
-        });
     }
 
-    diContainer.register(SOCKET_CONTROLLERS, {
-        useValue: new SocketControllers({
-            io: bp.io,
-            ...socketOptions,
-        })
-    });
+    if (config.socketOptions) {
+        diContainer.register(SOCKET_CONTROLLERS, {
+            useValue: new SocketControllers({
+                io: bp.io,
+                ...socketOptions,
+            })
+        });
+    }
 
     // Connect to mongo if necessary
     if (configuration.hasParam("mongoUri") && configuration.resolve("mongoUri")) {

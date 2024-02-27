@@ -1,4 +1,4 @@
-import {DependencyContainer, inject, injectable, injectAll, Lifecycle, scoped} from "tsyringe";
+import {DependencyContainer, inject, injectAll, singleton} from "tsyringe";
 import cron from "node-cron";
 import {socket, Socket} from "zeromq";
 import {Subject, Subscription} from "rxjs";
@@ -30,14 +30,13 @@ import {
 import {Configuration} from "./configuration";
 import {Logger} from "./logger";
 
-@injectable()
-@scoped(Lifecycle.ContainerScoped)
+@singleton()
 export class JobManager {
 
     protected jobTypes: Type<IJob>[];
     protected jobs: { [name: string]: (jobParams: JobParams, uniqueId: string) => Promise<any> };
     protected messages: Subject<ISocketMessage>;
-    protected processing: boolean;
+    protected processing: Promise<any>;
 
     protected apiPush: Socket;
     protected apiPull: Socket;
@@ -67,7 +66,7 @@ export class JobManager {
             return res;
         }, {});
         this.messages = new Subject<ISocketMessage>();
-        this.processing = false;
+        this.processing = null;
         this.maxTimeout = this.config.resolve("jobTimeout");
     }
 
@@ -119,24 +118,16 @@ export class JobManager {
         });
     }
 
-    async startProcessing(): Promise<any> {
-        if (this.processing) return null;
-        this.processing = true;
-
-        if (!this.config.resolve("isWorker")) {
-            this.logger.log("job-manager", colorize(`Processing can not be started because this is NOT a worker process!`, ConsoleColor.FgRed));
-            return null;
-        }
-
+    protected async initProcessing(): Promise<void> {
         const host = this.config.resolve("zmqRemoteHost");
         const pushHost = `${host}:${this.config.resolve("zmqBackPort")}`;
         this.workerPush = socket("push");
-        await this.workerPush.connect(pushHost);
+        this.workerPush.connect(pushHost);
         this.logger.log("job-manager", `Worker producer connected to: ${pushHost}`);
 
         const pullHost = `${host}:${this.config.resolve("zmqPort")}`;
         this.workerPull = socket("pull");
-        await this.workerPull.connect(pullHost);
+        this.workerPull.connect(pullHost);
         this.logger.log("job-manager", `Worker consumer connected to: ${pullHost}`);
 
         this.workerPull.on("message", async (name: Buffer, args: Buffer, uniqId: Buffer) => {
@@ -161,6 +152,11 @@ export class JobManager {
         });
     }
 
+    startProcessing(): Promise<void> {
+        this.processing = this.processing || this.initProcessing();
+        return this.processing;
+    }
+
     tryResolve(jobType: Type<IJob>, params: JobParams): string {
         const jobName = getConstructorName(jobType);
         if (!this.jobs[jobName]) {
@@ -174,7 +170,7 @@ export class JobManager {
         return jobName;
     }
 
-    protected tryResolveFromName(jobName: string, params: JobParams): string {
+    protected tryResolveFromName(jobName: string, params: JobParams) {
         const jobType = this.jobTypes.find(type => {
             return getConstructorName(type) == jobName;
         });
@@ -184,7 +180,7 @@ export class JobManager {
         return this.tryResolveAndInit(jobType, params);
     }
 
-    protected tryResolveAndInit(jobType: Type<IJob>, params: JobParams): string {
+    protected tryResolveAndInit(jobType: Type<IJob>, params: JobParams) {
         if (!this.apiPush) {
             const port = this.config.resolve("zmqPort");
             this.apiPush = socket("push");
@@ -210,7 +206,7 @@ export class JobManager {
         return this.tryResolve(jobType, params);
     }
 
-    protected resolveJobInstance(jobType: Type<IJob>, params: JobParams, uniqueId: string = ""): IJob {
+    protected resolveJobInstance(jobType: Type<IJob>, params: JobParams, uniqueId: string = "") {
         const container = this.container.createChildContainer();
         Object.keys(params).map((name) => {
             container.register(name, {useValue: params[name]});
@@ -220,10 +216,9 @@ export class JobManager {
         return container.resolve(jobType) as IJob;
     }
 
-    protected async sendToWorkers(jobName: string, params: JobParams): Promise<string> {
-        const publisher = await this.apiPush;
+    protected async sendToWorkers(jobName: string, params: JobParams) {
         const uniqueId = new ObjectId().toHexString();
-        await publisher.send([jobName, JSON.stringify(params), uniqueId]);
+        this.apiPush.send([jobName, JSON.stringify(params), uniqueId]);
         return uniqueId;
     }
 }

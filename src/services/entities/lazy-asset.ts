@@ -2,7 +2,7 @@ import {Collection} from "mongodb";
 import {ObjectId} from "bson";
 
 import {IAsset, ILazyAsset} from "../../common-types";
-import {deleteFromBucket, gunzipPromised} from "../../utils";
+import {deleteFromBucket, gunzipPromised, isObject} from "../../utils";
 import {Assets} from "../assets";
 import {Progresses} from "../progresses";
 import {BaseEntity} from "./base-entity";
@@ -61,13 +61,6 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
         });
     }
 
-    async load(): Promise<this> {
-        await super.load();
-        if (this.deleted) return this;
-        this.data.jobParams = JSON.parse(await gunzipPromised(this.data.jobParams));
-        return this;
-    }
-
     async loadAsset(): Promise<IAsset> {
         await this.load();
         if (this.deleted) return null;
@@ -92,6 +85,7 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
         this.data.progressId = (await this.progresses.create()).id;
         this.data.assetId = null;
         await this.save();
-        await this.progresses.jobMan.enqueueWithName(this.data.jobName, {...this.data.jobParams, lazyId: this.id, fromLoad});
+        const jobParams = JSON.parse(await gunzipPromised(this.data.jobParams));
+        await this.progresses.jobMan.enqueueWithName(this.data.jobName, {...jobParams, lazyId: this.id, fromLoad});
     }
 }

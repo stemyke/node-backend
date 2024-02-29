@@ -83,6 +83,7 @@ import {EmptyJob} from "./utilities/empty-job";
 import {diContainers, isFunction, isString, isType, prepareUrlEmpty, valueToPromise, getDirName} from "./utils";
 import {setupStatic} from "./static";
 import {commands} from "./commands";
+import {fixtures} from './fixtures';
 
 export {
     FilterPredicate,
@@ -407,8 +408,7 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
     parent = parent || createServices();
 
     // Create fixtures
-    const fixtureTypes = (config.fixtures || []);
-    const fixtureProviders = fixtureTypes.map(fixture => {
+    const fixtureProviders = fixtures.concat(config.fixtures || []).map(fixture => {
         return {
             provide: FIXTURE,
             useClass: fixture
@@ -487,7 +487,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
 
     // Add other providers
     allProviders.push(
-        ...fixtureTypes,
         ...fixtureProviders,
         ...paramProviders,
         ...jobProviders,

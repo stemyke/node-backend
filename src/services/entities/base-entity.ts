@@ -29,6 +29,8 @@ export class BaseEntity<T> {
         const ret = Object.assign({}, this.data) as any;
         delete ret._id;
         ret.id = this.id;
+        ret.updatedAt = new Date();
+        ret.createdAt = ret.createdAt || ret.updatedAt;
         return ret;
     }
 }

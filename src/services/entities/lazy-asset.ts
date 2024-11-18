@@ -22,6 +22,14 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
         return this.data.jobQue;
     }
 
+    get createdAt(): Date {
+        return this.data.createdAt;
+    }
+
+    get updatedAt(): Date {
+        return this.data.updatedAt;
+    }
+
     get progressId(): string {
         return this.data.progressId;
     }
@@ -76,15 +84,20 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
     }
 
     async writeAsset(asset: IAsset): Promise<IAsset> {
+        this.data.updatedAt = new Date();
         this.data.assetId = asset.id;
+        await asset.setMeta({lazyId: this.id});
         await this.save();
         return asset;
     }
 
     protected async startWorkingOnAsset(fromLoad: boolean): Promise<any> {
+        const oldAsset = this.data.assetId;
+        this.data.updatedAt = new Date();
         this.data.progressId = (await this.progresses.create()).id;
         this.data.assetId = null;
         await this.save();
+        await deleteFromBucket(this.assets.bucket, oldAsset);
         const jobParams = JSON.parse(await gunzipPromised(this.data.jobParams));
         await this.progresses.jobMan.enqueueWithName(this.data.jobName, {...jobParams, lazyId: this.id, fromLoad});
     }

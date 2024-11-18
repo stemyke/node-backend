@@ -27,14 +27,16 @@ export class LazyAssets {
 
     async create(jobType: Type<IJob>, jobParamsObj: JobParams = {}, jobQue: string = "main"): Promise<ILazyAsset> {
         const jobName = this.jobMan.tryResolve(jobType, {...jobParamsObj, lazyId: ""});
-        const jobParams = await gzipPromised(JSON.stringify(jobParamsObj))
+        const jobParams = await gzipPromised(JSON.stringify(jobParamsObj));
         const data = {
             jobName,
             jobParams,
-            jobQue
-        };
+            jobQue,
+        } as ILazyAsset;
         const existingAsset = await this.find(data);
         if (existingAsset) return existingAsset;
+        data.createdAt = new Date();
+        data.updatedAt = data.createdAt;
         const res = await this.collection.insertOne(data);
         return new LazyAsset(res.insertedId, data, this.collection, this.logger, this.assets, this.progresses);
     }

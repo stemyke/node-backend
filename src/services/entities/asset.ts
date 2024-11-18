@@ -35,6 +35,11 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
         return deleteFromBucket(this.bucket, this.mId);
     }
 
+    async setMeta(metadata: Partial<IAssetMeta>): Promise<any> {
+        metadata = Object.assign(this.metadata, metadata || {});
+        await this.collection.updateOne({_id: this.mId}, {$set: {metadata}});
+    }
+
     getBuffer(): Promise<Buffer> {
         return streamToBuffer(this.stream);
     }

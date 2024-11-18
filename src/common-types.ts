@@ -270,6 +270,7 @@ export interface IAsset {
     readonly metadata: IAssetMeta;
     readonly stream: Readable;
     unlink(): Promise<string>;
+    setMeta(meta: Partial<IAssetMeta>): Promise<any>;
     getBuffer(): Promise<Buffer>;
     download(metadata?: IAssetMeta): Promise<Readable>;
     downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable>;
@@ -284,6 +285,8 @@ export interface ILazyAsset {
     jobName: string;
     jobParams: any;
     jobQue: string;
+    createdAt: Date;
+    updatedAt: Date;
     progressId?: string;
     assetId?: string;
     unlink(): Promise<string>;

@@ -556,8 +556,14 @@ export function gunzipPromised(data: string, opts?: ZlibOptions): Promise<string
     });
 }
 
-export function deleteFromBucket(bucket: GridFSBucket, fileId: ObjectId): Promise<string> {
+export function deleteFromBucket(bucket: GridFSBucket, id: ObjectId | string): Promise<string> {
+    const fileId = id instanceof ObjectId ? id : new ObjectId(id);
     return new Promise<string>(((resolve, reject) => {
+        if (!id) {
+            // We don't care about empty id
+            resolve(null);
+            return;
+        }
         bucket.delete(fileId, error => {
             let err = error as any;
             if (error) {

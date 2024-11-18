@@ -19,6 +19,10 @@ export class TempAsset implements IAsset {
         throw new Error(`Temp asset '${this.id}' can not be removed!`);
     }
 
+    async setMeta(meta: Partial<IAssetMeta>): Promise<any> {
+        Object.assign(this.metadata, meta || {});
+    }
+
     async getBuffer(): Promise<Buffer> {
         return this.buffer;
     }

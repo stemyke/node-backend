@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "5.1.0",
+    "version": "5.1.1",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -73,6 +73,6 @@
         "@angular/compiler": "15.2.0",
         "@angular/compiler-cli": "15.2.0",
         "zone.js": "0.11.6",
-        "typescript": "4.8.4"
+        "typescript": "4.9.5"
     }
 }

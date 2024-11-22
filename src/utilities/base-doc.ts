@@ -35,7 +35,7 @@ export abstract class BaseDoc<IDType extends RefType = mongoose.Types.ObjectId> 
     /**
      * Casts this to DocumentType<this> to allow using document methods in get/set-s
      */
-    cast(): DocumentType<this> {
+    cast<ImplType = this>(): DocumentType<ImplType> {
         return this as any;
     }
 

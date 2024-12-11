@@ -1,12 +1,12 @@
-import {injectable, Lifecycle, scoped} from "tsyringe";
+import {inject, injectable, Lifecycle, scoped} from "tsyringe";
 import {Readable} from "stream";
 import {ObjectId} from "bson";
-import {Collection, GridFSBucket} from "mongodb";
+import {Collection} from "mongodb";
 import {FilterQuery} from "mongoose";
 import axios from "axios";
 
-import {bufferToStream, copyStream, streamToBuffer, fileTypeFromBuffer} from "../utils";
-import {IAsset, IAssetMeta, IFileType} from "../common-types";
+import {bufferToStream, copyStream, fileTypeFromBuffer, streamToBuffer} from "../utils";
+import {ASSET_DRIVER, IAsset, IAssetDriver, IAssetMeta, IFileType} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
@@ -16,12 +16,12 @@ import {TempAsset} from "./entities/temp-asset";
 @scoped(Lifecycle.ContainerScoped)
 export class Assets {
 
-    readonly bucket: GridFSBucket;
     readonly collection: Collection<Partial<IAsset>>;
 
-    constructor(readonly connector: MongoConnector, readonly assetProcessor: AssetProcessor) {
-        this.bucket = connector.bucket;
-        this.collection = connector.database?.collection("assets.files");
+    constructor(readonly connector: MongoConnector,
+                readonly assetProcessor: AssetProcessor,
+                @inject(ASSET_DRIVER) readonly driver: IAssetDriver) {
+        this.collection = connector.database?.collection(driver.metaCollection);
     }
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
@@ -92,7 +92,7 @@ export class Assets {
 
     async find(where: FilterQuery<IAsset>): Promise<IAsset> {
         const data = await this.collection.findOne(where);
-        return !data ? null : new Asset(data._id, data, this.collection, this.bucket);
+        return !data ? null : new Asset(data._id, data, this.collection, this.driver);
     }
 
     async findMany(where: FilterQuery<IAsset>): Promise<ReadonlyArray<IAsset>> {
@@ -101,7 +101,7 @@ export class Assets {
         const result: IAsset[] = [];
         for (let item of items) {
             if (!item) continue;
-            result.push(new Asset(item._id, item, this.collection, this.bucket));
+            result.push(new Asset(item._id, item, this.collection, this.driver));
         }
         return result;
     }
@@ -127,7 +127,11 @@ export class Assets {
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         metadata.extension = (fileType.ext || "").trim();
         return new Promise<IAsset>(((resolve, reject) => {
-            const uploaderStream = this.bucket.openUploadStream(metadata.filename);
+            const uploaderStream = this.driver.openUploadStream(metadata.filename, {
+                chunkSizeBytes: 1048576,
+                metadata,
+                contentType: fileType.mime
+            });
             stream.pipe(uploaderStream)
                 .on("error", error => {
                     reject(error.message || error);
@@ -137,7 +141,7 @@ export class Assets {
                         filename: metadata.filename,
                         contentType,
                         metadata
-                    }, this.collection, this.bucket);
+                    }, this.collection, this.driver);
                     asset.save().then(() => {
                         resolve(asset);
                     }, error => {

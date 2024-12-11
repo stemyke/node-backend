@@ -4,22 +4,22 @@ import {ObjectId} from "bson";
 export class BaseEntity<T> {
 
     get id(): string {
-        return this.mId.toHexString();
+        return this.oid.toHexString();
     }
 
     protected deleted: boolean;
 
-    constructor(readonly mId: ObjectId,
+    constructor(readonly oid: ObjectId,
                 protected data: Partial<T>,
                 protected collection: Collection<any>) {
     }
 
     save(): Promise<any> {
-        return this.collection.updateOne({_id: this.mId}, {$set: this.toJSON()});
+        return this.collection.updateOne({_id: this.oid}, {$set: this.toJSON()}, {upsert: true});
     }
 
     async load(): Promise<this> {
-        const res = await this.collection.findOne({_id: this.mId});
+        const res = await this.collection.findOne({_id: this.oid});
         this.deleted = !res;
         this.data = res || {};
         return this;

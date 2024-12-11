@@ -2,7 +2,7 @@ import {Collection} from "mongodb";
 import {ObjectId} from "bson";
 
 import {IAsset, ILazyAsset} from "../../common-types";
-import {deleteFromBucket, gunzipPromised, isObject} from "../../utils";
+import {gunzipPromised} from "../../utils";
 import {Assets} from "../assets";
 import {Progresses} from "../progresses";
 import {BaseEntity} from "./base-entity";
@@ -50,9 +50,9 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
     async unlink(): Promise<string> {
         await this.load();
         if (!this.progressId) {
-            await this.collection.deleteOne({_id: this.mId});
+            await this.collection.deleteOne({_id: this.oid});
         }
-        return deleteFromBucket(this.assets.bucket, new ObjectId(this.assetId));
+        return this.assets.unlink(this.assetId);
     }
 
     startWorking(): void {
@@ -97,7 +97,7 @@ export class LazyAsset extends BaseEntity<ILazyAsset> implements ILazyAsset {
         this.data.progressId = (await this.progresses.create()).id;
         this.data.assetId = null;
         await this.save();
-        await deleteFromBucket(this.assets.bucket, oldAsset);
+        await this.assets.unlink(oldAsset);
         const jobParams = JSON.parse(await gunzipPromised(this.data.jobParams));
         await this.progresses.jobMan.enqueueWithName(this.data.jobName, {...jobParams, lazyId: this.id, fromLoad});
     }

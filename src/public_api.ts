@@ -1,5 +1,4 @@
 import {join} from "path";
-import bodyParser from "body-parser";
 import webToken from "jsonwebtoken";
 import {container, DependencyContainer} from "tsyringe";
 import {
@@ -9,9 +8,10 @@ import {
     useContainer as useRoutingContainer,
     useExpressServer
 } from "routing-controllers";
-import {SocketControllersOptions, SocketControllers} from "socket-controllers";
+import {SocketControllers, SocketControllersOptions} from "socket-controllers";
 
 import {
+    ASSET_DRIVER,
     DI_CONTAINER,
     EXPRESS,
     FIXTURE,
@@ -19,17 +19,15 @@ import {
     IBackendConfig,
     IDependencyContainer,
     IJob,
-    IPaginationParams,
     IRequest,
-    ITerminalCommand,
     IUser,
-    JOB,
+    JOB, LOCAL_DIR,
     OPENAPI_VALIDATION,
     Parameter,
     PARAMETER,
     Provider,
-    SOCKET_SERVER,
     SOCKET_CONTROLLERS,
+    SOCKET_SERVER,
     TERMINAL_COMMAND,
     Type
 } from "./common-types";
@@ -80,10 +78,11 @@ import {CompressionMiddleware} from "./socket-middlewares/compression.middleware
 
 import {DiContainer} from "./utilities/di-container";
 import {EmptyJob} from "./utilities/empty-job";
-import {diContainers, isFunction, isString, isType, prepareUrlEmpty, valueToPromise, getDirName} from "./utils";
+import {diContainers, getDirName, isFunction, isString, isType, prepareUrlEmpty, valueToPromise} from "./utils";
 import {setupStatic} from "./static";
 import {commands} from "./commands";
 import {fixtures} from './fixtures';
+import {AssetGridDriver} from "./services/drivers/asset-grid.driver";
 
 export {
     FilterPredicate,
@@ -213,6 +212,9 @@ export {
     IAssetMeta,
     IAssetImageParams,
     IAsset,
+    IAssetUploadStream,
+    IAssetUploadOpts,
+    IAssetDriver,
     ILazyAsset,
     IUser,
     IClientSocket,
@@ -531,6 +533,14 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
 
     diContainer.register(OPENAPI_VALIDATION, {
         useValue: config.customValidation || (() => null)
+    });
+
+    diContainer.register(LOCAL_DIR, {
+        useValue: config.assetLocalDir || "assets_files"
+    });
+
+    diContainer.register(ASSET_DRIVER, {
+        useClass: config.assetDriver || AssetGridDriver
     });
 
     diContainers.appContainer = diContainers.appContainer || diContainer;

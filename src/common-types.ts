@@ -12,10 +12,11 @@ import {
     RegistrationOptions
 } from "tsyringe";
 import {SchemaObject} from "openapi3-ts";
-import {Readable} from "stream";
+import {Readable, Writable} from "stream";
 import {Moment} from "moment";
 import {AnyExpression, Expression} from "mongoose";
 import {ICommandArgs, ISuggestion, ITerminal as ITerminalBase} from "@stemy/terminal-commands-addon";
+import {ObjectId} from "bson";
 
 // --- DI functions ---
 
@@ -112,6 +113,10 @@ export const PARAMETER: InjectionToken<Parameter> = Symbol.for("parameter-token"
 export const DI_CONTAINER: InjectionToken<IDependencyContainer> = Symbol.for("di-container-token");
 
 export const OPENAPI_VALIDATION: InjectionToken<OpenApiValidation> = Symbol.for("openapi-validation-token");
+
+export const LOCAL_DIR: InjectionToken<string> = Symbol.for('asset-local-dir');
+
+export const ASSET_DRIVER: InjectionToken<IAssetDriver> = Symbol.for('assets-driver');
 
 // --- Mongo interfaces and types
 
@@ -280,6 +285,24 @@ export interface IAsset {
     toJSON(): any;
 }
 
+export interface IAssetUploadStream extends Writable {
+    id?: ObjectId;
+    done?: boolean;
+}
+
+export interface IAssetUploadOpts {
+    chunkSizeBytes?: number;
+    metadata?: IAssetMeta;
+    contentType?: string;
+}
+
+export interface IAssetDriver {
+    readonly metaCollection: string;
+    openUploadStream(filename: string, opts?: IAssetUploadOpts): IAssetUploadStream;
+    openDownloadStream(id: ObjectId): Readable;
+    delete(id: ObjectId): Promise<void>;
+}
+
 export interface ILazyAsset {
     id: string;
     jobName: string;
@@ -390,4 +413,6 @@ export interface IBackendConfig {
     restOptions?: RoutingOptions;
     socketOptions?: SocketOptions;
     customValidation?: SchemaConverter | SchemaObject;
+    assetLocalDir?: string;
+    assetDriver?: Type<IAssetDriver>;
 }

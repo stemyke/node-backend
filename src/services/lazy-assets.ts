@@ -41,7 +41,7 @@ export class LazyAssets {
         return new LazyAsset(res.insertedId, data, this.collection, this.logger, this.assets, this.progresses);
     }
 
-    async read(id: string): Promise<ILazyAsset> {
+    async read(id: string | ObjectId): Promise<ILazyAsset> {
         return !id ? null : this.find({_id: new ObjectId(id)});
     }
 

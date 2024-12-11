@@ -240,18 +240,24 @@ export interface IAssetCropInfo {
     h: number;
 }
 
-export interface IAssetMeta {
+export interface IImageMeta {
+    crop?: IAssetCropInfo;
+    cropBefore?: IAssetCropInfo;
+    cropAfter?: IAssetCropInfo;
+    canvasScaleX?: number;
+    canvasScaleY?: number;
+}
+
+export interface IAssetMeta extends IImageMeta {
     filename?: string;
     extension?: string;
     classified?: boolean;
     downloadCount?: number;
     firstDownload?: Date;
     lastDownload?: Date;
-    crop?: IAssetCropInfo;
-    cropBefore?: IAssetCropInfo;
-    cropAfter?: IAssetCropInfo;
-    canvasScaleX?: number;
-    canvasScaleY?: number;
+    preview?: ObjectId | string;
+    publicUrl?: string;
+
     [prop: string]: any;
 }
 

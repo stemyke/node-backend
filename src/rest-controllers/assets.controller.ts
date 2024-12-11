@@ -19,6 +19,8 @@ import {Assets} from "../services/assets";
 import {AssetResolver} from "../services/asset-resolver";
 import {AssetImageParams} from "../requests/asset-image-params";
 
+type AssetReqType = 'Image' | 'Asset';
+
 @injectable()
 @Controller("/assets")
 export class AssetsController {
@@ -93,10 +95,7 @@ export class AssetsController {
         return asset.downloadImage(params);
     }
 
-    protected setAssetHeaders(type: string, asset: IAsset, res: Response): void {
-        if (asset.metadata?.classified) {
-            throw new HttpError(403, `${type} is classified, and can be only downloaded from a custom url.`);
-        }
+    protected setAssetHeaders(asset: IAsset, res: Response): void {
         const ext = asset.metadata?.extension;
         if (ext) {
             res.header("content-disposition", `inline; filename=${asset.filename}.${ext}`);
@@ -106,21 +105,33 @@ export class AssetsController {
         }
     }
 
-    protected async getAsset(type: string, id: string, lazy: boolean, res: Response): Promise<IAsset> {
-        const asset = await this.assetResolver.resolve(id, lazy);
+    protected async getAsset(type: AssetReqType, id: string, lazy: boolean, res: Response): Promise<IAsset> {
+        let asset = await this.assetResolver.resolve(id, lazy);
         if (!asset) {
             throw new HttpError(404, `${type} with id: '${id}' not found.`);
         }
-        this.setAssetHeaders(type, asset, res);
+        asset = await this.resolveFinalAsset(type, asset);
+        this.setAssetHeaders(asset, res);
         return asset;
     }
 
-    protected async getAssetByName(type: string, filename: string, res: Response): Promise<IAsset> {
-        const asset = await this.assets.find({filename});
+    protected async getAssetByName(type: AssetReqType, filename: string, res: Response): Promise<IAsset> {
+        let asset = await this.assets.find({filename});
         if (!asset) {
             throw new HttpError(404, `${type} with filename: '${filename}' not found.`);
         }
-        this.setAssetHeaders(type, asset, res);
+        asset = await this.resolveFinalAsset(type, asset);
+        this.setAssetHeaders(asset, res);
+        return asset;
+    }
+
+    protected async resolveFinalAsset(type: AssetReqType, asset: IAsset): Promise<IAsset> {
+        if (asset.metadata?.classified) {
+            throw new HttpError(403, `${type} is classified, and can be only downloaded from a custom url.`);
+        }
+        if (type == 'Image' && asset.metadata.preview) {
+            return this.resolveFinalAsset(type, await this.assetResolver.resolve(asset.metadata.preview));
+        }
         return asset;
     }
 }

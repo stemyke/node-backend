@@ -86,7 +86,7 @@ export class Assets {
         return new TempAsset(buffer, url, fileType.mime, metadata);
     }
 
-    async read(id: string): Promise<IAsset> {
+    async read(id: string | ObjectId): Promise<IAsset> {
         return !id ? null : this.find({_id: new ObjectId(id)});
     }
 

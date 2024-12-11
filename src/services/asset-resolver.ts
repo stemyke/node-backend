@@ -1,4 +1,5 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
+import {ObjectId} from "bson";
 import {IAsset} from "../common-types";
 import {Assets} from "./assets";
 import {LazyAssets} from "./lazy-assets";
@@ -11,7 +12,7 @@ export class AssetResolver {
 
     }
 
-    async resolve(id: string, lazy: boolean = false): Promise<IAsset> {
+    async resolve(id: string | ObjectId, lazy: boolean = false): Promise<IAsset> {
         let asset: IAsset = null;
         if (lazy) {
             const lazyAsset = await this.lazyAssets.read(id);

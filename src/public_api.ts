@@ -209,6 +209,7 @@ export {
     ITerminalCommand,
     IProgress,
     IAssetCropInfo,
+    IImageMeta,
     IAssetMeta,
     IAssetImageParams,
     IAsset,
@@ -235,6 +236,8 @@ export {
     IBackendConfig
 } from "./common-types";
 
+export {AssetLocalDriver} from "./services/drivers/asset-local.driver";
+export {AssetGridDriver} from "./services/drivers/asset-grid.driver";
 export {AssetProcessor} from "./services/asset-processor";
 export {AssetResolver} from "./services/asset-resolver";
 export {Assets} from "./services/assets";

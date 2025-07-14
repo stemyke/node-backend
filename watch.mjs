@@ -9,7 +9,7 @@ import {copy} from './build/copy.mjs';
 program
     .version('5.0.0', '-v, --version')
     .option('-b, --skip-build', 'Skip first build')
-    .option('-m, --skip-modules', 'Skip copying node modules to project')
+    .option('-m, --modules', 'Copy node modules to project')
     .option('-p, --project [path]', 'Project path where "configurator-ui-core" is used')
     .parse(process.argv);
 
@@ -61,6 +61,6 @@ function build(cb = new Function("void 0")) {
 build(async () => {
     console.log('Watching for file changes started.');
     watch('./src', {delay: 1000, recursive: true, filter: /\.(json|html|scss|ts)$/}, () => build());
-    if (options.skipModules) return;
+    if (!options.modules) return;
     await copy('./node_modules/**', join(projectPath, 'node_modules'), `node modules to project: ${projectPath}`);
 });

@@ -21,7 +21,7 @@ export class Assets {
     constructor(readonly connector: MongoConnector,
                 readonly assetProcessor: AssetProcessor,
                 @inject(ASSET_DRIVER) readonly driver: IAssetDriver) {
-        this.collection = connector.database?.collection(driver.metaCollection);
+        this.collection = connector.database?.collection("assets.metadata");
     }
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {

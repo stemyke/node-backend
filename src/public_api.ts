@@ -503,20 +503,20 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         ...providers,
         {
             provide: EXPRESS,
-            useFactory: (container: DependencyContainer) => {
-                return container.resolve(BackendProvider).express;
+            useFactory: ctr => {
+                return ctr.resolve(BackendProvider).express;
             }
         },
         {
             provide: HTTP_SERVER,
-            useFactory: (container: DependencyContainer) => {
-                return container.resolve(BackendProvider).server;
+            useFactory: ctr => {
+                return ctr.resolve(BackendProvider).server;
             }
         },
         {
             provide: SOCKET_SERVER,
-            useFactory: (container: DependencyContainer) => {
-                return container.resolve(BackendProvider).io;
+            useFactory: ctr => {
+                return ctr.resolve(BackendProvider).io;
             }
         }
     )

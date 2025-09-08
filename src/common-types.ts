@@ -39,7 +39,7 @@ export interface ITree {
     resolvePath(path: string, throwError?: boolean): ITree;
 }
 
-export interface IDependencyContainer extends DependencyContainer {
+export interface IDependencyContainer {
     readonly parent: IDependencyContainer;
     readonly tree: ITree;
     readonly registeredTokens: ReadonlyArray<InjectionToken>;
@@ -54,6 +54,8 @@ export interface IDependencyContainer extends DependencyContainer {
     registerType<T>(from: InjectionToken<T>, to: InjectionToken<T>): IDependencyContainer;
     registerInstance<T>(token: InjectionToken<T>, instance: T): IDependencyContainer;
     get<T>(token: InjectionToken<T>): T;
+    resolve<T>(token: InjectionToken<T>): T;
+    resolveAll<T>(token: InjectionToken<T>): T[];
 }
 
 export interface ClassBasedProvider<T> extends ClassProvider<T> {

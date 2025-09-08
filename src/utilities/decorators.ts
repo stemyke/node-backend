@@ -6,7 +6,7 @@ export function IsDocumented(summary: string = null, paramDescriptions: {[name: 
         op.summary = summary || op.summary;
         op.tags = ["Documented"].concat(op.tags || []);
         op.parameters?.forEach(p => {
-            if (p.$ref) return;
+            if ((p as ReferenceObject)?.$ref) return;
             const schema = p as ParameterObject;
             schema.description = paramDescriptions[schema.name]
                 || schema.description

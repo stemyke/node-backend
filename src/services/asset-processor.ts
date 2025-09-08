@@ -76,7 +76,7 @@ export class AssetProcessor {
     }
 
     static copyFontMeta(buffer: Buffer, metadata: IAssetMeta): void {
-        const font: Font = fontKit.create(buffer);
+        const font = fontKit.create(buffer) as Font;
         metadata.format = AssetProcessor.extractFontFormat(font);
         fontProps.forEach(prop => {
             metadata[prop] = font[prop];

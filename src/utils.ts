@@ -4,9 +4,7 @@ import {basename, dirname} from "path";
 import {fileURLToPath} from "url";
 import {exec as execChildProcess} from "child_process";
 import {createHash} from "crypto";
-import {DependencyContainer} from "tsyringe";
 import {from, Observable, Subject, Subscription} from "rxjs";
-import {canReportError} from "rxjs/internal/util/canReportError";
 import {Server} from "socket.io";
 import {GridFSBucket, ObjectId} from "mongodb";
 import {Document} from "mongoose";
@@ -15,12 +13,13 @@ import {PassThrough, Readable, ReadableOptions} from "stream";
 import sharp_, {Region} from "sharp";
 import {HttpError} from "routing-controllers";
 import axios from "axios";
-import fileType from "file-type/core";
+import {AnyWebByteStream} from "strtok3";
+import {fileTypeFromStream as ftFromStream, fileTypeFromBuffer as ftFromBuffer} from "file-type/core";
 import {
     IAssetCropInfo,
     IAssetImageParams,
     IAssetMeta,
-    IClientSocket,
+    IClientSocket, IDependencyContainer,
     IFileType,
     ParamResolver,
     Type
@@ -29,7 +28,7 @@ import {
 const sharp = sharp_;
 
 export interface IDIContainers {
-    appContainer: DependencyContainer
+    appContainer: IDependencyContainer
 }
 
 export const diContainers: IDIContainers = {
@@ -509,11 +508,7 @@ export function observableFromFunction(callbackFunc: () => any): Observable<any>
             try {
                 subject = from(callbackFunc());
             } catch (err) {
-                if (canReportError(subject)) {
-                    subject.error(err);
-                } else {
-                    console.warn(err);
-                }
+                subject.error(err);
             }
         }
         return subject.subscribe(subscriber);
@@ -820,14 +815,13 @@ function fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
 
 export async function fileTypeFromBuffer(buffer: Buffer): Promise<IFileType> {
     const stream = bufferToStream(buffer);
-    const type = (await fileType.fromStream(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
+    const type = (await ftFromBuffer(buffer) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
     if (checkTextFileType(type)) {
         return fixTextFileType(type, buffer);
     }
     return type;
 }
 
-export async function fileTypeFromStream(buffer: Buffer): Promise<IFileType> {
-    const stream = bufferToStream(buffer);
-    return (await fileType.fromStream(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
+export async function fileTypeFromStream(stream: AnyWebByteStream): Promise<IFileType> {
+    return (await ftFromStream(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
 }

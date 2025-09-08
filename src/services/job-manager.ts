@@ -1,6 +1,6 @@
 import {DependencyContainer, inject, injectAll, singleton} from "tsyringe";
 import cron from "node-cron";
-import {socket, Socket} from "zeromq";
+import {socket, Socket} from "zeromq/v5-compat";
 import {Subject, Subscription} from "rxjs";
 import {filter, map} from "rxjs/operators";
 import {ObjectId} from "bson";

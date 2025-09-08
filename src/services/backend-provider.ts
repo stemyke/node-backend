@@ -1,5 +1,6 @@
 import {createServer, Server} from "http";
 import {Server as SocketServer} from "socket.io";
+import cors from "cors";
 import express_, {Express} from "express";
 import {inject, singleton} from "tsyringe";
 import bodyParser from 'body-parser';
@@ -35,6 +36,7 @@ export class BackendProvider {
             this.expressApp.use(bodyParser.json({
                 limit: this.config.resolve("jsonLimit")
             }));
+            this.expressApp.options("*", cors());
             this.expressApp.get("/api-docs", (req, res) => {
                 this.openApi = this.openApi || this.container.get(OpenApi);
                 res.header("Content-Type", "application/json")

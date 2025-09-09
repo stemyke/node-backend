@@ -23,17 +23,15 @@ const fontProps = [
 export class AssetProcessor {
 
     static extractFontFormat(font: Font): FontFormat {
-        const name: string = font.constructor.name;
-        const tag: string  = font["directory"].tag;
-        switch (name) {
-            case "TTFFont":
+        const type = font.type as string;
+        const tag = font["directory"].tag;
+        switch (type) {
+            case "TTF":
                 return tag === "OTTO" ? "opentype" : "truetype";
-            case "WOFF2Font":
+            case "WOFF2":
                 return "woff2";
-            case "WOFFFont":
+            case "WOFF":
                 return "woff";
-            case "DFont":
-                return "datafork";
         }
         return null;
     }

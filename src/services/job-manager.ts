@@ -36,12 +36,11 @@ export class JobManager {
     protected jobTypes: Type<IJob>[];
     protected jobs: { [name: string]: (jobParams: JobParams, uniqueId: string) => Promise<any> };
     protected messages: Subject<ISocketMessage>;
-    protected processing: Promise<any>;
 
-    protected apiPush: Socket;
-    protected apiPull: Socket;
-    protected workerPush: Socket;
-    protected workerPull: Socket;
+    protected apiPush: Promise<Socket>;
+    protected apiPull: Promise<Socket>;
+    protected workerPush: Promise<Socket>;
+    protected workerPull: Promise<Socket>;
 
     readonly maxTimeout: number;
 
@@ -57,7 +56,9 @@ export class JobManager {
                 const messageBridge: IMessageBridge = {
                     sendMessage: (message: string, params?: SocketParams) => {
                         params.uniqueId = uniqueId;
-                        this.workerPush.send([message, JSON.stringify(params)]);
+                        this.workerPush.then(sock => {
+                            sock.send([message, JSON.stringify(params)]);
+                        });
                     }
                 };
                 messageBridge.sendMessage(`job-started`, {name: jobName});
@@ -66,7 +67,6 @@ export class JobManager {
             return res;
         }, {});
         this.messages = new Subject<ISocketMessage>();
-        this.processing = null;
         this.maxTimeout = this.config.resolve("jobTimeout");
     }
 
@@ -118,43 +118,47 @@ export class JobManager {
         });
     }
 
-    protected async initProcessing(): Promise<void> {
+    async startProcessing(): Promise<void> {
         const host = this.config.resolve("zmqRemoteHost");
         const pushHost = `${host}:${this.config.resolve("zmqBackPort")}`;
-        this.workerPush = socket("push");
-        this.workerPush.connect(pushHost);
-        this.logger.log("job-manager", `Worker producer connected to: ${pushHost}`);
-
         const pullHost = `${host}:${this.config.resolve("zmqPort")}`;
-        this.workerPull = socket("pull");
-        this.workerPull.connect(pullHost);
-        this.logger.log("job-manager", `Worker consumer connected to: ${pullHost}`);
-
-        this.workerPull.on("message", async (name: Buffer, args: Buffer, uniqId: Buffer) => {
-            try {
-                const jobName = name.toString("utf8");
-                const jobParams = JSON.parse(args.toString("utf8")) as JobParams;
-                const uniqueId = uniqId?.toString("utf8");
-
-                console.time(uniqueId);
-                console.timeLog(uniqueId, `Started working on background job: ${colorize(jobName, ConsoleColor.FgCyan)} with args: \n${jsonHighlight(jobParams)}\n\n`);
-
-                try {
-                    await Promise.race([this.jobs[jobName](jobParams, uniqueId), promiseTimeout(this.maxTimeout, true)]);
-                    console.timeLog(uniqueId, `Finished working on background job: ${colorize(jobName, ConsoleColor.FgCyan)}\n\n`);
-                } catch (e) {
-                    console.timeLog(uniqueId, `Background job failed: ${colorize(jobName, ConsoleColor.FgRed)}\n${e}\n\n`);
-                }
-                console.timeEnd(uniqueId);
-            } catch (e) {
-                this.logger.log("job-manager", `Failed to start job: ${e.message}`);
-            }
+        this.workerPush = this.workerPush || new Promise(resolve => {
+            const sock = socket("push");
+            sock.connect(pushHost);
+            this.logger.log("job-manager", `Worker producer connected to: ${pushHost}`);
+            resolve(sock);
         });
-    }
+        this.workerPull = this.workerPull || new Promise(resolve => {
+            const sock = socket("pull");
+            sock.connect(pullHost);
+            sock.on("message", async (name: Buffer, args: Buffer, uniqId: Buffer) => {
+                try {
+                    const jobName = name.toString("utf8");
+                    const jobParams = JSON.parse(args.toString("utf8")) as JobParams;
+                    const uniqueId = uniqId?.toString("utf8");
 
-    startProcessing(): Promise<void> {
-        this.processing = this.processing || this.initProcessing();
-        return this.processing;
+                    console.time(uniqueId);
+                    console.timeLog(uniqueId, `Started working on background job: ${colorize(jobName, ConsoleColor.FgCyan)} with args: \n${jsonHighlight(jobParams)}\n\n`);
+
+                    try {
+                        await Promise.race([this.jobs[jobName](jobParams, uniqueId), promiseTimeout(this.maxTimeout, true)]);
+                        console.timeLog(uniqueId, `Finished working on background job: ${colorize(jobName, ConsoleColor.FgCyan)}\n\n`);
+                    } catch (e) {
+                        console.timeLog(uniqueId, `Background job failed: ${colorize(jobName, ConsoleColor.FgRed)}\n${e}\n\n`);
+                    }
+                    console.timeEnd(uniqueId);
+                } catch (e) {
+                    this.logger.log("job-manager", `Failed to start job: ${e.message}`);
+                }
+            });
+            this.logger.log("job-manager", `Worker consumer connected to: ${pullHost}`);
+            resolve(sock);
+        });
+
+        await Promise.allSettled([
+            this.workerPush,
+            this.workerPull,
+        ]);
     }
 
     tryResolve(jobType: Type<IJob>, params: JobParams): string {
@@ -181,28 +185,32 @@ export class JobManager {
     }
 
     protected tryResolveAndInit(jobType: Type<IJob>, params: JobParams) {
-        if (!this.apiPush) {
+        this.apiPush = this.apiPush || new Promise(resolve => {
             const port = this.config.resolve("zmqPort");
-            this.apiPush = socket("push");
-            this.apiPush.bind(`tcp://0.0.0.0:${port}`);
-            this.logger.log("job-manager", `API producer bound to port: ${port}`);
-        }
-        if (!this.apiPull) {
-            const backPort = this.config.resolve("zmqBackPort");
-            this.apiPull = socket("pull");
-            this.apiPull.bind(`tcp://0.0.0.0:${backPort}`);
-            this.apiPull.on("message", (name: Buffer, args?: Buffer) => {
-                const message = name.toString("utf8");
-                const params = JSON.parse(args?.toString("utf8") || "{}") as JobParams;
-                const paramTypes = Object.keys(params).reduce((res, key) => {
-                    res[key] = getType(params[key]);
-                    return res;
-                }, {});
-                this.logger.log("job-manager", `Received a message from worker: "${colorize(message, ConsoleColor.FgCyan)}" with args: ${jsonHighlight(paramTypes)}\n\n`);
-                this.messages.next({message, params});
+            const sock = socket("push");
+            sock.bind(`tcp://0.0.0.0:${port}`, () => {
+                this.logger.log("job-manager", `API producer bound to port: ${port}`);
+                resolve(sock);
             });
-            this.logger.log("job-manager", `API consumer bound to port: ${backPort}`);
-        }
+        });
+        this.apiPull = this.apiPush || new Promise(resolve => {
+            const backPort = this.config.resolve("zmqBackPort");
+            const sock = socket("pull");
+            sock.bind(`tcp://0.0.0.0:${backPort}`, () => {
+                sock.on("message", (name: Buffer, args?: Buffer) => {
+                    const message = name.toString("utf8");
+                    const params = JSON.parse(args?.toString("utf8") || "{}") as JobParams;
+                    const paramTypes = Object.keys(params).reduce((res, key) => {
+                        res[key] = getType(params[key]);
+                        return res;
+                    }, {});
+                    this.logger.log("job-manager", `Received a message from worker: "${colorize(message, ConsoleColor.FgCyan)}" with args: ${jsonHighlight(paramTypes)}\n\n`);
+                    this.messages.next({message, params});
+                });
+                this.logger.log("job-manager", `API consumer bound to port: ${backPort}`);
+                resolve(sock);
+            });
+        });
         return this.tryResolve(jobType, params);
     }
 
@@ -218,7 +226,8 @@ export class JobManager {
 
     protected async sendToWorkers(jobName: string, params: JobParams) {
         const uniqueId = new ObjectId().toHexString();
-        this.apiPush.send([jobName, JSON.stringify(params), uniqueId]);
+        const sock = await this.apiPush;
+        sock.send([jobName, JSON.stringify(params), uniqueId]);
         return uniqueId;
     }
 }

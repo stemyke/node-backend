@@ -1,6 +1,6 @@
 {
     "name": "@stemy/backend",
-    "version": "6.0.0",
+    "version": "6.0.1",
     "license": "MIT",
     "repository": "git@github.com:stemyke/node-backend.git",
     "scripts": {
@@ -45,7 +45,7 @@
         "@typegoose/typegoose": "10.1.1",
         "multer": "^2.0.2",
         "dotenv": "^17.2.2",
-        "file-type":"^21.0.0",
+        "file-type": "16.5.4",
         "zeromq": "^6.5.0",
         "node-cron": "^4.2.1",
         "tz-offset": "^0.0.2",

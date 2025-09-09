@@ -82,35 +82,34 @@ export class OpenApi {
 
     protected createApiDocs(): OpenAPIObject {
         const storage = getMetadataArgsStorage();
-        const docs = routingControllersToSpec(storage);
-        // docs.basePath = "/api/";
-        docs.components = {
-            ...(docs.components || {}),
-            schemas: validationMetadatasToSchemas({
-                classTransformerMetadataStorage: defaultMetadataStorage,
-                additionalConverters: {
-                    [ValidationTypes.CUSTOM_VALIDATION]: (meta, options) => {
-                        const res = isFunction(this.customValidation) ? this.customValidation(meta, options) : this.customValidation;
-                        if (isObject(res)) return res;
-                        const constraints = meta.constraints || [];
-                        if (meta.constraintCls === IsFile) {
-                            return {
-                                multi: constraints[0] || false,
-                                type: "file"
-                            } as any;
+        const docs = routingControllersToSpec(storage, {}, {
+            components: {
+                schemas: validationMetadatasToSchemas({
+                    classTransformerMetadataStorage: defaultMetadataStorage,
+                    additionalConverters: {
+                        [ValidationTypes.CUSTOM_VALIDATION]: (meta, options) => {
+                            const res = isFunction(this.customValidation) ? this.customValidation(meta, options) : this.customValidation;
+                            if (isObject(res)) return res;
+                            const constraints = meta.constraints || [];
+                            if (meta.constraintCls === IsFile) {
+                                return {
+                                    multi: constraints[0] || false,
+                                    type: "file"
+                                } as any;
+                            }
+                            if (meta.constraintCls === IsObjectId) {
+                                return {
+                                    endpoint: constraints[0] || false,
+                                    multi: constraints[1] || false,
+                                    type: "list"
+                                } as any;
+                            }
+                            return null;
                         }
-                        if (meta.constraintCls === IsObjectId) {
-                            return {
-                                endpoint: constraints[0] || false,
-                                multi: constraints[1] || false,
-                                type: "list"
-                            } as any;
-                        }
-                        return null;
                     }
-                }
-            })
-        };
+                })
+            }
+        });
         return docs;
     }
 }

@@ -1,10 +1,8 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
-import fontKit_, {Font} from "fontkit";
-import sharp_ from "sharp";
+import {create as createFont} from "fontkit";
+import sharp from "sharp";
+import type {Font} from "fontkit";
 import {FontFormat, IAssetMeta, IFileType} from "../common-types";
-
-const sharp = sharp_;
-const fontKit = fontKit_;
 
 const fontTypes = [
     "application/font-woff", "application/font-woff2", "application/x-font-opentype", "application/x-font-truetype", "application/x-font-datafork",
@@ -76,7 +74,7 @@ export class AssetProcessor {
     }
 
     static copyFontMeta(buffer: Buffer, metadata: IAssetMeta): void {
-        const font = fontKit.create(buffer) as Font;
+        const font = createFont(buffer) as Font;
         metadata.format = AssetProcessor.extractFontFormat(font);
         fontProps.forEach(prop => {
             metadata[prop] = font[prop];

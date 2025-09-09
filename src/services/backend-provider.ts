@@ -33,10 +33,10 @@ export class BackendProvider {
         if (!this.expressApp) {
             this.expressApp = express();
             this.expressApp.set("trust proxy", true);
+            this.expressApp.use(cors());
             this.expressApp.use(bodyParser.json({
                 limit: this.config.resolve("jsonLimit")
             }));
-            this.expressApp.options("*", cors());
             this.expressApp.get("/api-docs", (req, res) => {
                 this.openApi = this.openApi || this.container.get(OpenApi);
                 res.header("Content-Type", "application/json")

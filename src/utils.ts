@@ -13,8 +13,7 @@ import {PassThrough, Readable, ReadableOptions} from "stream";
 import sharp_, {Region} from "sharp";
 import {HttpError} from "routing-controllers";
 import axios from "axios";
-import {AnyWebByteStream} from "strtok3";
-import {fileTypeFromStream as ftFromStream, fileTypeFromBuffer as ftFromBuffer} from "file-type/core";
+import fileType from "file-type/core";
 import {
     IAssetCropInfo,
     IAssetImageParams,
@@ -814,14 +813,14 @@ function fixTextFileType(type: IFileType, buffer: Buffer): IFileType {
 }
 
 export async function fileTypeFromBuffer(buffer: Buffer): Promise<IFileType> {
-    const stream = bufferToStream(buffer);
-    const type = (await ftFromBuffer(buffer) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
+    let type: IFileType = {ext: "txt", mime: "text/plain"};
+    try {
+        type = await fileType.fromBuffer(buffer) || {ext: "txt", mime: "text/plain"};
+    } catch (e) {
+        console.error(e);
+    }
     if (checkTextFileType(type)) {
         return fixTextFileType(type, buffer);
     }
     return type;
-}
-
-export async function fileTypeFromStream(stream: AnyWebByteStream): Promise<IFileType> {
-    return (await ftFromStream(stream) ?? {ext: "txt", mime: "text/plain"}) as IFileType;
 }

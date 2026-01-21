@@ -4,9 +4,11 @@ import {ITerminal, ITerminalCommand, TERMINAL_COMMAND} from "../common-types";
 import {Logger} from "./logger";
 import {Configuration} from "./configuration";
 import {camelCaseToDash, colorize, ConsoleColor} from "../utils";
+import {CliTerminal} from "./cli-terminal";
 
 @singleton()
 export class TerminalManager {
+    protected cliTerminal: CliTerminal;
     protected servicePassword: string;
     protected suggestions: ISuggestionMap;
     protected commands: ICommandMap;
@@ -34,7 +36,7 @@ export class TerminalManager {
                 if (!command.name || !command.suggest) return acc;
                 acc[command.name] = async (a, t) => command.suggest(a, t);
                 return acc;
-            }, {})
+            }, {} as ISuggestionMap)
         };
         this.commands = commands.reduce((acc, command) => {
             if (!command.name) return acc;
@@ -47,22 +49,35 @@ export class TerminalManager {
         console.log(`Current service password is: ${colorize(this.servicePassword, ConsoleColor.FgGreen)}`);
     }
 
+    runCli(): void {
+        this.cliTerminal = new CliTerminal();
+        this.loadAddons(this.cliTerminal);
+    }
+
     loadAddons(terminal: ITerminal): void {
-        let loggedIn = false;
+        const isCli = terminal === this.cliTerminal;
+        let loggedIn = isCli;
+        const commands: ICommandMap = isCli ? {
+            logout: async () => {
+                terminal.dispose();
+            }
+        } : {
+            login: async (args, terminal) => {
+                if (args.at(1).label === this.servicePassword) {
+                    loggedIn = true;
+                    terminal.writeln("Logged in as admin");
+                } else {
+                    throw new Error("Invalid login");
+                }
+            },
+            logout: async (args, terminal) => {
+                loggedIn = false;
+                terminal.writeln("Logged out");
+            }
+        };
         const addon = new CommandsAddon({
             commands: {
-                login: async (args, terminal) => {
-                    if (args.at(1).label === this.servicePassword) {
-                        loggedIn = true;
-                        terminal.writeln("Logged in as admin");
-                    } else {
-                        throw new Error("Invalid login");
-                    }
-                },
-                logout: async (args, terminal) => {
-                    loggedIn = false;
-                    terminal.writeln("Logged out");
-                },
+                ...commands,
                 ...this.commands
             },
             suggestCommands: async () => {

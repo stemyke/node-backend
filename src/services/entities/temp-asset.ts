@@ -5,14 +5,26 @@ import {bufferToStream, toImage} from "../../utils";
 
 export class TempAsset implements IAsset {
 
-    readonly id: string;
+    get id(): string {
+        return this.oid.toHexString();
+    }
+
+    get streamId(): ObjectId {
+        return this.oid;
+    }
+
+    get driverId(): string {
+        return "temp";
+    }
 
     get stream(): Readable {
         return bufferToStream(this.buffer);
     }
 
+    protected readonly oid: ObjectId;
+
     constructor(protected buffer: Buffer, readonly filename: string, readonly contentType: string, readonly metadata: IAssetMeta) {
-        this.id = new ObjectId().toHexString();
+        this.oid = new ObjectId();
     }
 
     async unlink(): Promise<string> {

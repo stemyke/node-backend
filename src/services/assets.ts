@@ -6,7 +6,18 @@ import {FilterQuery} from "mongoose";
 import axios from "axios";
 
 import {bufferToStream, copyStream, fileTypeFromBuffer, streamToBuffer} from "../utils";
-import {ASSET_DRIVER, IAsset, IAssetDriver, IAssetMeta, IFileType} from "../common-types";
+import {
+    ASSET_DRIVER_FACTORIES,
+    ASSET_MAIN_DRIVER,
+    ASSET_MISSING_DRIVER,
+    AssetDriverFactoryMap,
+    DI_CONTAINER,
+    IAsset,
+    IAssetDriver,
+    IAssetMeta,
+    IDependencyContainer,
+    IFileType
+} from "../common-types";
 import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
@@ -16,12 +27,33 @@ import {TempAsset} from "./entities/temp-asset";
 @scoped(Lifecycle.ContainerScoped)
 export class Assets {
 
-    readonly collection: Collection<Partial<IAsset>>;
+    protected readonly collection: Collection<Partial<IAsset>>;
+    protected readonly driverMap: Map<string, IAssetDriver>;
+    readonly drivers: ReadonlyArray<string>;
 
     constructor(readonly connector: MongoConnector,
                 readonly assetProcessor: AssetProcessor,
-                @inject(ASSET_DRIVER) readonly driver: IAssetDriver) {
+                @inject(DI_CONTAINER) protected readonly container: IDependencyContainer,
+                @inject(ASSET_MAIN_DRIVER) protected readonly mainDriver: string,
+                @inject(ASSET_MISSING_DRIVER) protected readonly missingDriver: string,
+                @inject(ASSET_DRIVER_FACTORIES) protected readonly driverFactoryMap: AssetDriverFactoryMap) {
         this.collection = connector.database?.collection("assets.metadata");
+        this.driverMap = new Map();
+        this.drivers = Object.keys(driverFactoryMap);
+    }
+
+    getDriver(name: string): IAssetDriver {
+        if (!name) {
+            throw new Error(`No name provider for asset driver!`);
+        }
+        if (!this.driverMap.has(name)) {
+            const factory = this.driverFactoryMap[name];
+            if (!factory) {
+                throw new Error(`No asset driver factory found with name: '${name}'!`);
+            }
+            this.driverMap.set(name, factory(this.container));
+        }
+        return this.driverMap.get(name);
     }
 
     async write(stream: Readable, contentType: string = null, metadata: IAssetMeta = null): Promise<IAsset> {
@@ -92,7 +124,7 @@ export class Assets {
 
     async find(where: FilterQuery<IAsset>): Promise<IAsset> {
         const data = await this.collection.findOne(where);
-        return !data ? null : new Asset(data._id, data, this.collection, this.driver);
+        return !data ? null : new Asset(data._id, data, this.collection, this.getDriver(data.driverId || this.missingDriver));
     }
 
     async findMany(where: FilterQuery<IAsset>): Promise<ReadonlyArray<IAsset>> {
@@ -101,7 +133,7 @@ export class Assets {
         const result: IAsset[] = [];
         for (let item of items) {
             if (!item) continue;
-            result.push(new Asset(item._id, item, this.collection, this.driver));
+            result.push(new Asset(item._id, item, this.collection, this.getDriver(item.driverId || this.missingDriver)));
         }
         return result;
     }
@@ -127,10 +159,13 @@ export class Assets {
         metadata.filename = metadata.filename || new ObjectId().toHexString();
         metadata.extension = (fileType.ext || "").trim();
         return new Promise<IAsset>(((resolve, reject) => {
-            const uploaderStream = this.driver.openUploadStream(metadata.filename, {
+            const driverId = this.mainDriver;
+            const driver = this.getDriver(driverId);
+            const uploaderStream = driver.openUploadStream(metadata.filename, {
                 chunkSizeBytes: 1048576,
+                contentType: fileType.mime,
+                extension: fileType.ext,
                 metadata,
-                contentType: fileType.mime
             });
             stream.pipe(uploaderStream)
                 .on("error", error => {
@@ -138,10 +173,12 @@ export class Assets {
                 })
                 .on("finish", () => {
                     const asset = new Asset(uploaderStream.id as ObjectId, {
+                        streamId: uploaderStream.id,
                         filename: metadata.filename,
                         contentType,
-                        metadata
-                    }, this.collection, this.driver);
+                        metadata,
+                        driverId
+                    }, this.collection, driver);
                     asset.save().then(() => {
                         resolve(asset);
                     }, error => {

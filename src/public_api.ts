@@ -1,6 +1,6 @@
 import {join} from "path";
 import webToken from "jsonwebtoken";
-import {container, DependencyContainer} from "tsyringe";
+import {container} from "tsyringe";
 import {
     Action,
     HttpError,
@@ -11,7 +11,10 @@ import {
 import {SocketControllers, SocketControllersOptions} from "socket-controllers";
 
 import {
-    ASSET_DRIVER,
+    ASSET_DRIVER_FACTORIES,
+    ASSET_LOCAL_DIR,
+    ASSET_MAIN_DRIVER,
+    ASSET_MISSING_DRIVER,
     DI_CONTAINER,
     EXPRESS,
     FIXTURE,
@@ -21,7 +24,7 @@ import {
     IJob,
     IRequest,
     IUser,
-    JOB, LOCAL_DIR,
+    JOB,
     OPENAPI_VALIDATION,
     Parameter,
     PARAMETER,
@@ -78,11 +81,22 @@ import {CompressionMiddleware} from "./socket-middlewares/compression.middleware
 
 import {DiContainer} from "./utilities/di-container";
 import {EmptyJob} from "./utilities/empty-job";
-import {diContainers, getDirName, isFunction, isString, isType, prepareUrlEmpty, valueToPromise} from "./utils";
+import {
+    diContainers,
+    getDirName,
+    isFunction,
+    isString,
+    isType,
+    prepareUrlEmpty,
+    prepareUrlSlash,
+    valueToPromise
+} from "./utils";
 import {setupStatic} from "./static";
 import {commands} from "./commands";
 import {fixtures} from './fixtures';
 import {AssetGridDriver} from "./services/drivers/asset-grid.driver";
+import {AssetLocalDriver} from "./services/drivers/asset-local.driver";
+import {AssetStorageProxyDriver} from "./services/drivers/asset-storage-proxy.driver";
 
 export {
     FilterPredicate,
@@ -216,6 +230,7 @@ export {
     IAssetUploadOpts,
     IAssetDriver,
     ILazyAsset,
+    AssetDriverFactoryMap,
     IUser,
     IClientSocket,
     IRequestBase,
@@ -237,6 +252,7 @@ export {
 
 export {AssetLocalDriver} from "./services/drivers/asset-local.driver";
 export {AssetGridDriver} from "./services/drivers/asset-grid.driver";
+export {AssetStorageProxyDriver} from "./services/drivers/asset-storage-proxy.driver";
 export {AssetProcessor} from "./services/asset-processor";
 export {AssetResolver} from "./services/asset-resolver";
 export {Assets} from "./services/assets";
@@ -313,6 +329,7 @@ export function createServices(): IDependencyContainer {
     // List of parameters
     const dirName = getDirName();
     const params = [
+        new Parameter("isCli", false),
         new Parameter("serviceName", "Backend"),
         new Parameter("servicePassword", Math.random().toString(36).substring(7)),
         new Parameter("serviceUrl", "http://localhost:3000", (value, helper) => {
@@ -336,6 +353,8 @@ export function createServices(): IDependencyContainer {
         new Parameter("mongoDb", "node-backend"),
         new Parameter("mongoUser", null),
         new Parameter("mongoPassword", null),
+        new Parameter("storageProxyUri", "http://localhost:4500/files", prepareUrlSlash),
+        new Parameter("storageProxyBucket", "something"),
         new Parameter("nodeEnv", "production"),
         new Parameter("appPort", 80),
         new Parameter("zmqPort", 3000),
@@ -537,12 +556,25 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
         useValue: config.customValidation || (() => null)
     });
 
-    diContainer.register(LOCAL_DIR, {
+    diContainer.register(ASSET_LOCAL_DIR, {
         useValue: config.assetLocalDir || "assets_files"
     });
 
-    diContainer.register(ASSET_DRIVER, {
-        useClass: config.assetDriver || AssetGridDriver
+    diContainer.register(ASSET_MAIN_DRIVER, {
+        useValue: config.assetMainDriver || "grid"
+    });
+
+    diContainer.register(ASSET_MISSING_DRIVER, {
+        useValue: config.assetMissingDriver || "grid"
+    });
+
+    diContainer.register(ASSET_DRIVER_FACTORIES, {
+        useValue: {
+            grid: container => container.resolve(AssetGridDriver),
+            storageProxy: container => container.resolve(AssetStorageProxyDriver),
+            local: container => container.resolve(AssetLocalDriver),
+            ...(config.assetDrivers || {}),
+        }
     });
 
     diContainers.appContainer = diContainers.appContainer || diContainer;

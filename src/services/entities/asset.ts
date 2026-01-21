@@ -12,6 +12,14 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
         return this.data.filename;
     }
 
+    get streamId(): ObjectId {
+        return this.data.streamId || this.oid;
+    }
+
+    get driverId(): string {
+        return this.data.driverId;
+    }
+
     get contentType(): string {
         return this.data.contentType;
     }
@@ -21,7 +29,7 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
     }
 
     get stream(): Readable {
-        return this.driver.openDownloadStream(this.oid);
+        return this.driver.openDownloadStream(this);
     }
 
     constructor(id: ObjectId,
@@ -33,17 +41,11 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
 
     async unlink(): Promise<string> {
         try {
-            await this.driver.delete(this.oid);
-            await this.collection.deleteOne({_id: this.oid});
+            await this.driver.delete(this);
         } catch (error) {
-            let err = error as any;
-            if (error) {
-                err = error.message || error || "";
-                if (!isString(err) || !err.startsWith("FileNotFound")) {
-                    throw err;
-                }
-            }
+            console.log("Failed to unlink", error?.message);
         }
+        await this.collection.deleteOne({_id: this.oid});
         return this.id;
     }
 

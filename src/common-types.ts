@@ -116,9 +116,13 @@ export const DI_CONTAINER: InjectionToken<IDependencyContainer> = Symbol.for("di
 
 export const OPENAPI_VALIDATION: InjectionToken<OpenApiValidation> = Symbol.for("openapi-validation-token");
 
-export const LOCAL_DIR: InjectionToken<string> = Symbol.for('asset-local-dir');
+export const ASSET_LOCAL_DIR: InjectionToken<string> = Symbol.for('asset-local-dir');
 
-export const ASSET_DRIVER: InjectionToken<IAssetDriver> = Symbol.for('assets-driver');
+export const ASSET_DRIVER_FACTORIES: InjectionToken<AssetDriverFactoryMap> = Symbol.for('assets-driver-factories');
+
+export const ASSET_MAIN_DRIVER: InjectionToken<string> = Symbol.for('assets-main-driver');
+
+export const ASSET_MISSING_DRIVER: InjectionToken<string> = Symbol.for('assets-missing-driver');
 
 // --- Mongo interfaces and types
 
@@ -202,8 +206,8 @@ export interface ITerminalFile extends ISuggestion {
 }
 
 export interface ITerminal extends ITerminalBase {
-    suggestFiles(accept: string): Promise<ITerminalFile[]>;
-    downloadFile(filename: string, buffer: Buffer): Promise<void>;
+    suggestFiles?(accept: string): Promise<ITerminalFile[]>;
+    downloadFile?(filename: string, buffer: Buffer): Promise<void>;
 }
 
 export interface ITerminalCommand {
@@ -279,6 +283,8 @@ export interface IAssetImageParams {
 export interface IAsset {
     readonly id: string;
     readonly filename: string;
+    readonly streamId: ObjectId;
+    readonly driverId: string;
     readonly contentType: string;
     readonly metadata: IAssetMeta;
     readonly stream: Readable;
@@ -301,14 +307,14 @@ export interface IAssetUploadStream extends Writable {
 export interface IAssetUploadOpts {
     chunkSizeBytes?: number;
     metadata?: IAssetMeta;
-    contentType?: string;
+    contentType: string;
+    extension: string;
 }
 
 export interface IAssetDriver {
-    readonly metaCollection: string;
-    openUploadStream(filename: string, opts?: IAssetUploadOpts): IAssetUploadStream;
-    openDownloadStream(id: ObjectId): Readable;
-    delete(id: ObjectId): Promise<void>;
+    openUploadStream(filename: string, opts: IAssetUploadOpts): IAssetUploadStream;
+    openDownloadStream(asset: IAsset): Readable;
+    delete(asset: IAsset): Promise<void>;
 }
 
 export interface ILazyAsset {
@@ -327,6 +333,10 @@ export interface ILazyAsset {
     save(): Promise<any>;
     load(): Promise<this>;
     toJSON(): any;
+}
+
+export interface AssetDriverFactoryMap {
+    [name: string]: (di: IDependencyContainer) => IAssetDriver;
 }
 
 export interface IUser {
@@ -422,5 +432,7 @@ export interface IBackendConfig {
     socketOptions?: SocketOptions;
     customValidation?: SchemaConverter | SchemaObject;
     assetLocalDir?: string;
-    assetDriver?: Type<IAssetDriver>;
+    assetMainDriver?: string;
+    assetMissingDriver?: string;
+    assetDrivers?: AssetDriverFactoryMap;
 }

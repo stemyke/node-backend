@@ -4,7 +4,7 @@ import {IDisposable, ISuggestion, ITerminalAddon} from "@stemy/terminal-commands
 import {IClientSocket, ITerminal, ITerminalFile} from "../common-types";
 import {fileTypeFromBuffer} from "../utils";
 
-export class Terminal implements ITerminal {
+export class SocketTerminal implements ITerminal {
     protected addons: ITerminalAddon[];
     protected files$: BehaviorSubject<ITerminalFile[]>;
     protected input$: Subject<string>;

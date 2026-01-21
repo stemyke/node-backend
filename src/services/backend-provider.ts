@@ -9,6 +9,7 @@ import {DI_CONTAINER, IDependencyContainer} from '../common-types';
 import {OpenApi} from './open-api';
 import {JobManager} from './job-manager';
 import {Fixtures} from './fixtures';
+import {TerminalManager} from "./terminal-manager";
 
 const express = express_;
 
@@ -63,6 +64,11 @@ export class BackendProvider {
 
     async quickStart(): Promise<string> {
         const port = this.config.resolve("appPort");
+        const isCli = this.config.resolve("isCli");
+        if (isCli) {
+            this.container.resolve(TerminalManager).runCli();
+            return `Running CLI mode`;
+        }
         const isWorker = this.config.resolve("isWorker");
         if (isWorker || this.config.resolve("startWorker")) {
             await this.container.resolve(JobManager).startProcessing();

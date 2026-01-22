@@ -1,7 +1,7 @@
 import {injectable, Lifecycle, scoped} from "tsyringe";
-import {ICommandArgs, ISuggestion} from "@stemy/terminal-commands-addon";
+import {ICommandArgs, IProgressBar, ISuggestion} from "@stemy/terminal-commands-addon";
 
-import {IFixtureOutput, ITerminal, ITerminalCommand} from "../common-types";
+import {ITerminal, ITerminalCommand} from "../common-types";
 import {Assets} from "../services/assets";
 import {colorize, ConsoleColor, promiseTimeout, regexEscape} from "../utils";
 
@@ -14,7 +14,7 @@ export class MoveAssetsCommand implements ITerminalCommand {
     constructor(protected assets: Assets) {
     }
 
-    async execute(args: ICommandArgs, terminal: ITerminal): Promise<any> {
+    async execute(args: ICommandArgs, terminal: ITerminal, progress: IProgressBar): Promise<any> {
         await promiseTimeout(1000);
         const from = `${args.at(1).id}`;
         const to = `${args.at(2).id}`;
@@ -24,15 +24,17 @@ export class MoveAssetsCommand implements ITerminalCommand {
                 { driverId: { "$exists": false } }
             ]
         } : {driverId: from});
+        progress.setMax(assets.length)
 
         for (const asset of assets) {
             await asset.move(to);
+            progress.advance();
         }
 
         terminal.writeln(colorize(`Assets successfully moved to: ${to}`, ConsoleColor.FgGreen));
     }
 
-    async suggest?(args: ICommandArgs, terminal: ITerminal): Promise<Array<string | ISuggestion>> {
+    async suggest?(args: ICommandArgs): Promise<Array<string | ISuggestion>> {
         if (args.length > 3) {
             return null;
         }

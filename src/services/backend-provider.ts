@@ -64,7 +64,7 @@ export class BackendProvider {
 
     async quickStart(): Promise<string> {
         const port = this.config.resolve("appPort");
-        const isCli = this.config.resolve("isCli");
+        const isCli = this.config.isCli;
         if (isCli) {
             this.container.resolve(TerminalManager).runCli();
             return `Running CLI mode`;

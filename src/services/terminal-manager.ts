@@ -40,9 +40,9 @@ export class TerminalManager {
         };
         this.commands = commands.reduce((acc, command) => {
             if (!command.name) return acc;
-            acc[command.name] = async (a, t) => command.execute(a, t);
+            acc[command.name] = async (a, t, p) => command.execute(a, t, p);
             return acc;
-        }, {});
+        }, {} as ICommandMap);
         this.loggedOutCommands = ["login", "clear"];
         this.loggedInCommands = Object.keys(this.commands);
         this.loggedInCommands.push("logout");

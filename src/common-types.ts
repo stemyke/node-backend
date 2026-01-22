@@ -15,7 +15,7 @@ import {SchemaObject} from "openapi3-ts";
 import {Readable, Writable} from "stream";
 import {Moment} from "moment";
 import {AnyExpression, Expression} from "mongoose";
-import {ICommandArgs, ISuggestion, ITerminal as ITerminalBase} from "@stemy/terminal-commands-addon";
+import {ICommandArgs, IProgressBar, ISuggestion, ITerminal as ITerminalBase} from "@stemy/terminal-commands-addon";
 import {ObjectId} from "bson";
 
 // --- DI functions ---
@@ -208,7 +208,7 @@ export interface ITerminal extends ITerminalBase {
 
 export interface ITerminalCommand {
     name?: string;
-    execute(args: ICommandArgs, terminal: ITerminal): Promise<any>;
+    execute(args: ICommandArgs, terminal: ITerminal, progress: IProgressBar): Promise<any>;
     suggest?(args: ICommandArgs, terminal: ITerminal): Promise<Array<string | ISuggestion>>;
 }
 

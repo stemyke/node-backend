@@ -7,11 +7,13 @@ import {colorize, ConsoleColor, convertValue, getType, isFunction} from "../util
 @singleton()
 export class Configuration {
 
+    readonly isCli: boolean;
     protected paramMap: {[name: string]: Parameter};
     protected paramValues: {[name: string]: any};
 
     constructor(@injectAll(PARAMETER) params: Parameter[]) {
         dotenv.config();
+        this.isCli = process.env.IS_CLI === 'true';
         this.paramMap = {};
         this.paramValues = {};
         (params || []).forEach(param => this.add(param));
@@ -34,7 +36,7 @@ export class Configuration {
             const value = isFunction(param.resolver)
                 ? param.resolver(envValue, helper)
                 : convertValue(envValue, getType(param.defaultValue));
-            console.log(
+            this.log(
                 colorize(`Processing param value`, ConsoleColor.FgYellow),
                 colorize(param.name, ConsoleColor.FgGreen),
                 colorize(envName, ConsoleColor.FgBlue),
@@ -44,7 +46,7 @@ export class Configuration {
             return value;
         } else if (isFunction(param.resolver)) {
             const value = param.resolver(param.defaultValue, helper);
-            console.log(
+            this.log(
                 colorize(`Processing default param value`, ConsoleColor.FgYellow),
                 colorize(param.name, ConsoleColor.FgGreen),
                 param.defaultValue,
@@ -52,7 +54,7 @@ export class Configuration {
             );
             return value;
         }
-        console.log(
+        this.log(
             colorize(`Using default param value`, ConsoleColor.FgYellow),
             colorize(param.name, ConsoleColor.FgGreen),
             param.defaultValue,
@@ -79,5 +81,10 @@ export class Configuration {
             this.paramValues[name] = this.resolveValue(param, alreadyResolved);
         }
         return this.paramValues[name];
+    }
+
+    protected log(...args: any[]) {
+        if (this.isCli) return;
+        console.log(...args);
     }
 }

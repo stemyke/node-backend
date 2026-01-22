@@ -328,7 +328,6 @@ export function createServices(): IDependencyContainer {
     // List of parameters
     const dirName = getDirName();
     const params = [
-        new Parameter("isCli", false),
         new Parameter("serviceName", "Backend"),
         new Parameter("servicePassword", Math.random().toString(36).substring(7)),
         new Parameter("serviceUrl", "http://localhost:3000", (value, helper) => {

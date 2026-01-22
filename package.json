@@ -52,7 +52,7 @@
         "fontkit": "^2.0.4",
         "moment": "^2.30.1",
         "got": "^14.4.5",
-        "@stemy/terminal-commands-addon": "1.0.0"
+        "@stemy/terminal-commands-addon": "^1.1.0"
     },
     "devDependencies": {
         "@types/jsonwebtoken": "^9.0.10",

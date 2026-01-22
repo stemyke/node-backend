@@ -39,6 +39,10 @@ export class TempAsset implements IAsset {
         return this.buffer;
     }
 
+    async move(): Promise<IAsset> {
+        throw new Error(`Temp asset '${this.id}' can not be moved!`);
+    }
+
     async download(metadata?: IAssetMeta): Promise<Readable> {
         return this.stream;
     }

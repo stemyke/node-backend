@@ -2,7 +2,7 @@ import {Readable} from "stream";
 import {Collection} from "mongodb";
 import {ObjectId} from "bson";
 
-import {IAsset, IAssetDriver, IAssetImageParams, IAssetMeta} from "../../common-types";
+import {IAsset, IAssetDriver, IAssetDrivers, IAssetImageParams, IAssetMeta} from "../../common-types";
 import {isString, streamToBuffer, toImage} from "../../utils";
 import {BaseEntity} from "./base-entity";
 
@@ -20,6 +20,10 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
         return this.data.driverId;
     }
 
+    get driver(): IAssetDriver {
+        return this.drivers.getDriver(this.driverId || this.drivers.missingDriver);
+    }
+
     get contentType(): string {
         return this.data.contentType;
     }
@@ -35,7 +39,7 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
     constructor(id: ObjectId,
                 data: Partial<IAsset>,
                 collection: Collection,
-                protected driver: IAssetDriver) {
+                protected drivers: IAssetDrivers) {
         super(id, data, collection);
     }
 
@@ -56,6 +60,39 @@ export class Asset extends BaseEntity<IAsset> implements IAsset {
 
     getBuffer(): Promise<Buffer> {
         return streamToBuffer(this.stream);
+    }
+
+    async move(driverId: string): Promise<IAsset> {
+        const oldDriver = this.driver;
+        const targetDriver = this.drivers.getDriver(driverId);
+        if (targetDriver === oldDriver) return this;
+        const oldAsset = new Asset(this.oid, this.data, this.collection, this.drivers);
+        const streamId = await this.uploadTo(targetDriver);
+        this.data = {
+            ...this.data,
+            streamId,
+            driverId,
+        };
+        await this.save();
+        await oldDriver.delete(oldAsset);
+    }
+
+    protected uploadTo(driver: IAssetDriver): Promise<ObjectId> {
+        return new Promise((resolve, reject) => {
+            const uploaderStream = driver.openUploadStream(this.filename, {
+                chunkSizeBytes: 1048576,
+                contentType: this.contentType,
+                extension: this.metadata.extension,
+                metadata: this.metadata,
+            });
+            this.stream.pipe(uploaderStream)
+                .on("error", error => {
+                    reject(error.message || error);
+                })
+                .on("finish", async () => {
+                    resolve(uploaderStream.id);
+                });
+        });
     }
 
     async download(metadata?: IAssetMeta): Promise<Readable> {

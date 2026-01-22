@@ -13,8 +13,6 @@ import {SocketControllers, SocketControllersOptions} from "socket-controllers";
 import {
     ASSET_DRIVER_FACTORIES,
     ASSET_LOCAL_DIR,
-    ASSET_MAIN_DRIVER,
-    ASSET_MISSING_DRIVER,
     DI_CONTAINER,
     EXPRESS,
     FIXTURE,
@@ -229,6 +227,7 @@ export {
     IAssetUploadStream,
     IAssetUploadOpts,
     IAssetDriver,
+    IAssetDrivers,
     ILazyAsset,
     AssetDriverFactoryMap,
     IUser,
@@ -355,6 +354,8 @@ export function createServices(): IDependencyContainer {
         new Parameter("mongoPassword", null),
         new Parameter("storageProxyUri", "http://localhost:4500/files", prepareUrlSlash),
         new Parameter("storageProxyBucket", "something"),
+        new Parameter("assetsMainDriver", "grid"),
+        new Parameter("assetsMissingDriver", "grid"),
         new Parameter("nodeEnv", "production"),
         new Parameter("appPort", 80),
         new Parameter("zmqPort", 3000),
@@ -558,14 +559,6 @@ export async function setupBackend(config: IBackendConfig, providers?: Provider<
 
     diContainer.register(ASSET_LOCAL_DIR, {
         useValue: config.assetLocalDir || "assets_files"
-    });
-
-    diContainer.register(ASSET_MAIN_DRIVER, {
-        useValue: config.assetMainDriver || "grid"
-    });
-
-    diContainer.register(ASSET_MISSING_DRIVER, {
-        useValue: config.assetMissingDriver || "grid"
     });
 
     diContainer.register(ASSET_DRIVER_FACTORIES, {

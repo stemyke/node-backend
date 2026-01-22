@@ -38,9 +38,6 @@ function build(cb = new Function("void 0")) {
     if (child) {
         child.kill();
     }
-    if (deploy) {
-        deploy.cancel();
-    }
     if (options.skipBuild) {
         cb();
         return;

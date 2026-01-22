@@ -120,10 +120,6 @@ export const ASSET_LOCAL_DIR: InjectionToken<string> = Symbol.for('asset-local-d
 
 export const ASSET_DRIVER_FACTORIES: InjectionToken<AssetDriverFactoryMap> = Symbol.for('assets-driver-factories');
 
-export const ASSET_MAIN_DRIVER: InjectionToken<string> = Symbol.for('assets-main-driver');
-
-export const ASSET_MISSING_DRIVER: InjectionToken<string> = Symbol.for('assets-missing-driver');
-
 // --- Mongo interfaces and types
 
 export interface IMatchField {
@@ -291,6 +287,7 @@ export interface IAsset {
     unlink(): Promise<string>;
     setMeta(meta: Partial<IAssetMeta>): Promise<any>;
     getBuffer(): Promise<Buffer>;
+    move(driverId: string): Promise<IAsset>;
     download(metadata?: IAssetMeta): Promise<Readable>;
     downloadImage(params?: IAssetImageParams, metadata?: IAssetMeta): Promise<Readable>;
     getImage(params?: IAssetImageParams): Promise<Readable>;
@@ -315,6 +312,11 @@ export interface IAssetDriver {
     openUploadStream(filename: string, opts: IAssetUploadOpts): IAssetUploadStream;
     openDownloadStream(asset: IAsset): Readable;
     delete(asset: IAsset): Promise<void>;
+}
+
+export interface IAssetDrivers {
+    readonly missingDriver: string;
+    getDriver(id: string): IAssetDriver;
 }
 
 export interface ILazyAsset {
@@ -432,7 +434,5 @@ export interface IBackendConfig {
     socketOptions?: SocketOptions;
     customValidation?: SchemaConverter | SchemaObject;
     assetLocalDir?: string;
-    assetMainDriver?: string;
-    assetMissingDriver?: string;
     assetDrivers?: AssetDriverFactoryMap;
 }

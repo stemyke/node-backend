@@ -8,12 +8,10 @@ import axios from "axios";
 import {bufferToStream, copyStream, fileTypeFromBuffer, streamToBuffer} from "../utils";
 import {
     ASSET_DRIVER_FACTORIES,
-    ASSET_MAIN_DRIVER,
-    ASSET_MISSING_DRIVER,
     AssetDriverFactoryMap,
     DI_CONTAINER,
     IAsset,
-    IAssetDriver,
+    IAssetDriver, IAssetDrivers,
     IAssetMeta,
     IDependencyContainer,
     IFileType
@@ -22,23 +20,28 @@ import {MongoConnector} from "./mongo-connector";
 import {AssetProcessor} from "./asset-processor";
 import {Asset} from "./entities/asset";
 import {TempAsset} from "./entities/temp-asset";
+import {Configuration} from "./configuration";
 
 @injectable()
 @scoped(Lifecycle.ContainerScoped)
-export class Assets {
+export class Assets implements IAssetDrivers {
 
     protected readonly collection: Collection<Partial<IAsset>>;
     protected readonly driverMap: Map<string, IAssetDriver>;
+
+    readonly mainDriver: string;
+    readonly missingDriver: string;
     readonly drivers: ReadonlyArray<string>;
 
     constructor(readonly connector: MongoConnector,
                 readonly assetProcessor: AssetProcessor,
+                readonly config: Configuration,
                 @inject(DI_CONTAINER) protected readonly container: IDependencyContainer,
-                @inject(ASSET_MAIN_DRIVER) protected readonly mainDriver: string,
-                @inject(ASSET_MISSING_DRIVER) protected readonly missingDriver: string,
                 @inject(ASSET_DRIVER_FACTORIES) protected readonly driverFactoryMap: AssetDriverFactoryMap) {
         this.collection = connector.database?.collection("assets.metadata");
         this.driverMap = new Map();
+        this.mainDriver = this.config.resolve("assetsMainDriver");
+        this.missingDriver = this.config.resolve("assetsMissingDriver");
         this.drivers = Object.keys(driverFactoryMap);
     }
 
@@ -124,7 +127,7 @@ export class Assets {
 
     async find(where: FilterQuery<IAsset>): Promise<IAsset> {
         const data = await this.collection.findOne(where);
-        return !data ? null : new Asset(data._id, data, this.collection, this.getDriver(data.driverId || this.missingDriver));
+        return !data ? null : new Asset(data._id, data, this.collection, this);
     }
 
     async findMany(where: FilterQuery<IAsset>): Promise<ReadonlyArray<IAsset>> {
@@ -133,7 +136,7 @@ export class Assets {
         const result: IAsset[] = [];
         for (let item of items) {
             if (!item) continue;
-            result.push(new Asset(item._id, item, this.collection, this.getDriver(item.driverId || this.missingDriver)));
+            result.push(new Asset(item._id, item, this.collection, this));
         }
         return result;
     }
@@ -178,7 +181,7 @@ export class Assets {
                         contentType,
                         metadata,
                         driverId
-                    }, this.collection, driver);
+                    }, this.collection, this);
                     asset.save().then(() => {
                         resolve(asset);
                     }, error => {
